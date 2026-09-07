@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import type { MapAsset } from '#shared/game/types';
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 
-const props = defineProps<{ engine: ReturnType<typeof useGameEngine> }>()
+const props = defineProps<{ engine: ReturnType<typeof useGameEngine>; floorplan: MapAsset[] }>()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 
 onMounted(() => {
-  if (canvas.value) props.engine.mount(canvas.value)
+  if (canvas.value) props.engine.mount(canvas.value, props.floorplan)
 })
 
 onBeforeUnmount(() => props.engine.unmount())

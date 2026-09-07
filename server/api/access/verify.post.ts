@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
   const code = typeof body?.code === 'string' ? body.code.trim() : ''
   const config = useRuntimeConfig(event)
 
-  if (!code || code !== config.gameAccessCode) {
+  const configuredCode = config.gameAccessCode || process.env.NUXT_GAME_ACCESS_CODE || 'courier-demo'
+  if (!code || code !== configuredCode) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid access code' })
   }
 

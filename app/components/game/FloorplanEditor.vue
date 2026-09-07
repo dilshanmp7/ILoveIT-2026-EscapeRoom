@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { defaultMapLayout } from '#shared/game/defaults';
+import type { MapAsset } from '#shared/game/types';
 import { reactive } from 'vue';
 
-const props = defineProps<{ open: boolean }>()
-const emit = defineEmits<{ close: []; deploy: [] }>()
-const assets = reactive(defaultMapLayout.map(asset => ({ ...asset })))
+const props = defineProps<{ open: boolean; initialAssets: MapAsset[] }>()
+const emit = defineEmits<{ close: []; deploy: [layout: MapAsset[]] }>()
+const assets = reactive(props.initialAssets.map(asset => ({ ...asset })))
 const selectedId = ref(assets[0]?.id || '')
 const selected = computed(() => assets.find(asset => asset.id === selectedId.value))
 
@@ -42,7 +42,7 @@ function deleteSelected() {
         <div class="map-panel"><div class="map-grid"><button v-for="asset in assets" :key="asset.id" type="button" class="map-asset" :class="{ selected: asset.id === selectedId }" :style="{ left: `${50 + asset.x * 4.2}%`, top: `${50 + asset.z * 5.5}%` }" @click="selectedId = asset.id">{{ asset.label.slice(0, 9) }}</button></div><p class="map-note">Select an asset to inspect it, then deploy the revised floorplan.</p></div>
         <aside v-if="selected" class="inspector"><span class="section-label">Object inspector</span><label>Label <input v-model="selected.label"></label><label>X <input v-model.number="selected.x" type="number" step=".5"></label><label>Z <input v-model.number="selected.z" type="number" step=".5"></label><label>Rotation <input v-model.number="selected.rotation" type="number" step="15"></label></aside>
       </div>
-      <footer class="editor-footer"><button type="button" class="deploy-button" @click="emit('deploy')">Deploy floorplan ↗</button></footer>
+      <footer class="editor-footer"><button type="button" class="deploy-button" @click="emit('deploy', assets)">Deploy floorplan ↗</button></footer>
     </section>
   </div>
 </template>

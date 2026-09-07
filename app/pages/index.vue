@@ -68,6 +68,8 @@ async function enterShift() {
         <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
       </form>
 
+      <NuxtLink class="editor-link" to="/editor">Open floorplan editor <span aria-hidden="true">↗</span></NuxtLink>
+
       <div class="briefing-strip">
         <span><strong>03:00</strong> SLA window</span>
         <span><strong>01</strong> active courier</span>
@@ -115,6 +117,7 @@ button { border: 0; padding: .85rem 1rem; background: #ffcc00; color: #15191b; c
 button:hover:not(:disabled) { background: #f5f0df; }
 button:disabled { cursor: wait; opacity: .45; }
 .form-error { margin: .8rem 0 0; color: #ff837b; font-family: 'Courier New', monospace; font-size: .75rem; }
+.editor-link { display: inline-block; margin-top: 1.5rem; color: #aaa89c; font-family: 'Courier New', monospace; font-size: .7rem; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; }.editor-link:hover { color: #ffcc00; }
 .briefing-strip { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 5rem; color: #77786f; font-size: .63rem; }
 .briefing-strip strong { display: block; margin-bottom: .25rem; color: #f5f0df; font-size: 1.1rem; letter-spacing: 0; }
 .access-aside { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 100vh; padding: 2.5rem; border-left: 1px solid #353938; background: #202526; }

@@ -5,6 +5,8 @@ interface HudState {
   nearbyLabel: string
   holding: string
   holdingConfigured: boolean
+  canGrab: boolean
+  canUse: boolean
 }
 
 defineProps<{ state: HudState }>()
@@ -26,7 +28,7 @@ function formatTime(seconds: number) {
       <div class="metric"><span>Rating</span><strong class="score">{{ state.score }}</strong></div>
       <button class="editor-button" type="button" @click="emit('editor')">Floorplan editor <span>↗</span></button>
     </div>
-    <div v-if="state.nearbyLabel" class="interaction-hint">[ SPACE ] {{ state.nearbyLabel }}</div>
+    <div v-if="state.nearbyLabel" class="interaction-hint">[ E / SPACE ] {{ state.nearbyLabel }}</div>
     <div v-if="state.holding" class="holding-pill">Holding: {{ state.holding }}{{ state.holdingConfigured ? ' / configured' : '' }}</div>
   </header>
 </template>

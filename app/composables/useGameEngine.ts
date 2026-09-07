@@ -22,6 +22,8 @@ const initialState = () => ({
   nearbyId: '',
   holding: '',
   holdingConfigured: false,
+  canGrab: false,
+  canUse: false,
   quiz: null as QuizQuestion | null,
   quizOpen: false,
   editorOpen: false,
@@ -34,12 +36,15 @@ export function useGameEngine() {
   let scene: THREE.Scene | null = null
   let camera: THREE.PerspectiveCamera | null = null
   let renderer: THREE.WebGLRenderer | null = null
-  let player: THREE.Mesh | null = null
+  let player: THREE.Group | null = null
   let animationFrame = 0
   let timerId: ReturnType<typeof setInterval> | undefined
   let lastFrame = 0
   let heldItem: HeldItem | null = null
   let nearby: Counter | null = null
+  let floorplan = defaultMapLayout.map(item => ({ ...item }))
+  let joystick = { x: 0, y: 0 }
+  let removeListeners: (() => void) | undefined
   const keys = new Set<string>()
   const counters: Counter[] = []
   const bodies: MapAsset[] = []
@@ -106,7 +111,7 @@ export function useGameEngine() {
       if (child.userData.courierAsset) scene.remove(child)
     }
 
-    for (const asset of defaultMapLayout.map(item => ({ ...item }))) {
+    for (const asset of floorplan.map(item => ({ ...item }))) {
       const mesh = createAssetMesh(asset)
       mesh.position.set(asset.x, 0, asset.z)
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
@@ -149,6 +154,10 @@ export function useGameEngine() {
     if (keys.has('KeyS') || keys.has('ArrowDown')) z += 1
     if (keys.has('KeyA') || keys.has('ArrowLeft')) x -= 1
     if (keys.has('KeyD') || keys.has('ArrowRight')) x += 1
+    if (joystick.x || joystick.y) {
+      x = joystick.x
+      z = joystick.y
+    }
     if (!x && !z) return
     const length = Math.hypot(x, z)
     const speed = 3.2 * delta
@@ -163,6 +172,8 @@ export function useGameEngine() {
     nearby = getNearby()
     state.nearbyId = nearby?.asset.id || ''
     state.nearbyLabel = nearby?.asset.label || ''
+    state.canGrab = Boolean(heldItem || nearby?.asset.allowGrab || nearby?.heldItem || nearby?.asset.actionType === 'trash')
+    state.canUse = Boolean(nearby && (nearby.asset.actionType === 'config' || nearby.asset.actionType === 'quiz' || nearby.asset.actionType === 'deliver' || nearby.asset.type === 'riddle' || nearby.asset.type === 'door' || nearby.asset.useAction === 'quiz' || nearby.asset.useAction === 'open_door'))
   }
 
   function pickUp() {
@@ -206,7 +217,8 @@ export function useGameEngine() {
       return
     }
     if (asset.useAction === 'quiz' || asset.type === 'riddle' || asset.actionType === 'quiz') {
-      state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]
+      if (asset.useRequiredKey && heldItem?.keyId !== asset.useRequiredKey) return
+      state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!
       state.quizOpen = true
       return
     }
@@ -234,7 +246,7 @@ export function useGameEngine() {
   }
 
   function openQuiz() {
-    state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]
+    state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!
     state.quizOpen = true
   }
 
@@ -259,7 +271,17 @@ export function useGameEngine() {
     animationFrame = requestAnimationFrame(frame)
   }
 
-  function mount(target: HTMLCanvasElement) {
+  function setJoystick(x: number, y: number) {
+    joystick = { x, y }
+  }
+
+  function setFloorplan(layout: MapAsset[]) {
+    floorplan = layout.map(item => ({ ...item }))
+    if (scene) buildFloorplan()
+  }
+
+  function mount(target: HTMLCanvasElement, layout?: MapAsset[]) {
+    if (layout) setFloorplan(layout)
     canvas.value = target
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0x0f172a)
@@ -305,7 +327,7 @@ export function useGameEngine() {
     }, 1000)
     animationFrame = requestAnimationFrame(frame)
 
-    return () => {
+    removeListeners = () => {
       window.removeEventListener('resize', resize)
       window.removeEventListener('keydown', keydown)
       window.removeEventListener('keyup', keyup)
@@ -313,6 +335,8 @@ export function useGameEngine() {
   }
 
   function unmount() {
+    removeListeners?.()
+    removeListeners = undefined
     cancelAnimationFrame(animationFrame)
     if (timerId) clearInterval(timerId)
     scene?.traverse(object => {
@@ -337,6 +361,8 @@ export function useGameEngine() {
     state: readonly(state),
     mount,
     unmount,
+    setJoystick,
+    setFloorplan,
     pickUp,
     useNearby,
     dash,

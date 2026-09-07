@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import type { MapAsset } from '#shared/game/types';
+
 const engine = useGameEngine()
 definePageMeta({ middleware: ['game-gate'] })
 
 const session = ref<{ id: string; score: number } | null>(null)
+const floorplan = ref<MapAsset[] | null>(null)
 const sessionError = ref('')
 
 async function submitScore(completed = true) {
@@ -15,6 +18,8 @@ async function submitScore(completed = true) {
 
 onMounted(async () => {
   try {
+    const floorplanResponse = await $fetch<{ layout: MapAsset[] }>('/api/game/floorplan')
+    floorplan.value = floorplanResponse.layout
     const response = await $fetch<{ session: { id: string; score: number } }>('/api/game/session', { method: 'POST' })
     session.value = response.session
   } catch {
@@ -39,13 +44,12 @@ useSeoMeta({
 <template>
   <main class="game-page">
     <div v-if="sessionError" class="game-error" role="alert">{{ sessionError }}</div>
-    <div v-else-if="!session" class="game-loading">CONNECTING TO DISPATCH HUB...</div>
+    <div v-else-if="!session || !floorplan" class="game-loading">CONNECTING TO DISPATCH HUB...</div>
     <section v-else class="game-shell" aria-label="DHL IT Courier game">
-      <GameScene :engine="engine" />
-      <GameHud :state="engine.state" @editor="engine.openEditor" />
-      <MobileControls @grab="engine.pickUp" @action="engine.useNearby" @dash="engine.dash" @quiz="engine.openQuiz" />
+      <GameScene :engine="engine" :floorplan="floorplan" />
+      <GameHud :state="engine.state" @editor="navigateTo('/editor')" />
+      <MobileControls :can-grab="engine.state.canGrab" :can-use="engine.state.canUse" @grab="engine.pickUp" @action="engine.useNearby" @dash="engine.dash" @quiz="engine.openQuiz" @move="engine.setJoystick" />
       <QuizModal :quiz="engine.state.quiz" :open="engine.state.quizOpen" @answer="engine.answerQuiz" @close="engine.answerQuiz(-1)" />
-      <FloorplanEditor :open="engine.state.editorOpen" @close="engine.closeEditor" @deploy="engine.deployEditor" />
     </section>
   </main>
 </template>

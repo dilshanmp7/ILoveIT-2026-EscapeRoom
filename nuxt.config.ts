@@ -3,6 +3,8 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   runtimeConfig: {
-    gameAccessCode: process.env.NUXT_GAME_ACCESS_CODE || 'courier-demo',
+    gameAccessCode: '',
+    editorPassword: '',
+    disableEditorPassword: false,
   },
 })

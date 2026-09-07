@@ -1,5 +1,6 @@
 import type { FinalScorePayload, GameSession } from '#shared/game/types'
 import { randomUUID } from 'node:crypto'
+import { insertGameSession, updateStoredSession } from './game-database'
 
 export const ACCESS_COOKIE = 'courier_access'
 
@@ -9,8 +10,6 @@ interface AccessRecord {
 }
 
 const accessRecords = new Map<string, AccessRecord>()
-const sessions = new Map<string, GameSession & { accessToken: string }>()
-
 export function createAccessToken() {
   const token = randomUUID()
   accessRecords.set(token, { token, createdAt: Date.now() })
@@ -38,18 +37,13 @@ export function createGameSession(accessToken: string): GameSession {
     updatedAt: now,
     accessToken,
   }
-  sessions.set(session.id, session)
+  insertGameSession(session, accessToken)
   return toPublicSession(session)
 }
 
 export function updateGameSession(id: string, accessToken: string, payload: FinalScorePayload) {
-  const session = sessions.get(id)
-  if (!session || session.accessToken !== accessToken) return null
-
-  session.score = payload.score
-  session.status = payload.completed === false ? 'active' : 'completed'
-  session.updatedAt = new Date().toISOString()
-  return toPublicSession(session)
+  const status = payload.completed === false ? 'active' : 'completed'
+  return updateStoredSession(id, accessToken, payload.score, status, new Date().toISOString())
 }
 
 function toPublicSession(session: GameSession & { accessToken: string }): GameSession {

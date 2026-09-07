@@ -10,7 +10,9 @@ Set the shared code through the private runtime variable before starting the app
 NUXT_GAME_ACCESS_CODE=your-shared-code npm run dev
 ```
 
-When unset, local development uses `courier-demo`.
+When unset, local development uses `courier-demo`. Set the variable in the environment used to build and run the Nuxt server for a production deployment.
+
+The floorplan editor is available at `/editor`. Its password defaults to `editor`; configure it with `NUXT_EDITOR_PASSWORD`. For local development, set `NUXT_DISABLE_EDITOR_PASSWORD=true` to skip the editor password form. The repository's ignored `.env` file enables this bypass locally.
 
 The server exposes these game routes:
 
@@ -18,8 +20,12 @@ The server exposes these game routes:
 - `GET /api/access/status` reports whether the access cookie is valid.
 - `POST /api/game/session` starts a game session.
 - `POST /api/game/session/:id` accepts a final score and completion state.
+- `GET /api/game/floorplan` loads the authenticated dispatch floorplan.
+- `PUT /api/game/floorplan` saves an authenticated editor deployment.
 
-Game sessions are process-local in this first extraction. They reset when the server restarts; production deployments that need durable scores should replace `server/utils/game-session.ts` with a database-backed store.
+The runtime database is SQLite at `data/courier.sqlite` by default. Override the location with `NUXT_GAME_DB_PATH`. The first startup creates the database, seeds the `floorplans` table from `server/data/floorplan.json`, and creates the `game_sessions` table used for final scores. The floorplan editor is available at `/editor` after access is granted.
+
+The SQLite integration uses Node's built-in `node:sqlite`, so the app requires Node 22.5 or newer. Access tokens remain process-local and expire after 12 hours; the database stores sessions and scores, but a server restart invalidates existing access cookies.
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
