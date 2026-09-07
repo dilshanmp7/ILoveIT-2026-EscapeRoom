@@ -1,6 +1,6 @@
+import type { FinalScorePayload } from '#shared/game/types'
 import { createError, getCookie, readBody } from 'h3'
 import { ACCESS_COOKIE, isAccessTokenValid, updateGameSession } from '../../../utils/game-session'
-import type { FinalScorePayload } from '#shared/game/types'
 
 export default defineEventHandler(async (event) => {
   const accessToken = getCookie(event, ACCESS_COOKIE)

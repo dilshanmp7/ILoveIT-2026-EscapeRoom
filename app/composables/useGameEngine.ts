@@ -1,7 +1,7 @@
-import * as THREE from 'three'
-import { reactive, readonly, shallowRef } from 'vue'
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
 import type { MapAsset, QuizQuestion } from '#shared/game/types'
+import * as THREE from 'three'
+import { reactive, readonly, shallowRef } from 'vue'
 
 interface HeldItem {
   type: 'laptop' | 'server' | 'key'

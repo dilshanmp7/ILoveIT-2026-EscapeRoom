@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
-import { defaultMapLayout } from '#shared/game/defaults'
+import { defaultMapLayout } from '#shared/game/defaults';
+import { reactive } from 'vue';
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: []; deploy: [] }>()

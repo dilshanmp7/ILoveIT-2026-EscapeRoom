@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto'
 import type { FinalScorePayload, GameSession } from '#shared/game/types'
+import { randomUUID } from 'node:crypto'
 
 export const ACCESS_COOKIE = 'courier_access'
 

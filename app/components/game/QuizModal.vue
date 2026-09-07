@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { QuizQuestion } from '#shared/game/types'
+import type { QuizQuestion } from '#shared/game/types';
 
 defineProps<{ quiz: QuizQuestion | null; open: boolean }>()
 const emit = defineEmits<{ answer: [index: number]; close: [] }>()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 
 const props = defineProps<{ engine: ReturnType<typeof useGameEngine> }>()
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
