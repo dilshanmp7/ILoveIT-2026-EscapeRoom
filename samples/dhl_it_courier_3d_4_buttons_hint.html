@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DHL IT Courier 3D - Office Chaos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- SignalR Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.12/signalr.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800;900&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            overflow: hidden;
+            background-color: #1a1e29;
+        }
+
+        .font-game {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Custom Scrollbar - DHL Yellow Theme */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #ffcc00; border-radius: 4px; }
+
+        /* Virtual Joystick Styling */
+        #joystick-container { touch-action: none; }
+
+        /* Animations */
+        @keyframes float-gentle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float { animation: float-gentle 2.5s ease-in-out infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 204, 0, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 204, 0, 0.9); }
+        }
+        .animate-glow { animation: pulse-glow 2s infinite; }
+
+        #canvas-container canvas { display: block; width: 100%; height: 100%; }
+        #map-editor-canvas { cursor: crosshair; background-color: #0f172a; }
+    </style>
+</head>
+<body class="text-white select-none">
+
+    <!-- MAIN HUD & UI CONTAINER -->
+    <div id="app-container" class="relative w-screen h-screen overflow-hidden">
+        
+        <!-- 3D Canvas -->
+        <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+        <!-- TOP BAR / HUD -->
+        <div class="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-start pointer-events-none">
+            
+            <!-- ORDERS QUEUE -->
+            <div class="flex flex-col gap-2 max-w-xl">
+                <div class="text-xs font-black uppercase tracking-wider text-yellow-400 drop-shadow-md flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-list"></i> Active IT Dispatch Tickets
+                </div>
+                <div id="orders-list" class="flex flex-wrap gap-2 pointer-events-auto">
+                    <!-- Order Cards Dynamically Generated Here -->
+                </div>
+            </div>
+
+            <!-- SCORE & TIMER & NETWORK STATUS -->
+            <div class="flex flex-col items-end gap-2 pointer-events-auto">
+                <div class="bg-slate-900/90 backdrop-blur-md border-2 border-yellow-500/50 rounded-2xl p-3 flex items-center gap-4 shadow-2xl">
+                    <!-- Timer -->
+                    <div class="flex items-center gap-2 pr-3 border-r border-slate-700">
+                        <i class="fa-solid fa-stopwatch text-yellow-400 text-2xl"></i>
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase">SLA Time</div>
+                            <div id="game-timer" class="font-game text-2xl text-yellow-400">03:00</div>
+                        </div>
+                    </div>
+
+                    <!-- Score -->
+                    <div class="flex items-center gap-2 pr-3 border-r border-slate-700">
+                        <i class="fa-solid fa-star text-red-500 text-2xl"></i>
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase">Performance Rating</div>
+                            <div id="game-score" class="font-game text-2xl text-green-400">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Network Status Button -->
+                    <button id="net-status-btn" onclick="toggleNetworkModal()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 p-2 rounded-xl border border-slate-600 transition">
+                        <span id="net-indicator" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div class="text-left">
+                            <div id="room-code-display" class="text-xs font-black text-slate-200">HUB: SOLO</div>
+                            <div id="ping-display" class="text-[9px] text-slate-400">12 ms (SignalR Mock)</div>
+                        </div>
+                    </button>
+
+                    <!-- Level Studio Button -->
+                    <button onclick="toggleEditorModal()" class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-500/50 px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow-lg">
+                        <i class="fa-solid fa-building-user text-yellow-400"></i>
+                        <span>Office Floorplan Editor</span>
+                    </button>
+                </div>
+
+                <!-- Co-op Players Pill -->
+                <div id="players-pill" class="bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-slate-300 flex items-center gap-2 border border-slate-700">
+                    <i class="fa-solid fa-truck-fast text-red-500"></i>
+                    <span id="player-count-text">2 Couriers on Floor</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FLOATING INTERACTION HINT -->
+        <div id="interaction-hint" class="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-200 opacity-0 transform translate-y-4">
+            <div class="bg-yellow-500 text-slate-950 font-game px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 border-2 border-red-600 animate-bounce">
+                <span id="hint-icon" class="bg-slate-950 text-yellow-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">E</span>
+                <span id="hint-text" class="text-base tracking-wide">CONFIGURE DEVICE</span>
+            </div>
+        </div>
+
+        <!-- MOBILE CONTROLS OVERLAY -->
+        <div id="mobile-controls" class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-6">
+            <div></div>
+            <div class="flex justify-between items-end w-full">
+                <!-- Virtual Joystick -->
+                <div id="joystick-container" class="relative w-36 h-36 bg-slate-900/80 backdrop-blur-md rounded-full border-2 border-yellow-500/40 pointer-events-auto flex items-center justify-center shadow-2xl touch-none">
+                    <div id="joystick-knob" class="absolute w-14 h-14 bg-gradient-to-tr from-yellow-400 to-yellow-300 rounded-full shadow-lg border-2 border-red-600 transform transition-transform duration-75"></div>
+                </div>
+
+                <!-- Mobile Action Buttons -->
+                <div class="flex flex-col gap-3 pointer-events-auto">
+                    <div class="flex gap-3 justify-end">
+                        <button id="btn-dash" class="w-16 h-16 rounded-2xl bg-slate-800/80 active:bg-yellow-600 border-2 border-yellow-500/50 text-yellow-400 active:text-slate-900 flex flex-col items-center justify-center gap-1 shadow-lg active:scale-95 transition">
+                            <i class="fa-solid fa-person-running text-xl"></i>
+                            <span class="text-[9px] font-black uppercase">Sprint</span>
+                        </button>
+                        <button id="btn-quiz" class="w-16 h-16 rounded-2xl bg-blue-900/80 active:bg-blue-600 border-2 border-blue-400 text-blue-200 flex flex-col items-center justify-center gap-1 shadow-lg active:scale-95 transition">
+                            <i class="fa-solid fa-shield-halved text-xl"></i>
+                            <span class="text-[9px] font-black uppercase">Security</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button id="btn-action" class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-red-700 to-red-500 active:from-red-800 active:to-red-600 border-2 border-yellow-400 text-white flex flex-col items-center justify-center gap-1 shadow-2xl active:scale-95 transition opacity-45 cursor-not-allowed" disabled>
+                            <i id="action-icon" class="fa-solid fa-laptop-code text-2xl"></i>
+                            <span id="action-text" class="text-[10px] font-black uppercase">Work</span>
+                        </button>
+                        <button id="btn-grab" class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-yellow-500 to-yellow-400 active:from-yellow-600 active:to-yellow-500 border-2 border-red-600 text-slate-950 flex flex-col items-center justify-center gap-1 shadow-2xl active:scale-95 transition opacity-45 cursor-not-allowed" disabled>
+                            <i id="grab-icon" class="fa-solid fa-hand text-2xl"></i>
+                            <span id="grab-label" class="text-[10px] font-black uppercase">Grab</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECURITY / QUIZ MODAL -->
+        <div id="quiz-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+            <div class="bg-slate-900 border-2 border-blue-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl animate-float">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xl border border-blue-500/30">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <div class="font-game text-xl text-blue-300">IT Security Check</div>
+                            <div class="text-xs text-slate-400">Pass to earn +100 Rating & Sprint Boost!</div>
+                        </div>
+                    </div>
+                    <button onclick="closeQuizModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+
+                <div id="quiz-question" class="bg-slate-800/80 rounded-2xl p-4 text-slate-200 font-medium mb-4 border border-slate-700 text-sm leading-relaxed">
+                    "Question goes here..."
+                </div>
+
+                <div id="quiz-options" class="grid grid-cols-1 gap-2 mb-4">
+                    <!-- Dynamic Options -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNALR NETWORKING MODAL -->
+        <div id="network-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+            <div class="bg-slate-900 border-2 border-yellow-500/40 rounded-3xl p-6 max-w-lg w-full shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center font-bold text-xl border border-yellow-500/30">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <div>
+                            <div class="font-game text-2xl text-yellow-400">Logistics Hub Settings</div>
+                            <div class="text-xs text-slate-400">Multiplayer Courier Regions</div>
+                        </div>
+                    </div>
+                    <button onclick="toggleNetworkModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="toggleNetworkModal()" class="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-400 text-slate-950 font-game py-3 rounded-2xl shadow-lg hover:brightness-110 transition text-sm border border-red-600">
+                        Connect to Hub
+                    </button>
+                    <button onclick="toggleNetworkModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-3 rounded-2xl border border-slate-700 text-xs transition">
+                        Solo Shift
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ASSET & MAP EDITOR MODAL -->
+        <div id="editor-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+            <div class="bg-slate-900 border-2 border-blue-500/40 rounded-3xl p-5 max-w-6xl w-full shadow-2xl h-[92vh] flex flex-col">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg border border-blue-500/30">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div>
+                            <div class="font-game text-xl text-blue-300">Office Floorplan Editor</div>
+                            <div class="text-[11px] text-slate-400">Drag & Drop Desks, Servers & Logistics Hatch</div>
+                        </div>
+                    </div>
+                    <button onclick="toggleEditorModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+
+                <!-- Tabs Header -->
+                <div class="flex gap-2 mb-3 bg-slate-800/60 p-1.5 rounded-2xl shrink-0">
+                    <button id="tab-btn-map" onclick="switchEditorTab('map')" class="flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition">
+                        <i class="fa-solid fa-map-location-dot mr-1.5"></i> 2D Floorplan
+                    </button>
+                    <button id="tab-btn-quiz" onclick="switchEditorTab('quiz')" class="flex-1 py-2 rounded-xl font-game text-xs text-slate-400 hover:text-white transition">
+                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Security Checks
+                    </button>
+                </div>
+
+                <!-- TAB 1: 2-COLUMN MAP EDITOR -->
+                <div id="tab-content-map" class="flex-1 flex gap-4 overflow-hidden min-h-0">
+                    <!-- Left: Palette -->
+                    <div class="w-80 flex flex-col gap-3 bg-slate-950/60 border border-slate-800 p-3 rounded-2xl overflow-y-auto">
+                        <div class="border-b border-slate-800 pb-2">
+                            <div class="text-xs font-bold text-yellow-400 uppercase tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-boxes-stacked"></i> Asset Palette
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addPresetAsset('box_laptop')" class="bg-slate-800 hover:bg-slate-700 border border-yellow-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-xs"><i class="fa-solid fa-box"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Laptop Box</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('box_server')" class="bg-slate-800 hover:bg-slate-700 border border-yellow-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-xs"><i class="fa-solid fa-box-open"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Server Box</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('config_desk')" class="bg-slate-800 hover:bg-slate-700 border border-blue-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs"><i class="fa-solid fa-desktop"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Config Desk</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('server_rack')" class="bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-server"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Server Rack</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('riddle')" class="bg-slate-800 hover:bg-slate-700 border border-purple-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs"><i class="fa-solid fa-shield"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Sec Terminal</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('delivery')" class="bg-slate-800 hover:bg-slate-700 border border-red-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Dispatch Hub</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('wall')" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-slate-700 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-border-all"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Partition Wall</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('office_desk')" class="bg-slate-800 hover:bg-slate-700 border border-slate-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-slate-600/40 text-slate-300 flex items-center justify-center text-xs"><i class="fa-solid fa-computer"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Worker Desk</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('trash')" class="bg-slate-800 hover:bg-slate-700 border border-zinc-500/40 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-zinc-500/30 text-zinc-300 flex items-center justify-center text-xs"><i class="fa-solid fa-trash-can"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Trash Bin</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('door')" class="bg-slate-800 hover:bg-slate-700 border border-red-500/60 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-red-600/30 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-door-closed"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">Secure Door</div></div>
+                            </button>
+                            <button onclick="addPresetAsset('key')" class="bg-slate-800 hover:bg-slate-700 border border-yellow-500/60 p-2 rounded-xl text-left transition flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-lg bg-yellow-500/30 text-yellow-300 flex items-center justify-center text-xs"><i class="fa-solid fa-id-card"></i></div>
+                                <div><div class="text-[11px] font-bold text-slate-200">ID Badge</div></div>
+                            </button>
+                        </div>
+
+                        <!-- Selected Object Inspector -->
+                        <div class="mt-2 pt-3 border-t border-slate-800 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-blue-300 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-sliders"></i> Object Inspector
+                                </div>
+                                <div id="inspector-content" class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-xs space-y-2">
+                                    <div class="text-slate-400 text-center py-4 text-[11px]">Click an object on the 2D grid.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Canvas Grid -->
+                    <div class="flex-1 bg-slate-950 border border-slate-800 rounded-2xl p-3 flex flex-col min-w-0">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-hand-pointer text-yellow-400"></i> Interactive 2D Layout Canvas
+                            </div>
+                        </div>
+                        <div class="flex-1 relative border border-slate-800 rounded-xl overflow-hidden bg-slate-900/50 flex items-center justify-center">
+                            <canvas id="map-editor-canvas" class="w-full h-full block rounded-xl"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: QUIZ MGR -->
+                <div id="tab-content-quiz" class="flex-1 overflow-y-auto hidden text-center pt-20 text-slate-400">
+                    Security Questions Module Editor
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="mt-3 pt-3 border-t border-slate-800 flex justify-between items-center shrink-0">
+                    <button onclick="applyEditorChangesToKitchen()" class="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-game px-6 py-2 rounded-xl text-xs shadow-xl transition border border-yellow-400">
+                        <i class="fa-solid fa-play mr-2"></i> Deploy Floorplan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* ========================================================================
+           0. ASSET REPOSITORY FACADE (Decoupled Map, Objects & Quizzes Repository)
+           ======================================================================== */
+        class AssetRepositoryFacade {
+            constructor() {
+                this.mapLayout = this.getDefaultMapLayout();
+                this.quizzes = this.getDefaultQuizzes();
+            }
+
+            getDefaultMapLayout() {
+                return [
+                    { id: 'c1', x: -4, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
+                    { id: 'c2', x: -2, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
+                    { id: 'c3', x: 0, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_server', label: 'Servers Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
+                    
+                    { id: 'c5', x: -4, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Station 1', allowGrab: false, actionType: 'config', acceptsDrop: 'laptop' },
+                    { id: 'c6', x: -4, z: 0.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Station 2', allowGrab: false, actionType: 'config', acceptsDrop: 'laptop' },
+                    
+                    { id: 'c7', x: 4, z: -2.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack A', allowGrab: false, actionType: 'config', acceptsDrop: 'server' },
+                    { id: 'c8', x: 4, z: 0.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack B', allowGrab: false, actionType: 'config', acceptsDrop: 'server' },
+
+                    { id: 'c9', x: 0, z: -1, w: 1.4, d: 1.4, rotation: 0, color: 0x1d4ed8, type: 'riddle', label: 'Security Terminal', allowGrab: false, actionType: 'quiz', acceptsDrop: '' },
+                    { id: 'c12', x: 6, z: 4.5, w: 1.2, d: 1.2, rotation: 0, color: 0x4b5563, type: 'trash', label: 'Recycle Bin', allowGrab: false, actionType: 'trash', acceptsDrop: 'any' },
+
+                    { id: 'c11', x: -4, z: 4.5, w: 2.5, d: 1.5, rotation: 0, color: 0xd40511, type: 'delivery', label: 'IT Dispatch Hatch', allowGrab: false, actionType: 'deliver', acceptsDrop: 'configured' },
+
+                    { id: 'key1', x: -6.5, z: 2.0, w: 0.8, d: 0.8, rotation: 0, color: 0x0ea5e9, type: 'key', label: 'Admin Badge', allowGrab: true, keyId: 'ADMIN_KEY', actionType: 'key' },
+                    { id: 'door1', x: 0, z: 2.0, w: 2.5, d: 0.4, rotation: 0, color: 0x3b82f6, type: 'door', label: 'Server Room Door', allowGrab: false, requiredKeyIds: ['ADMIN_KEY'], isOpen: false, actionType: 'door' },
+                    { id: 'w_door_left', x: -2.5, z: 2.0, w: 2.5, d: 0.4, rotation: 0, color: 0x64748b, type: 'wall', label: 'Glass Partition', allowGrab: false, actionType: 'none' },
+                    { id: 'w_door_right', x: 2.5, z: 2.0, w: 2.5, d: 0.4, rotation: 0, color: 0x64748b, type: 'wall', label: 'Glass Partition', allowGrab: false, actionType: 'none' },
+
+                    { id: 'w1', x: -8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Left Wall', allowGrab: false, actionType: 'none' },
+                    { id: 'w2', x: 8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Right Wall', allowGrab: false, actionType: 'none' },
+                    { id: 'w3', x: 0, z: 6.2, w: 17, d: 0.5, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Front Wall', allowGrab: false, actionType: 'none' },
+
+                    { id: 't1', x: 6.5, z: -5.5, w: 1.6, d: 1.6, rotation: 0, color: 0x475569, type: 'office_desk', label: 'Manager Desk', allowGrab: false, actionType: 'none', acceptsDrop: 'any' }
+                ];
+            }
+
+            getDefaultQuizzes() {
+                return [
+                    { q: "I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?", options: ["Keyboard", "Database", "Warehouse", "Van"], correct: 0 },
+                    { q: "I have a screen but no face. I process data but have no brain. What am I?", options: ["Router", "Monitor/Laptop", "Scanner", "Barcode"], correct: 1 },
+                    { q: "What travels around the world but stays in one corner?", options: ["Email", "IP Address", "Postage Stamp", "Data Packet"], correct: 2 }
+                ];
+            }
+        }
+        let assetRepository = new AssetRepositoryFacade();
+
+        /* ========================================================================
+           1. AUDIO SOUND EFFECTS SYNTHESIZER
+           ======================================================================== */
+        class SoundFX {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            }
+            play(effect) {
+                this.init();
+                if (effect === 'type') {
+                    this.playTone(800, 'square', 0.05, 0.05);
+                    setTimeout(() => this.playTone(850, 'square', 0.05, 0.05), 50);
+                }
+                else if (effect === 'process') {
+                    this.playTone(150, 'sawtooth', 0.1, 0.08);
+                    setTimeout(() => this.playTone(200, 'sawtooth', 0.1, 0.08), 100);
+                }
+                else if (effect === 'pickup') this.playTone(600, 'sine', 0.1, 0.15);
+                else if (effect === 'drop') this.playTone(300, 'triangle', 0.1, 0.15);
+                else if (effect === 'unlock') {
+                    this.playTone(800, 'sine', 0.1, 0.1);
+                    setTimeout(() => this.playTone(1200, 'sine', 0.15, 0.15), 100);
+                }
+                else if (effect === 'deliver') {
+                    this.playTone(523.25, 'sine', 0.1, 0.2);
+                    setTimeout(() => this.playTone(659.25, 'sine', 0.1, 0.2), 100);
+                    setTimeout(() => this.playTone(783.99, 'sine', 0.2, 0.2), 200);
+                }
+                else if (effect === 'riddle_success') {
+                    this.playTone(440, 'triangle', 0.1, 0.2);
+                    setTimeout(() => this.playTone(880, 'sine', 0.25, 0.2), 120);
+                }
+            }
+        }
+        const sfx = new SoundFX();
+        function playSound(type) { sfx.play(type); }
+
+        /* ========================================================================
+           2. PHYSICS ENGINE & TECH ITEMS
+           ======================================================================== */
+        class PhysicalBody {
+            constructor(params) {
+                this.x = params.x || 0; this.y = params.y || 0; this.z = params.z || 0;
+                this.width = params.width || 1; this.depth = params.depth || 1;
+                this.isStatic = params.isStatic || false; this.mesh = params.mesh || null;
+            }
+            getAABB() {
+                return { minX: this.x - this.width / 2, maxX: this.x + this.width / 2, minZ: this.z - this.depth / 2, maxZ: this.z + this.depth / 2 };
+            }
+        }
+
+        class KitchenPhysicsWorld {
+            constructor() { this.bodies = []; }
+            addBody(body) { this.bodies.push(body); return body; }
+            checkAABBCollision(a, b) {
+                const boxA = a.getAABB(); const boxB = b.getAABB();
+                return (boxA.minX < boxB.maxX && boxA.maxX > boxB.minX && boxA.minZ < boxB.maxZ && boxA.maxZ > boxB.minZ);
+            }
+            moveBodyWithSlide(body, deltaX, deltaZ) {
+                if (body.isStatic) return;
+                body.x += deltaX;
+                for (let other of this.bodies) {
+                    if (other !== body && this.checkAABBCollision(body, other)) {
+                        if (deltaX > 0) body.x = other.x - other.width / 2 - body.width / 2 - 0.001;
+                        else if (deltaX < 0) body.x = other.x + other.width / 2 + body.width / 2 + 0.001;
+                    }
+                }
+                body.z += deltaZ;
+                for (let other of this.bodies) {
+                    if (other !== body && this.checkAABBCollision(body, other)) {
+                        if (deltaZ > 0) body.z = other.z - other.depth / 2 - body.depth / 2 - 0.001;
+                        else if (deltaZ < 0) body.z = other.z + other.depth / 2 + body.depth / 2 + 0.001;
+                    }
+                }
+                if (body.mesh) { body.mesh.position.x = body.x; body.mesh.position.z = body.z; }
+            }
+        }
+        let physicsWorld = new KitchenPhysicsWorld();
+
+        class TechItem {
+            constructor(type) {
+                this.type = type; // 'laptop' or 'server'
+                this.isConfigured = false;
+                this.mesh = this.createMesh();
+            }
+            createMesh() {
+                const group = new THREE.Group();
+                if (this.type === 'laptop') {
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8 });
+                    const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), mat);
+                    group.add(base);
+                    
+                    if (this.isConfigured) {
+                        const screenMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+                        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.02), screenMat);
+                        screen.position.set(0, 0.15, -0.14);
+                        screen.rotation.x = -Math.PI / 12;
+                        group.add(screen);
+
+                        const displayMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+                        const display = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.25), displayMat);
+                        display.position.set(0, 0.15, -0.125);
+                        display.rotation.x = -Math.PI / 12;
+                        group.add(display);
+                    } else {
+                        const lid = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), mat);
+                        lid.position.y = 0.04;
+                        group.add(lid);
+                    }
+                } else if (this.type === 'server') {
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5 });
+                    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.5), mat);
+                    group.add(blade);
+
+                    const lightMat = new THREE.MeshBasicMaterial({ color: this.isConfigured ? 0x22c55e : 0xef4444 });
+                    const light = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.02), lightMat);
+                    light.position.set(-0.1, 0, 0.26);
+                    group.add(light);
+                }
+                return group;
+            }
+        }
+
+        let scene, camera, renderer;
+        let playerGroup, playerPhysicsBody, peerGroup;
+        let kitchenCounters = [];
+        let occludableMeshes = [];
+        let occlusionRaycaster = new THREE.Raycaster();
+        let cameraOffset = new THREE.Vector3(0, 8.5, 8.8);
+        let currentCameraLookAt = new THREE.Vector3(0, 0.8, 1);
+
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(5, 15, 10);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 16), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const grid = new THREE.GridHelper(20, 20, 0x94a3b8, 0xcbd5e1);
+            grid.position.y = 0.01;
+            scene.add(grid);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function createCourierAvatarMesh(shirtColorHex) {
+            const group = new THREE.Group();
+
+            const shoeMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+            const lShoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.3), shoeMat);
+            lShoe.position.set(-0.16, 0.05, 0.05); group.add(lShoe);
+            const rShoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.3), shoeMat);
+            rShoe.position.set(0.16, 0.05, 0.05); group.add(rShoe);
+
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            const pants = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.34, 0.3, 16), pantsMat);
+            pants.position.y = 0.25; group.add(pants);
+
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.35, 0.38, 0.55, 16),
+                new THREE.MeshStandardMaterial({ color: shirtColorHex, roughness: 0.4 })
+            );
+            body.position.y = 0.65; group.add(body);
+
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.33, 16, 16), skinMat);
+            head.position.y = 1.12; group.add(head);
+
+            const eyeWhite = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const pupil = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            for(let sign of [-1, 1]) {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), eyeWhite);
+                eye.position.set(sign*0.11, 1.16, 0.29); group.add(eye);
+                const p = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), pupil);
+                p.position.set(sign*0.11, 1.16, 0.34); group.add(p);
+            }
+
+            const capColor = shirtColorHex === 0xffcc00 ? 0xd40511 : 0xffcc00;
+            const capMat = new THREE.MeshStandardMaterial({ color: capColor });
+            const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.15, 16), capMat);
+            capBase.position.y = 1.4; group.add(capBase);
+            const capTop = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16, 0, Math.PI*2, 0, Math.PI/2), capMat);
+            capTop.position.y = 1.47; group.add(capTop);
+            const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.3), capMat);
+            brim.position.set(0, 1.35, 0.25); group.add(brim);
+
+            const itemSlot = new THREE.Group();
+            itemSlot.name = "holdingSlot";
+            itemSlot.position.set(0, 0.9, 0.5);
+            group.add(itemSlot);
+
+            return group;
+        }
+
+        function initPlayers() {
+            playerGroup = createCourierAvatarMesh(0xffcc00);
+            playerGroup.position.set(0, 0, 2);
+            scene.add(playerGroup);
+            playerPhysicsBody = physicsWorld.addBody(new PhysicalBody({ x: 0, y: 0, z: 2, width: 0.8, depth: 0.8, mesh: playerGroup }));
+
+            peerGroup = createCourierAvatarMesh(0xd40511);
+            peerGroup.position.set(2, 0, 2);
+            scene.add(peerGroup);
+            physicsWorld.addBody(new PhysicalBody({ x: 2, y: 0, z: 2, width: 0.8, depth: 0.8, mesh: peerGroup }));
+        }
+
+        function createOfficeCounterMesh(width, depth, topColor, type, options = {}) {
+            const group = new THREE.Group();
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
+
+            if (type === 'door') {
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+                const fL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat); fL.position.set(-width/2 + 0.08, 1.1, 0); group.add(fL);
+                const fR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat); fR.position.set(width/2 - 0.08, 1.1, 0); group.add(fR);
+                
+                const panel = new THREE.Mesh(new THREE.BoxGeometry(width - 0.3, 2.0, 0.1), new THREE.MeshStandardMaterial({ color: topColor, transparent: true, opacity: options.isOpen ? 0.2 : 0.8 }));
+                panel.position.set(options.isOpen ? width/2 - 0.2 : 0, 1.0, 0);
+                group.add(panel);
+                return group;
+            } else if (type === 'key') {
+                const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.8, 12), new THREE.MeshStandardMaterial({color: 0x1e293b}));
+                ped.position.y = 0.4; group.add(ped);
+                const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({color: topColor}));
+                badge.position.set(0, 0.9, 0); group.add(badge);
+                group.userData.canRotate = true;
+                return group;
+            } else if (type === 'wall') {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 2.5, depth), new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.9 }));
+                wall.position.y = 1.25; group.add(wall);
+                return group;
+            }
+
+            const base = new THREE.Mesh(new THREE.BoxGeometry(width, 1.1, depth), baseMat);
+            base.position.y = 0.55; group.add(base);
+            const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, 0.1, depth + 0.05), new THREE.MeshStandardMaterial({ color: topColor || 0x64748b }));
+            top.position.y = 1.15; group.add(top);
+
+            if (type.startsWith('box_')) {
+                const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.9 }));
+                box.position.set(0, 1.45, 0); group.add(box);
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.71, 0.1, 0.71), new THREE.MeshBasicMaterial({ color: 0xd40511 }));
+                stripe.position.set(0, 1.45, 0); group.add(stripe);
+            } 
+            else if (type === 'config_desk') {
+                const mBase = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.15), new THREE.MeshStandardMaterial({color: 0x111}));
+                mBase.position.set(0, 1.25, -0.2); group.add(mBase);
+                const mScreen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), new THREE.MeshStandardMaterial({color: 0x000}));
+                mScreen.position.set(0, 1.5, -0.2); group.add(mScreen);
+                const kb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.2), new THREE.MeshStandardMaterial({color: 0x333}));
+                kb.position.set(0, 1.21, 0.2); group.add(kb);
+            }
+            else if (type === 'server_rack') {
+                const rack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.7), new THREE.MeshStandardMaterial({color: 0x111827}));
+                rack.position.set(0, 1.95, 0); group.add(rack);
+                for(let i=0; i<3; i++) {
+                    const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.02), new THREE.MeshBasicMaterial({color: 0x22c55e}));
+                    l.position.set(-0.2, 1.5 + i*0.3, 0.36); group.add(l);
+                }
+            }
+            else if (type === 'delivery') {
+                const hatch = new THREE.Mesh(new THREE.BoxGeometry(width-0.2, 0.8, 0.1), new THREE.MeshStandardMaterial({color: 0xd40511, transparent:true, opacity:0.8}));
+                hatch.position.set(0, 1.6, 0); group.add(hatch);
+            }
+            else if (type === 'trash') {
+                const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.8, 16), new THREE.MeshStandardMaterial({color: 0x3f3f46}));
+                bin.position.y = 1.6; group.add(bin);
+            }
+            else if (type === 'office_desk') {
+                const mScreen1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.05), new THREE.MeshStandardMaterial({color: 0x111}));
+                mScreen1.position.set(-0.3, 1.4, -0.1); group.add(mScreen1);
+                const mScreen2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.05), new THREE.MeshStandardMaterial({color: 0x111}));
+                mScreen2.position.set(0.3, 1.4, -0.1); group.add(mScreen2);
+            }
+            else if (type === 'riddle') {
+                const screen = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.05), new THREE.MeshBasicMaterial({color: 0x3b82f6}));
+                screen.position.set(0, 1.5, 0); group.add(screen);
+            }
+
+            return group;
+        }
+
+        function buildFloorplan() {
+            kitchenCounters.forEach(c => scene.remove(c.mesh));
+            kitchenCounters = [];
+            occludableMeshes = [];
+
+            assetRepository.mapLayout.forEach(item => {
+                const rotRad = THREE.MathUtils.degToRad(item.rotation || 0);
+                const mesh = createOfficeCounterMesh(item.w, item.d, item.color, item.type, { isOpen: item.isOpen });
+                mesh.position.set(item.x, 0, item.z);
+                mesh.rotation.y = rotRad;
+                scene.add(mesh);
+                occludableMeshes.push(mesh);
+
+                if (item.type !== 'wall') {
+                    kitchenCounters.push({
+                        id: item.id, mesh: mesh, x: item.x, z: item.z, type: item.type, label: item.label,
+                        keyId: item.keyId, requiredKeyIds: item.requiredKeyIds || [], isOpen: item.isOpen || false, heldItem: null,
+                        allowGrab: item.allowGrab !== undefined ? item.allowGrab : (item.type === 'key' || item.type.startsWith('box_')),
+                        actionType: item.actionType || 'none',
+                        acceptsDrop: item.acceptsDrop || ''
+                    });
+                }
+
+                if (item.type !== 'door' || !item.isOpen) {
+                    physicsWorld.addBody(new PhysicalBody({ x: item.x, y: 0, z: item.z, width: item.w, depth: item.d, isStatic: true }));
+                }
+            });
+        }
+
+        let heldItem = null;
+        let currentNearbyCounter = null;
+        let gameScore = 0;
+        let gameTimerSeconds = 180;
+        let keysPressed = {};
+        let joystickVector = { x: 0, y: 0 };
+        let activeQuizIndex = 0;
+
+        function triggerDash() {
+            if (!playerPhysicsBody) return;
+            const moveSpeed = 0.45;
+            const dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerGroup.rotation.y);
+            physicsWorld.moveBodyWithSlide(playerPhysicsBody, dir.x * moveSpeed, dir.z * moveSpeed);
+            playSound('process');
+        }
+
+        function renderOrdersList() {
+            document.getElementById('orders-list').innerHTML = `
+                <div class="bg-slate-900/90 border border-yellow-500/50 rounded-2xl p-2.5 flex items-center gap-3 shadow-lg">
+                    <div class="w-8 h-8 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center font-bold text-sm border border-yellow-500/30">
+                        <i class="fa-solid fa-laptop-medical"></i>
+                    </div>
+                    <div>
+                        <div class="font-game text-xs text-yellow-400">New Hire Setup</div>
+                        <div class="text-[9px] text-slate-400 font-semibold">Configured Laptop required</div>
+                    </div>
+                    <div class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">+150 pts</div>
+                </div>
+            `;
+        }
+
+        function triggerGrabDrop() {
+            const btnGrab = document.getElementById('btn-grab');
+            if (btnGrab.disabled) return;
+            if (!currentNearbyCounter) return;
+            const counter = currentNearbyCounter;
+
+            // 1. Door / Unlock Logic
+            if (counter.type === 'door' && !counter.isOpen && counter.requiredKeyIds) {
+                if (heldItem && heldItem.type === 'key' && counter.requiredKeyIds.includes(heldItem.keyId)) {
+                    counter.isOpen = true;
+                    playSound('unlock');
+                    applyEditorChangesToKitchen();
+                    return;
+                }
+            }
+
+            // 2. Grab item from a source spawner (allowGrab is true)
+            if (counter.allowGrab && !heldItem) {
+                if (counter.type === 'key') {
+                    heldItem = { type: 'key', keyId: counter.keyId, mesh: new THREE.Group() };
+                    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
+                    badge.position.set(0, 0, 0);
+                    heldItem.mesh.add(badge);
+                    playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
+                    heldItem.mesh.position.set(0, 0, 0);
+                    playSound('pickup');
+                } else if (counter.type === 'box_laptop' || counter.type === 'crate_laptop') {
+                    heldItem = new TechItem('laptop');
+                    playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
+                    heldItem.mesh.position.set(0, 0, 0);
+                    playSound('pickup');
+                } else if (counter.type === 'box_server' || counter.type === 'crate_server') {
+                    heldItem = new TechItem('server');
+                    playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
+                    heldItem.mesh.position.set(0, 0, 0);
+                    playSound('pickup');
+                }
+            } 
+            // 3. Trash Action (Discard held item)
+            else if (counter.actionType === 'trash' && heldItem) {
+                playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                heldItem = null;
+                playSound('drop');
+            } 
+            // 4. Pickup item already placed on a counter
+            else if (counter.heldItem && !heldItem) {
+                heldItem = counter.heldItem;
+                counter.heldItem = null;
+                counter.mesh.remove(heldItem.mesh);
+                playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
+                heldItem.mesh.position.set(0, 0, 0);
+                playSound('pickup');
+            }
+            // 5. Drop held item onto an empty counter (with acceptsDrop rule validation)
+            else if (heldItem && !counter.heldItem) {
+                const accepts = counter.acceptsDrop || '';
+                const itemType = heldItem.type; // 'laptop', 'server', 'key'
+
+                let canDrop = true;
+                if (accepts && accepts !== 'any') {
+                    if (accepts === 'configured') {
+                        canDrop = (heldItem instanceof TechItem && heldItem.isConfigured);
+                    } else {
+                        canDrop = (accepts === itemType);
+                    }
+                }
+
+                if (canDrop) {
+                    playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                    counter.heldItem = heldItem;
+                    counter.mesh.add(heldItem.mesh);
+                    heldItem.mesh.position.set(0, 1.3, 0);
+                    heldItem = null;
+                    playSound('drop');
+                } else {
+                    playSound('process'); // Reject beep/feedback sound
+                }
+            }
+            updateButtonStates();
+        }
+
+        function triggerAction() {
+            const btnAction = document.getElementById('btn-action');
+            if (btnAction.disabled) return;
+            if (!currentNearbyCounter) return;
+            const counter = currentNearbyCounter;
+
+            if (counter.actionType === 'config' && counter.heldItem && counter.heldItem instanceof TechItem && !counter.heldItem.isConfigured) {
+                const itemType = counter.heldItem.type;
+                if ((counter.type === 'config_desk' && itemType === 'laptop') || (counter.type === 'server_rack' && itemType === 'server')) {
+                    counter.heldItem.isConfigured = true;
+                    counter.mesh.remove(counter.heldItem.mesh);
+                    counter.heldItem.mesh = counter.heldItem.createMesh();
+                    counter.heldItem.mesh.position.set(0, 1.3, itemType === 'server' ? 0.4 : 0);
+                    counter.mesh.add(counter.heldItem.mesh);
+                    if (itemType === 'laptop') playSound('type');
+                    else playSound('process');
+                }
+            } else if (counter.actionType === 'quiz' || counter.type === 'riddle') {
+                openQuizModal();
+            } else if (counter.actionType === 'deliver' && heldItem) {
+                if (heldItem instanceof TechItem && heldItem.isConfigured) {
+                    gameScore += 150;
+                    document.getElementById('game-score').innerText = gameScore;
+                    playSound('deliver');
+                } else {
+                    playSound('drop');
+                }
+                playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                heldItem = null;
+            }
+            updateButtonStates();
+        }
+
+        function updateButtonStates() {
+            const btnGrab = document.getElementById('btn-grab');
+            const grabLabel = document.getElementById('grab-label');
+            const grabIcon = document.getElementById('grab-icon');
+
+            const btnAction = document.getElementById('btn-action');
+
+            // 1. Grab / Drop button logic
+            if (heldItem) {
+                grabLabel.innerText = "Drop";
+                grabIcon.className = "fa-solid fa-arrow-down text-2xl";
+                btnGrab.classList.remove('opacity-45', 'cursor-not-allowed');
+                btnGrab.disabled = false;
+            } else {
+                grabLabel.innerText = "Grab";
+                grabIcon.className = "fa-solid fa-hand text-2xl";
+
+                const canGrabOrDrop = currentNearbyCounter && (
+                    currentNearbyCounter.allowGrab || 
+                    currentNearbyCounter.type === 'key' || 
+                    currentNearbyCounter.heldItem ||
+                    currentNearbyCounter.actionType === 'trash'
+                );
+
+                if (canGrabOrDrop) {
+                    btnGrab.classList.remove('opacity-45', 'cursor-not-allowed');
+                    btnGrab.disabled = false;
+                } else {
+                    btnGrab.classList.add('opacity-45', 'cursor-not-allowed');
+                    btnGrab.disabled = true;
+                }
+            }
+
+            // 2. Work / Action button logic
+            const canWork = currentNearbyCounter && (
+                currentNearbyCounter.actionType === 'config' ||
+                currentNearbyCounter.actionType === 'quiz' ||
+                currentNearbyCounter.actionType === 'deliver' ||
+                currentNearbyCounter.type === 'riddle' ||
+                (currentNearbyCounter.type === 'door' && !currentNearbyCounter.isOpen)
+            );
+
+            if (canWork) {
+                btnAction.classList.remove('opacity-45', 'cursor-not-allowed');
+                btnAction.disabled = false;
+            } else {
+                btnAction.classList.add('opacity-45', 'cursor-not-allowed');
+                btnAction.disabled = true;
+            }
+        }
+
+        function updatePlayerMovement() {
+            if (!playerGroup || !playerPhysicsBody) return;
+
+            let dx = 0; let dz = 0;
+            if (keysPressed['KeyW'] || keysPressed['ArrowUp']) dz -= 1;
+            if (keysPressed['KeyS'] || keysPressed['ArrowDown']) dz += 1;
+            if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) dx -= 1;
+            if (keysPressed['KeyD'] || keysPressed['ArrowRight']) dx += 1;
+
+            if (joystickVector.x !== 0 || joystickVector.y !== 0) {
+                dx = joystickVector.x; dz = joystickVector.y;
+            }
+
+            if (dx !== 0 || dz !== 0) {
+                const len = Math.hypot(dx, dz);
+                const speed = 0.12;
+                physicsWorld.moveBodyWithSlide(playerPhysicsBody, (dx/len)*speed, (dz/len)*speed);
+                playerGroup.rotation.y = Math.atan2(dx, dz);
+            }
+
+            let minDistance = 1.8;
+            let foundCounter = null;
+            kitchenCounters.forEach(c => {
+                const dist = Math.hypot(playerGroup.position.x - c.x, playerGroup.position.z - c.z);
+                if (dist < minDistance) { minDistance = dist; foundCounter = c; }
+            });
+
+            currentNearbyCounter = foundCounter;
+            updateButtonStates();
+
+            const hint = document.getElementById('interaction-hint');
+            if (foundCounter && foundCounter.type !== 'wall') {
+                hint.classList.remove('opacity-0', 'translate-y-4');
+                document.getElementById('hint-text').innerText = foundCounter.label.toUpperCase();
+            } else {
+                hint.classList.add('opacity-0', 'translate-y-4');
+            }
+
+            currentCameraLookAt.lerp(new THREE.Vector3(playerGroup.position.x * 0.5, 0.8, playerGroup.position.z * 0.5), 0.08);
+            camera.position.lerp(new THREE.Vector3(currentCameraLookAt.x + cameraOffset.x, currentCameraLookAt.y + cameraOffset.y, currentCameraLookAt.z + cameraOffset.z), 0.08);
+            camera.lookAt(currentCameraLookAt);
+        }
+
+        function updateCameraWallOcclusion() {
+            if (!playerGroup || !camera) return;
+
+            const targetPos = new THREE.Vector3();
+            playerGroup.getWorldPosition(targetPos);
+            targetPos.y += 0.9;
+
+            const camPos = camera.position.clone();
+            const rayDir = targetPos.clone().sub(camPos);
+            const distance = rayDir.length();
+            rayDir.normalize();
+
+            occlusionRaycaster.set(camPos, rayDir);
+            occlusionRaycaster.far = distance - 0.2;
+
+            const intersects = occlusionRaycaster.intersectObjects(occludableMeshes, true);
+            const currentlyOccluding = new Set();
+
+            intersects.forEach(hit => {
+                let obj = hit.object;
+                while (obj && !occludableMeshes.includes(obj) && obj.parent !== scene) {
+                    obj = obj.parent;
+                }
+                if (obj) currentlyOccluding.add(obj);
+            });
+
+            occludableMeshes.forEach(groupOrMesh => {
+                const isOccluding = currentlyOccluding.has(groupOrMesh);
+                groupOrMesh.traverse(child => {
+                    if (child.isMesh && child.material) {
+                        if (child.userData.originalOpacity === undefined) {
+                            child.userData.originalOpacity = child.material.opacity !== undefined ? child.material.opacity : 1.0;
+                        }
+
+                        if (isOccluding) {
+                            child.material.transparent = true;
+                            child.material.opacity = 0.25;
+                        } else {
+                            child.material.opacity = child.userData.originalOpacity;
+                            if (child.material.opacity >= 0.99) child.material.transparent = false;
+                        }
+                    }
+                });
+            });
+        }
+
+        function initControls() {
+            window.addEventListener('keydown', e => {
+                keysPressed[e.code] = true;
+                if (e.code === 'KeyE') triggerGrabDrop();
+                if (e.code === 'Space') triggerAction();
+                if (e.code === 'ShiftLeft') triggerDash();
+            });
+            window.addEventListener('keyup', e => keysPressed[e.code] = false);
+
+            document.getElementById('btn-grab').addEventListener('touchstart', (e) => { e.preventDefault(); triggerGrabDrop(); });
+            document.getElementById('btn-action').addEventListener('touchstart', (e) => { e.preventDefault(); triggerAction(); });
+            document.getElementById('btn-dash').addEventListener('touchstart', (e) => { e.preventDefault(); triggerDash(); });
+            document.getElementById('btn-quiz').addEventListener('touchstart', (e) => { e.preventDefault(); openQuizModal(); });
+
+            document.getElementById('btn-grab').addEventListener('click', triggerGrabDrop);
+            document.getElementById('btn-action').addEventListener('click', triggerAction);
+            document.getElementById('btn-dash').addEventListener('click', triggerDash);
+            document.getElementById('btn-quiz').addEventListener('click', openQuizModal);
+
+            const joyContainer = document.getElementById('joystick-container');
+            const joyKnob = document.getElementById('joystick-knob');
+            let isDragging = false;
+
+            const handleTouch = (clientX, clientY) => {
+                const rect = joyContainer.getBoundingClientRect();
+                let dx = clientX - (rect.left + rect.width/2);
+                let dy = clientY - (rect.top + rect.height/2);
+                const dist = Math.hypot(dx, dy);
+                const max = rect.width/2 - 20;
+                if (dist > max) { dx = (dx/dist)*max; dy = (dy/dist)*max; }
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                joystickVector = { x: dx/max, y: dy/max };
+            };
+
+            joyContainer.addEventListener('pointerdown', e => { isDragging = true; handleTouch(e.clientX, e.clientY); });
+            window.addEventListener('pointermove', e => { if (isDragging) handleTouch(e.clientX, e.clientY); });
+            window.addEventListener('pointerup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    joyKnob.style.transform = `translate(0px, 0px)`;
+                    joystickVector = { x: 0, y: 0 };
+                }
+            });
+        }
+
+        function openQuizModal() {
+            activeQuizIndex = Math.floor(Math.random() * assetRepository.quizzes.length);
+            const quiz = assetRepository.quizzes[activeQuizIndex];
+            document.getElementById('quiz-question').innerText = `"${quiz.q}"`;
+            const opts = document.getElementById('quiz-options');
+            opts.innerHTML = '';
+            quiz.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-slate-800 hover:bg-blue-600 text-slate-200 hover:text-white font-bold p-3 rounded-xl border border-slate-700 text-xs transition text-left flex justify-between items-center";
+                btn.onclick = () => {
+                    if(i === quiz.correct) {
+                        gameScore += 100;
+                        document.getElementById('game-score').innerText = gameScore;
+                        playSound('riddle_success');
+                    }
+                    closeQuizModal();
+                };
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-check opacity-50"></i>`;
+                opts.appendChild(btn);
+            });
+            document.getElementById('quiz-modal').classList.remove('hidden');
+        }
+        function closeQuizModal() { document.getElementById('quiz-modal').classList.add('hidden'); }
+
+        let selectedMapObjectIndex = -1;
+        let isDraggingMapObject = false;
+
+        function worldToCanvasCoords(wx, wz, canvas) {
+            const scaleX = (canvas.width - 60) / 20;
+            const scaleZ = (canvas.height - 60) / 16;
+            return { x: canvas.width / 2 + wx * scaleX, y: canvas.height / 2 + wz * scaleZ };
+        }
+
+        function canvasToWorldCoords(cx, cy, canvas) {
+            const scaleX = (canvas.width - 60) / 20;
+            const scaleZ = (canvas.height - 60) / 16;
+            return { x: (cx - canvas.width / 2) / scaleX, z: (cy - canvas.height / 2) / scaleZ };
+        }
+
+        function draw2DMapCanvas() {
+            const canvas = document.getElementById('map-editor-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const layout = assetRepository.mapLayout;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1;
+            for (let x = -10; x <= 10; x += 2) {
+                const pt1 = worldToCanvasCoords(x, -8, canvas);
+                const pt2 = worldToCanvasCoords(x, 8, canvas);
+                ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y); ctx.lineTo(pt2.x, pt2.y); ctx.stroke();
+            }
+            for (let z = -8; z <= 8; z += 2) {
+                const pt1 = worldToCanvasCoords(-10, z, canvas);
+                const pt2 = worldToCanvasCoords(10, z, canvas);
+                ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y); ctx.lineTo(pt2.x, pt2.y); ctx.stroke();
+            }
+
+            const tl = worldToCanvasCoords(-8.5, -6.5, canvas);
+            const br = worldToCanvasCoords(8.5, 6.5, canvas);
+            ctx.strokeStyle = "#ffcc00"; ctx.setLineDash([4, 4]);
+            ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+            ctx.setLineDash([]);
+
+            layout.forEach((obj, idx) => {
+                const pos = worldToCanvasCoords(obj.x, obj.z, canvas);
+                const isSelected = (idx === selectedMapObjectIndex);
+                const boxW = Math.max(20, (obj.w / 20) * (canvas.width - 60));
+                const boxH = Math.max(20, (obj.d / 16) * (canvas.height - 60));
+
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(THREE.MathUtils.degToRad(obj.rotation || 0));
+
+                ctx.fillStyle = "#3b82f6";
+                if(obj.type.startsWith('box_')) ctx.fillStyle = "#ffcc00";
+                if(obj.type === 'delivery') ctx.fillStyle = "#d40511";
+                if(obj.type === 'wall') ctx.fillStyle = "#64748b";
+                if(obj.type === 'riddle') ctx.fillStyle = "#a855f7";
+
+                ctx.fillRect(-boxW/2, -boxH/2, boxW, boxH);
+                
+                ctx.lineWidth = isSelected ? 3 : 1;
+                ctx.strokeStyle = isSelected ? "#ffffff" : "#000000";
+                ctx.strokeRect(-boxW/2, -boxH/2, boxW, boxH);
+
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 9px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(obj.label ? obj.label.substring(0, 10) : obj.type, 0, 0);
+                
+                ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, boxH/2 + 4); ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        function setup2DMapCanvasEvents() {
+            const canvas = document.getElementById('map-editor-canvas');
+            if (!canvas) return;
+
+            const resizeCanvas = () => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width; canvas.height = rect.height;
+                draw2DMapCanvas();
+            };
+            resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
+                const layout = assetRepository.mapLayout;
+                let foundIndex = -1;
+
+                for (let i = layout.length - 1; i >= 0; i--) {
+                    const obj = layout[i];
+                    const pos = worldToCanvasCoords(obj.x, obj.z, canvas);
+                    const boxW = Math.max(20, (obj.w / 20) * (canvas.width - 60));
+                    const boxH = Math.max(20, (obj.d / 16) * (canvas.height - 60));
+
+                    if (Math.abs(mouseX - pos.x) < boxW / 2 && Math.abs(mouseY - pos.y) < boxH / 2) {
+                        foundIndex = i; break;
+                    }
+                }
+                selectedMapObjectIndex = foundIndex;
+                isDraggingMapObject = (foundIndex !== -1);
+                renderInspectorPanel(); draw2DMapCanvas();
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDraggingMapObject && selectedMapObjectIndex !== -1) {
+                    const rect = canvas.getBoundingClientRect();
+                    const worldPos = canvasToWorldCoords(e.clientX - rect.left, e.clientY - rect.top, canvas);
+                    assetRepository.mapLayout[selectedMapObjectIndex].x = Math.round(worldPos.x * 2) / 2;
+                    assetRepository.mapLayout[selectedMapObjectIndex].z = Math.round(worldPos.z * 2) / 2;
+                    renderInspectorPanel(); draw2DMapCanvas();
+                }
+            });
+            window.addEventListener('mouseup', () => isDraggingMapObject = false);
+        }
+
+        function renderInspectorPanel() {
+            const container = document.getElementById('inspector-content');
+            if (selectedMapObjectIndex === -1 || !assetRepository.mapLayout[selectedMapObjectIndex]) {
+                container.innerHTML = `<div class="text-slate-400 text-center py-4 text-[11px]">Click an object on the 2D grid.</div>`;
+                return;
+            }
+            const obj = assetRepository.mapLayout[selectedMapObjectIndex];
+            container.innerHTML = `
+                <div>
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">Label</label>
+                    <input type="text" value="${obj.label}" onchange="updateSelectedObjectProp('label', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">X Position</label>
+                        <input type="number" step="0.5" value="${obj.x}" onchange="updateSelectedObjectProp('x', parseFloat(this.value))" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Z Position</label>
+                        <input type="number" step="0.5" value="${obj.z}" onchange="updateSelectedObjectProp('z', parseFloat(this.value))" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">Rotation</label>
+                    <input type="number" step="15" value="${obj.rotation || 0}" onchange="updateSelectedObjectProp('rotation', parseFloat(this.value))" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                </div>
+
+                <div class="mt-3 pt-2 border-t border-slate-800 space-y-2">
+                    <div class="text-[10px] font-bold text-yellow-400 uppercase">Asset Action Rules</div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-slate-300">Allow Grab (Pickup)</span>
+                        <input type="checkbox" ${obj.allowGrab ? 'checked' : ''} onchange="updateSelectedObjectProp('allowGrab', this.checked)" class="accent-yellow-400">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Action Type</label>
+                        <select onchange="updateSelectedObjectProp('actionType', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                            <option value="none" ${obj.actionType==='none'?'selected':''}>None (Storage / Surface)</option>
+                            <option value="config" ${obj.actionType==='config'?'selected':''}>Configure / Process Device</option>
+                            <option value="quiz" ${obj.actionType==='quiz'?'selected':''}>Open Security Quiz</option>
+                            <option value="deliver" ${obj.actionType==='deliver'?'selected':''}>IT Dispatch Hatch (Score)</option>
+                            <option value="trash" ${obj.actionType==='trash'?'selected':''}>Trash Bin (Discard)</option>
+                            <option value="door" ${obj.actionType==='door'?'selected':''}>Lockable Door</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Accepts Drop Item Type</label>
+                        <input type="text" value="${obj.acceptsDrop || ''}" placeholder="e.g. laptop, server, configured, any" onchange="updateSelectedObjectProp('acceptsDrop', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    </div>
+
+                    ${obj.type === 'key' ? `
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Key ID</label>
+                        <input type="text" value="${obj.keyId || 'ADMIN_KEY'}" onchange="updateSelectedObjectProp('keyId', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    </div>
+                    ` : ''}
+
+                    ${obj.type === 'door' ? `
+                    <div>
+                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Required Key ID</label>
+                        <input type="text" value="${(obj.requiredKeyIds || ['ADMIN_KEY']).join(', ')}" onchange="updateSelectedObjectProp('requiredKeyIds', this.value.split(',').map(s=>s.trim()))" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                    </div>
+                    ` : ''}
+                </div>
+
+                <button onclick="deleteSelectedObject()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-1.5 rounded-xl text-xs mt-3 transition">Delete Object</button>
+            `;
+        }
+
+        function addPresetAsset(type) {
+            const labels = {
+                box_laptop: 'Laptops Box', box_server: 'Servers Box', config_desk: 'Config Station', 
+                server_rack: 'Server Rack', riddle: 'Security Terminal', delivery: 'IT Dispatch Hatch',
+                wall: 'Partition Wall', office_desk: 'Worker Desk', trash: 'Recycle Bin',
+                door: 'Secure Door', key: 'ID Badge'
+            };
+            const w = (type === 'wall' || type === 'door') ? 2.5 : (type === 'delivery' ? 2.5 : 1.5);
+            const d = (type === 'wall' || type === 'door') ? 0.4 : (type === 'delivery' ? 1.5 : 1.2);
+            const newObj = {
+                id: 'obj_' + Date.now(),
+                x: 0, z: 0, rotation: 0, w: w, d: d,
+                color: type === 'door' ? 0x3b82f6 : (type === 'key' ? 0x0ea5e9 : 0x1e293b),
+                type: type, label: labels[type] || type,
+                keyId: type === 'key' ? 'ADMIN_KEY' : undefined,
+                requiredKeyIds: type === 'door' ? ['ADMIN_KEY'] : undefined,
+                isOpen: false,
+                allowGrab: type === 'key' || type.startsWith('box_'),
+                actionType: 'none',
+                acceptsDrop: ''
+            };
+            assetRepository.mapLayout.push(newObj);
+            selectedMapObjectIndex = assetRepository.mapLayout.length - 1;
+            renderInspectorPanel(); draw2DMapCanvas();
+        }
+
+        function updateSelectedObjectProp(prop, val) {
+            if (selectedMapObjectIndex !== -1) {
+                assetRepository.mapLayout[selectedMapObjectIndex][prop] = val;
+                renderInspectorPanel(); draw2DMapCanvas();
+            }
+        }
+
+        function deleteSelectedObject() {
+            if (selectedMapObjectIndex !== -1) {
+                assetRepository.mapLayout.splice(selectedMapObjectIndex, 1);
+                selectedMapObjectIndex = -1;
+                renderInspectorPanel(); draw2DMapCanvas();
+            }
+        }
+
+        function toggleEditorModal() {
+            const modal = document.getElementById('editor-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                setup2DMapCanvasEvents();
+                draw2DMapCanvas();
+            }
+        }
+
+        function switchEditorTab(t) {
+            document.getElementById('tab-content-map').classList.add('hidden');
+            document.getElementById('tab-content-quiz').classList.add('hidden');
+            document.getElementById('tab-btn-map').className = "flex-1 py-2 rounded-xl font-game text-xs text-slate-400 hover:text-white transition";
+            document.getElementById('tab-btn-quiz').className = "flex-1 py-2 rounded-xl font-game text-xs text-slate-400 hover:text-white transition";
+
+            document.getElementById('tab-content-' + t).classList.remove('hidden');
+            if(t === 'map') {
+                document.getElementById('tab-btn-map').className = "flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition";
+                draw2DMapCanvas();
+            } else {
+                document.getElementById('tab-btn-quiz').className = "flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition";
+            }
+        }
+
+        function applyEditorChangesToKitchen() {
+            physicsWorld = new KitchenPhysicsWorld();
+            buildFloorplan();
+            document.getElementById('editor-modal').classList.add('hidden');
+            playSound('deliver');
+        }
+        
+        function toggleNetworkModal() { document.getElementById('network-modal').classList.toggle('hidden'); }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePlayerMovement();
+            updateCameraWallOcclusion();
+            scene.traverse(child => { if (child.userData && child.userData.canRotate) child.rotation.y += 0.02; });
+            renderer.render(scene, camera);
+        }
+
+        window.onload = () => {
+            init3DScene();
+            buildFloorplan();
+            initPlayers();
+            initControls();
+            renderOrdersList();
+            
+            setInterval(() => {
+                if (gameTimerSeconds > 0) {
+                    gameTimerSeconds--;
+                    const m = Math.floor(gameTimerSeconds / 60).toString().padStart(2, '0');
+                    const s = (gameTimerSeconds % 60).toString().padStart(2, '0');
+                    document.getElementById('game-timer').innerText = `${m}:${s}`;
+                }
+            }, 1000);
+
+            animate();
+        };
+    </script>
+</body>
+</html>

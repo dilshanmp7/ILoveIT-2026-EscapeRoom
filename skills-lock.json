@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "nuxt": {
+      "source": "onmax/nuxt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nuxt/SKILL.md",
+      "computedHash": "84cc4998d9df8a90833ff43e472ef121f3374620bebbfdf28c8e5c6b1a3c1e45"
+    }
+  }
+}
