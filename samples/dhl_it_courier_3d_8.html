@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DHL IT Courier 3D - Office Chaos & Logistics</title>
+    <title>DHL IT Courier 3D - Office Logistics & Security Chaos</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -23,14 +23,14 @@
             -webkit-user-select: none;
             touch-action: none;
             overflow: hidden;
-            background-color: #1a1e29;
+            background-color: #111827;
         }
 
         .font-game {
             font-family: 'Fredoka One', cursive;
         }
 
-        /* Custom Scrollbar - DHL Yellow Theme */
+        /* Custom Scrollbar - DHL Yellow & Red */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -108,11 +108,11 @@
         <!-- TOP BAR / HUD -->
         <div class="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-start pointer-events-none">
 
-            <!-- ORDERS QUEUE -->
+            <!-- ORDERS / IT TICKETS QUEUE -->
             <div class="flex flex-col gap-2 max-w-xl">
                 <div
                     class="text-xs font-black uppercase tracking-wider text-yellow-400 drop-shadow-md flex items-center gap-1.5">
-                    <i class="fa-solid fa-clipboard-list"></i> Active IT Dispatch Tickets
+                    <i class="fa-solid fa-clipboard-list"></i> Active IT Service Tickets
                 </div>
                 <div id="orders-list" class="flex flex-wrap gap-2 pointer-events-auto">
                     <!-- Order Cards Dynamically Generated Here -->
@@ -136,7 +136,7 @@
                     <div class="flex items-center gap-2 pr-3 border-r border-slate-700">
                         <i class="fa-solid fa-star text-red-500 text-2xl"></i>
                         <div class="text-right">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase">Performance Rating</div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase">Performance Points</div>
                             <div id="game-score" class="font-game text-2xl text-green-400">0</div>
                         </div>
                     </div>
@@ -151,11 +151,11 @@
                         </div>
                     </button>
 
-                    <!-- Level Studio Button -->
+                    <!-- Level & Security Studio Button -->
                     <button onclick="toggleEditorModal()"
-                        class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-500/50 px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow-lg">
-                        <i class="fa-solid fa-building-user text-yellow-400"></i>
-                        <span>Office Floorplan Editor</span>
+                        class="bg-red-700/90 hover:bg-red-600 text-yellow-300 border border-yellow-400/50 px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow-lg">
+                        <i class="fa-solid fa-building-user text-yellow-300"></i>
+                        <span>Office & Security Studio</span>
                     </button>
                 </div>
 
@@ -163,7 +163,7 @@
                 <div id="players-pill"
                     class="bg-slate-900/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-slate-300 flex items-center gap-2 border border-slate-700">
                     <i class="fa-solid fa-truck-fast text-red-500"></i>
-                    <span id="player-count-text">DHL Courier Active</span>
+                    <span id="player-count-text">DHL Couriers Active</span>
                 </div>
             </div>
         </div>
@@ -175,7 +175,7 @@
                 class="bg-yellow-500 text-slate-950 font-game px-6 py-2 rounded-full shadow-2xl flex items-center gap-3 border-2 border-red-600 animate-bounce">
                 <span id="hint-icon"
                     class="bg-slate-950 text-yellow-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">E</span>
-                <span id="hint-text" class="text-base tracking-wide">CONFIGURE DEVICE</span>
+                <span id="hint-text" class="text-base tracking-wide">CONFIG DEVICE</span>
             </div>
         </div>
 
@@ -236,8 +236,8 @@
                             <i class="fa-solid fa-shield-halved"></i>
                         </div>
                         <div>
-                            <div class="font-game text-xl text-blue-300">IT Security Check</div>
-                            <div class="text-xs text-slate-400">Pass to earn +100 Rating & Sprint Boost!</div>
+                            <div class="font-game text-xl text-blue-300">IT Security Terminal Check</div>
+                            <div class="text-xs text-slate-400">Pass to earn +100 Performance & Sprint Boost!</div>
                         </div>
                     </div>
                     <button onclick="closeQuizModal()" class="text-slate-400 hover:text-white"><i
@@ -286,21 +286,22 @@
             </div>
         </div>
 
-        <!-- ASSET & MAP EDITOR MODAL -->
+        <!-- ASSET & SECURITY STUDIO MODAL -->
         <div id="editor-modal"
             class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
             <div
-                class="bg-slate-900 border-2 border-blue-500/40 rounded-3xl p-5 max-w-6xl w-full shadow-2xl h-[92vh] flex flex-col">
+                class="bg-slate-900 border-2 border-red-500/40 rounded-3xl p-5 max-w-6xl w-full shadow-2xl h-[92vh] flex flex-col">
                 <!-- Header -->
                 <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg border border-blue-500/30">
+                            class="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-lg border border-red-500/30">
                             <i class="fa-solid fa-building"></i>
                         </div>
                         <div>
-                            <div class="font-game text-xl text-blue-300">Office Floorplan Editor</div>
-                            <div class="text-[11px] text-slate-400">Drag & Drop Desks, Servers & Logistics Hatch</div>
+                            <div class="font-game text-xl text-yellow-300">Office Floorplan & Security Studio</div>
+                            <div class="text-[11px] text-slate-400">Drag & Drop Desks, Servers, ID Badges & Security
+                                Check Manager</div>
                         </div>
                     </div>
                     <button onclick="toggleEditorModal()" class="text-slate-400 hover:text-white"><i
@@ -310,12 +311,12 @@
                 <!-- Tabs Header -->
                 <div class="flex gap-2 mb-3 bg-slate-800/60 p-1.5 rounded-2xl shrink-0">
                     <button id="tab-btn-map" onclick="switchEditorTab('map')"
-                        class="flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition">
-                        <i class="fa-solid fa-map-location-dot mr-1.5"></i> 2D Floorplan
+                        class="flex-1 py-2 rounded-xl font-game text-xs bg-red-700 text-yellow-300 shadow-md transition">
+                        <i class="fa-solid fa-map-location-dot mr-1.5"></i> 2D Floorplan Editor
                     </button>
                     <button id="tab-btn-quiz" onclick="switchEditorTab('quiz')"
                         class="flex-1 py-2 rounded-xl font-game text-xs text-slate-400 hover:text-white transition">
-                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Security Checks
+                        <i class="fa-solid fa-shield-halved mr-1.5"></i> Security Check Editor
                     </button>
                 </div>
 
@@ -419,7 +420,7 @@
                                     <i class="fa-solid fa-trash-can"></i>
                                 </div>
                                 <div>
-                                    <div class="text-[11px] font-bold text-slate-200">Trash Bin</div>
+                                    <div class="text-[11px] font-bold text-slate-200">Recycle Bin</div>
                                 </div>
                             </button>
                             <button onclick="addPresetAsset('door')"
@@ -448,7 +449,7 @@
                         <div class="mt-2 pt-3 border-t border-slate-800 flex-1 flex flex-col justify-between">
                             <div>
                                 <div
-                                    class="text-xs font-bold text-blue-300 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                    class="text-xs font-bold text-yellow-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                                     <i class="fa-solid fa-sliders"></i> Object Inspector
                                 </div>
                                 <div id="inspector-content"
@@ -474,16 +475,105 @@
                     </div>
                 </div>
 
-                <!-- TAB 2: QUIZ MGR -->
-                <div id="tab-content-quiz" class="flex-1 overflow-y-auto hidden text-center pt-20 text-slate-400">
-                    Security Questions Module Editor
+                <!-- TAB 2: SECURITY CHECK EDITOR MGR -->
+                <div id="tab-content-quiz" class="flex-1 flex gap-4 overflow-hidden min-h-0 hidden">
+                    <!-- Left Side: Security Checks List -->
+                    <div
+                        class="w-1/2 flex flex-col bg-slate-950/60 border border-slate-800 p-3 rounded-2xl overflow-hidden">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-800 mb-2">
+                            <div
+                                class="text-xs font-bold text-yellow-400 uppercase tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-list-check"></i> Security Check Pool
+                            </div>
+                            <button onclick="initNewQuizForm()"
+                                class="bg-red-700 hover:bg-red-600 text-yellow-300 font-bold px-3 py-1 rounded-xl text-xs transition flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> New Security Check
+                            </button>
+                        </div>
+                        <div id="editor-quizzes-list" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Security Check Form Editor -->
+                    <div
+                        class="w-1/2 flex flex-col bg-slate-900 border border-slate-800 p-4 rounded-2xl overflow-y-auto">
+                        <div
+                            class="text-xs font-bold text-yellow-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square"></i> Security Check Properties
+                        </div>
+
+                        <form id="quiz-editor-form" onsubmit="saveQuizForm(event)" class="space-y-3">
+                            <input type="hidden" id="quiz-form-index" value="-1">
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Security Question / Riddle
+                                    Text</label>
+                                <textarea id="quiz-form-q" required rows="3"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-yellow-500"
+                                    placeholder="e.g. What protocol secures web traffic?"></textarea>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-slate-300">Answer Options (Select correct
+                                    choice radio)</label>
+
+                                <div
+                                    class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                                    <input type="radio" name="correct_option" value="0" id="radio-opt-0" checked
+                                        class="accent-yellow-500">
+                                    <input type="text" id="quiz-form-opt-0" required
+                                        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                                        placeholder="Option 1">
+                                </div>
+
+                                <div
+                                    class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                                    <input type="radio" name="correct_option" value="1" id="radio-opt-1"
+                                        class="accent-yellow-500">
+                                    <input type="text" id="quiz-form-opt-1" required
+                                        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                                        placeholder="Option 2">
+                                </div>
+
+                                <div
+                                    class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                                    <input type="radio" name="correct_option" value="2" id="radio-opt-2"
+                                        class="accent-yellow-500">
+                                    <input type="text" id="quiz-form-opt-2" required
+                                        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                                        placeholder="Option 3">
+                                </div>
+
+                                <div
+                                    class="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                                    <input type="radio" name="correct_option" value="3" id="radio-opt-3"
+                                        class="accent-yellow-500">
+                                    <input type="text" id="quiz-form-opt-3" required
+                                        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none"
+                                        placeholder="Option 4">
+                                </div>
+                            </div>
+
+                            <div class="pt-2 flex gap-2">
+                                <button type="submit"
+                                    class="flex-1 bg-red-700 hover:bg-red-600 text-yellow-300 font-game py-2.5 rounded-xl text-xs transition shadow-md">
+                                    Save Security Check
+                                </button>
+                                <button type="button" onclick="initNewQuizForm()"
+                                    class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Footer Actions -->
                 <div class="mt-3 pt-3 border-t border-slate-800 flex justify-between items-center shrink-0">
                     <button onclick="applyEditorChangesToKitchen()"
-                        class="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-game px-6 py-2 rounded-xl text-xs shadow-xl transition border border-yellow-400">
-                        <i class="fa-solid fa-play mr-2"></i> Deploy Floorplan
+                        class="bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-400 hover:to-yellow-300 text-slate-950 font-game px-6 py-2 rounded-xl text-xs shadow-xl transition border border-red-600">
+                        <i class="fa-solid fa-play mr-2"></i> Deploy Office & Security Layout
                     </button>
                 </div>
             </div>
@@ -503,29 +593,26 @@
 
             getDefaultMapLayout() {
                 return [
-                    { id: 'c1', x: -4, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
-                    { id: 'c2', x: -2, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
-                    { id: 'c3', x: 0, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_server', label: 'Servers Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
+                    { id: 'c1', x: -4, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0xffcc00, type: 'box_laptop', label: 'Laptop Box', allowGrab: true },
+                    { id: 'c2', x: -2, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0xffcc00, type: 'box_laptop', label: 'Laptop Box', allowGrab: true },
+                    { id: 'c3', x: 0, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0xffcc00, type: 'box_server', label: 'Server Box', allowGrab: true },
 
-                    { id: 'c5', x: -4, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Station 1', allowGrab: false, actionType: 'config', acceptsDrop: 'laptop' },
+                    { id: 'c5', x: -4, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Desk 1', actionType: 'config', acceptsDrop: 'laptop' },
+                    { id: 'admin_comp', x: -1.5, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0xd40511, type: 'config_desk', label: 'Admin Terminal', useAction: 'quiz', useRequiredKey: 'ADMIN_KEY' },
+                    { id: 'c7', x: 4, z: -2.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack A', actionType: 'config', acceptsDrop: 'server' },
 
-                    { id: 'admin_comp', x: -1.5, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x2563eb, type: 'config_desk', label: 'Admin Terminal', allowGrab: false, useAction: 'quiz', useRequiredKey: 'ADMIN_KEY', acceptsDrop: '' },
+                    { id: 'c9', x: 0, z: -1, w: 1.4, d: 1.4, rotation: 0, color: 0x7e22ce, type: 'riddle', label: 'Security Terminal', actionType: 'quiz' },
+                    { id: 'c12', x: 6, z: 4.5, w: 1.2, d: 1.2, rotation: 0, color: 0x4b5563, type: 'trash', label: 'Recycle Bin', actionType: 'trash', acceptsDrop: 'any' },
+                    { id: 'c11', x: -4, z: 4.5, w: 2.5, d: 1.5, rotation: 0, color: 0xd40511, type: 'delivery', label: 'IT Dispatch Hatch', actionType: 'deliver', acceptsDrop: 'configured' },
 
-                    { id: 'c7', x: 4, z: -2.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack A', allowGrab: false, actionType: 'config', acceptsDrop: 'server' },
+                    { id: 'key_admin', x: -6.5, z: 2.0, w: 0.8, d: 0.8, rotation: 0, color: 0x38bdf8, type: 'key', label: 'Admin Badge', allowGrab: true, keyId: 'ADMIN_KEY' },
+                    { id: 'key_slide', x: 6.5, z: 2.0, w: 0.8, d: 0.8, rotation: 0, color: 0xffcc00, type: 'key', label: 'Sliding Key', allowGrab: true, keyId: 'SLIDING_DOR_KEY' },
 
-                    { id: 'c9', x: 0, z: -1, w: 1.4, d: 1.4, rotation: 0, color: 0x1d4ed8, type: 'riddle', label: 'Security Terminal', allowGrab: false, actionType: 'quiz', acceptsDrop: '' },
-                    { id: 'c12', x: 6, z: 4.5, w: 1.2, d: 1.2, rotation: 0, color: 0x4b5563, type: 'trash', label: 'Recycle Bin', allowGrab: false, actionType: 'trash', acceptsDrop: 'any' },
+                    { id: 'slide_door', x: 0, z: 2.0, w: 2.5, d: 0.4, rotation: 0, color: 0xd40511, type: 'door', label: 'Secure Sliding Door', useAction: 'open_door', useRequiredKey: 'SLIDING_DOR_KEY', isOpen: false },
 
-                    { id: 'c11', x: -4, z: 4.5, w: 2.5, d: 1.5, rotation: 0, color: 0xd40511, type: 'delivery', label: 'IT Dispatch Hatch', allowGrab: false, actionType: 'deliver', acceptsDrop: 'configured' },
-
-                    { id: 'key_admin', x: -6.5, z: 2.0, w: 0.8, d: 0.8, rotation: 0, color: 0x0ea5e9, type: 'key', label: 'Admin Badge', allowGrab: true, keyId: 'ADMIN_KEY', actionType: 'key' },
-                    { id: 'key_slide', x: 6.5, z: 2.0, w: 0.8, d: 0.8, rotation: 0, color: 0xfacc15, type: 'key', label: 'Sliding Key', allowGrab: true, keyId: 'SLIDING_DOR_KEY', actionType: 'key' },
-
-                    { id: 'slide_door', x: 0, z: 2.0, w: 2.5, d: 0.4, rotation: 0, color: 0x3b82f6, type: 'door', label: 'Secure Sliding Door', allowGrab: false, useAction: 'open_door', useRequiredKey: 'SLIDING_DOR_KEY', isOpen: false },
-
-                    { id: 'w1', x: -8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Left Wall', allowGrab: false, actionType: 'none' },
-                    { id: 'w2', x: 8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Right Wall', allowGrab: false, actionType: 'none' },
-                    { id: 'w3', x: 0, z: 6.2, w: 17, d: 0.5, rotation: 0, color: 0x94a3b8, type: 'wall', label: 'Front Wall', allowGrab: false, actionType: 'none' }
+                    { id: 'w1', x: -8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x64748b, type: 'wall', label: 'Left Wall' },
+                    { id: 'w2', x: 8.5, z: 0, w: 0.5, d: 13, rotation: 0, color: 0x64748b, type: 'wall', label: 'Right Wall' },
+                    { id: 'w3', x: 0, z: 6.2, w: 17, d: 0.5, rotation: 0, color: 0x64748b, type: 'wall', label: 'Front Wall' }
                 ];
             }
 
@@ -565,27 +652,22 @@
                 if (effect === 'type') {
                     this.playTone(800, 'square', 0.05, 0.05);
                     setTimeout(() => this.playTone(850, 'square', 0.05, 0.05), 50);
-                }
-                else if (effect === 'process') {
+                } else if (effect === 'process') {
                     this.playTone(150, 'sawtooth', 0.1, 0.08);
                     setTimeout(() => this.playTone(200, 'sawtooth', 0.1, 0.08), 100);
-                }
-                else if (effect === 'pickup') this.playTone(600, 'sine', 0.1, 0.15);
+                } else if (effect === 'pickup') this.playTone(600, 'sine', 0.1, 0.15);
                 else if (effect === 'drop') this.playTone(300, 'triangle', 0.1, 0.15);
                 else if (effect === 'unlock') {
                     this.playTone(800, 'sine', 0.1, 0.1);
                     setTimeout(() => this.playTone(1200, 'sine', 0.15, 0.15), 100);
-                }
-                else if (effect === 'deliver') {
+                } else if (effect === 'deliver') {
                     this.playTone(523.25, 'sine', 0.1, 0.2);
                     setTimeout(() => this.playTone(659.25, 'sine', 0.1, 0.2), 100);
                     setTimeout(() => this.playTone(783.99, 'sine', 0.2, 0.2), 200);
-                }
-                else if (effect === 'riddle_success') {
+                } else if (effect === 'riddle_success') {
                     this.playTone(440, 'triangle', 0.1, 0.2);
                     setTimeout(() => this.playTone(880, 'sine', 0.25, 0.2), 120);
-                }
-                else if (effect === 'dash') this.playTone(200, 'sawtooth', 0.1, 0.12);
+                } else if (effect === 'dash') this.playTone(200, 'sawtooth', 0.1, 0.12);
             }
         }
         const sfx = new SoundFX();
@@ -678,7 +760,7 @@
         }
 
         let scene, camera, renderer;
-        let player, playerPhysicsBody, peerGroup;
+        let playerGroup, playerPhysicsBody;
         let kitchenCounters = [];
         let occludableMeshes = [];
         let occlusionRaycaster = new THREE.Raycaster();
@@ -697,9 +779,9 @@
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
             scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
             dirLight.position.set(5, 15, 10);
             dirLight.castShadow = true;
             scene.add(dirLight);
@@ -710,7 +792,7 @@
             floor.receiveShadow = true;
             scene.add(floor);
 
-            const grid = new THREE.GridHelper(20, 20, 0x94a3b8, 0xcbd5e1);
+            const grid = new THREE.GridHelper(20, 20, 0xd40511, 0xcbd5e1);
             grid.position.y = 0.01;
             scene.add(grid);
 
@@ -721,8 +803,7 @@
             });
         }
 
-        /* Animated Courier Avatar Mesh with limbs and walk cycle capability */
-        function createCourierAvatarMesh(shirtColorHex) {
+        function createDHLACourierAvatarMesh(shirtColorHex) {
             const group = new THREE.Group();
 
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
@@ -790,8 +871,7 @@
                 p.position.set(sign * 0.11, 1.16, 0.34); group.add(p);
             }
 
-            const capColor = shirtColorHex === 0xffcc00 ? 0xd40511 : 0xffcc00;
-            const capMat = new THREE.MeshStandardMaterial({ color: capColor });
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xd40511 });
             const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.15, 16), capMat);
             capBase.position.y = 1.4; group.add(capBase);
             const capTop = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
@@ -807,13 +887,21 @@
             return group;
         }
 
+        let heldItem = null;
+        let currentNearbyCounter = null;
+        let gameScore = 0;
+        let gameTimerSeconds = 180;
+        let keysPressed = {};
+        let joystickVector = { x: 0, y: 0 };
+        let activeQuizIndex = 0;
         let playerWalkCycle = 0;
+
         function updatePlayerAnimation(isMoving, isHolding) {
-            if (!player) return;
-            const lLeg = player.getObjectByName("leftLeg");
-            const rLeg = player.getObjectByName("rightLeg");
-            const lArm = player.getObjectByName("leftArm");
-            const rArm = player.getObjectByName("rightArm");
+            if (!playerGroup) return;
+            const lLeg = playerGroup.getObjectByName("leftLeg");
+            const rLeg = playerGroup.getObjectByName("rightLeg");
+            const lArm = playerGroup.getObjectByName("leftArm");
+            const rArm = playerGroup.getObjectByName("rightArm");
 
             if (isMoving) {
                 playerWalkCycle += 0.25;
@@ -851,133 +939,10 @@
             }
         }
 
-        function initPlayers() {
-            player = createCourierAvatarMesh(0xffcc00);
-            player.position.set(0, 0, 2);
-            scene.add(player);
-            playerPhysicsBody = physicsWorld.addBody(new PhysicalBody({ x: 0, y: 0, z: 2, width: 0.8, depth: 0.8, mesh: player }));
-
-        }
-
-        function createOfficeCounterMesh(width, depth, topColor, type, options = {}) {
-            const group = new THREE.Group();
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
-
-            if (type === 'door') {
-                const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-                const fL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat); fL.position.set(-width / 2 + 0.08, 1.1, 0); group.add(fL);
-                const fR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat); fR.position.set(width / 2 - 0.08, 1.1, 0); group.add(fR);
-
-                const panel = new THREE.Mesh(new THREE.BoxGeometry(width - 0.3, 2.0, 0.1), new THREE.MeshStandardMaterial({ color: topColor, transparent: true, opacity: options.isOpen ? 0.2 : 0.8 }));
-                panel.position.set(options.isOpen ? width / 2 - 0.2 : 0, 1.0, 0);
-                panel.name = "doorPanel";
-                group.add(panel);
-                return group;
-            } else if (type === 'key') {
-                const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-                ped.position.y = 0.4; group.add(ped);
-                const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({ color: topColor }));
-                badge.position.set(0, 0.9, 0); group.add(badge);
-                group.userData.canRotate = true;
-                return group;
-            } else if (type === 'wall') {
-                const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 2.5, depth), new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.9 }));
-                wall.position.y = 1.25; group.add(wall);
-                return group;
-            }
-
-            const base = new THREE.Mesh(new THREE.BoxGeometry(width, 1.1, depth), baseMat);
-            base.position.y = 0.55; group.add(base);
-            const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, 0.1, depth + 0.05), new THREE.MeshStandardMaterial({ color: topColor || 0x64748b }));
-            top.position.y = 1.15; group.add(top);
-
-            if (type.startsWith('box_')) {
-                const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.9 }));
-                box.position.set(0, 1.45, 0); group.add(box);
-                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.71, 0.1, 0.71), new THREE.MeshBasicMaterial({ color: 0xd40511 }));
-                stripe.position.set(0, 1.45, 0); group.add(stripe);
-            }
-            else if (type === 'config_desk') {
-                const mBase = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, 0.15), new THREE.MeshStandardMaterial({ color: 0x111 }));
-                mBase.position.set(0, 1.25, -0.2); group.add(mBase);
-                const mScreen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), new THREE.MeshStandardMaterial({ color: 0x000 }));
-                mScreen.position.set(0, 1.5, -0.2); group.add(mScreen);
-                const kb = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.2), new THREE.MeshStandardMaterial({ color: 0x333 }));
-                kb.position.set(0, 1.21, 0.2); group.add(kb);
-            }
-            else if (type === 'server_rack') {
-                const rack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.7), new THREE.MeshStandardMaterial({ color: 0x111827 }));
-                rack.position.set(0, 1.95, 0); group.add(rack);
-                for (let i = 0; i < 3; i++) {
-                    const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.02), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
-                    l.position.set(-0.2, 1.5 + i * 0.3, 0.36); group.add(l);
-                }
-            }
-            else if (type === 'delivery') {
-                const hatch = new THREE.Mesh(new THREE.BoxGeometry(width - 0.2, 0.8, 0.1), new THREE.MeshStandardMaterial({ color: 0xd40511, transparent: true, opacity: 0.8 }));
-                hatch.position.set(0, 1.6, 0); group.add(hatch);
-            }
-            else if (type === 'trash') {
-                const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x3f3f46 }));
-                bin.position.y = 1.6; group.add(bin);
-            }
-            else if (type === 'office_desk') {
-                const mScreen1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: 0x111 }));
-                mScreen1.position.set(-0.3, 1.4, -0.1); group.add(mScreen1);
-                const mScreen2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.05), new THREE.MeshStandardMaterial({ color: 0x111 }));
-                mScreen2.position.set(0.3, 1.4, -0.1); group.add(mScreen2);
-            }
-            else if (type === 'riddle') {
-                const screen = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.05), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
-                screen.position.set(0, 1.5, 0); group.add(screen);
-            }
-
-            return group;
-        }
-
-        function buildFloorplan() {
-            kitchenCounters.forEach(c => scene.remove(c.mesh));
-            kitchenCounters = [];
-            occludableMeshes = [];
-
-            assetRepository.mapLayout.forEach(item => {
-                const rotRad = THREE.MathUtils.degToRad(item.rotation || 0);
-                const mesh = createOfficeCounterMesh(item.w, item.d, item.color, item.type, { isOpen: item.isOpen });
-                mesh.position.set(item.x, 0, item.z);
-                mesh.rotation.y = rotRad;
-                scene.add(mesh);
-                occludableMeshes.push(mesh);
-
-                if (item.type !== 'wall') {
-                    kitchenCounters.push({
-                        id: item.id, mesh: mesh, x: item.x, z: item.z, type: item.type, label: item.label,
-                        keyId: item.keyId, requiredKeyIds: item.requiredKeyIds || [], isOpen: item.isOpen || false, heldItem: null,
-                        allowGrab: item.allowGrab !== undefined ? item.allowGrab : (item.type === 'key' || item.type.startsWith('box_')),
-                        actionType: item.actionType || 'none',
-                        acceptsDrop: item.acceptsDrop || '',
-                        useAction: item.useAction || 'none',
-                        useRequiredKey: item.useRequiredKey || ''
-                    });
-                }
-
-                if (item.type !== 'door' || !item.isOpen) {
-                    physicsWorld.addBody(new PhysicalBody({ x: item.x, y: 0, z: item.z, width: item.w, depth: item.d, isStatic: true }));
-                }
-            });
-        }
-
-        let heldItem = null;
-        let currentNearbyCounter = null;
-        let gameScore = 0;
-        let gameTimerSeconds = 180;
-        let keysPressed = {};
-        let joystickVector = { x: 0, y: 0 };
-        let activeQuizIndex = 0;
-
         function triggerDash() {
             if (!playerPhysicsBody) return;
             const moveSpeed = 0.5;
-            const dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y);
+            const dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), playerGroup.rotation.y);
             physicsWorld.moveBodyWithSlide(playerPhysicsBody, dir.x * moveSpeed, dir.z * moveSpeed);
             playSound('dash');
         }
@@ -989,8 +954,8 @@
                         <i class="fa-solid fa-laptop-medical"></i>
                     </div>
                     <div>
-                        <div class="font-game text-xs text-yellow-400">New Hire Setup</div>
-                        <div class="text-[9px] text-slate-400 font-semibold">Configured Laptop required</div>
+                        <div class="font-game text-xs text-yellow-400">IT New Hire Setup</div>
+                        <div class="text-[9px] text-slate-400 font-semibold">Configured Laptop & Server Unit</div>
                     </div>
                     <div class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto">+150 pts</div>
                 </div>
@@ -1015,7 +980,7 @@
                     }
 
                     if (canDrop) {
-                        player.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                        playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
                         currentNearbyCounter.heldItem = heldItem;
                         currentNearbyCounter.mesh.add(heldItem.mesh);
                         heldItem.mesh.position.set(0, 1.3, 0);
@@ -1027,13 +992,13 @@
                 }
 
                 const dropDist = 1.2;
-                const dropX = Math.round((player.position.x + Math.sin(player.rotation.y) * dropDist) * 2) / 2;
-                const dropZ = Math.round((player.position.z + Math.cos(player.rotation.y) * dropDist) * 2) / 2;
+                const dropX = Math.round((playerGroup.position.x + Math.sin(playerGroup.rotation.y) * dropDist) * 2) / 2;
+                const dropZ = Math.round((playerGroup.position.z + Math.cos(playerGroup.rotation.y) * dropDist) * 2) / 2;
 
                 let itemTypeStr = 'box_laptop';
                 let labelStr = 'Dropped Laptop';
                 let keyIdStr = undefined;
-                let colorVal = 0x334155;
+                let colorVal = 0xffcc00;
 
                 if (heldItem instanceof TechItem) {
                     itemTypeStr = heldItem.type === 'server' ? 'box_server' : 'box_laptop';
@@ -1042,7 +1007,7 @@
                     itemTypeStr = 'key';
                     labelStr = heldItem.label || 'ID Badge';
                     keyIdStr = heldItem.keyId;
-                    colorVal = 0x0ea5e9;
+                    colorVal = 0x38bdf8;
                 }
 
                 const newObj = {
@@ -1053,7 +1018,7 @@
                 };
 
                 assetRepository.mapLayout.push(newObj);
-                player.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
                 heldItem = null;
                 playSound('drop');
                 applyEditorChangesToKitchen();
@@ -1067,10 +1032,10 @@
             if (counter.allowGrab) {
                 if (counter.type === 'key') {
                     heldItem = { type: 'key', keyId: counter.keyId, label: counter.label, mesh: new THREE.Group() };
-                    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({ color: 0x0ea5e9 }));
+                    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
                     badge.position.set(0, 0, 0);
                     heldItem.mesh.add(badge);
-                    player.getObjectByName('holdingSlot').add(heldItem.mesh);
+                    playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
                     heldItem.mesh.position.set(0, 0, 0);
                     playSound('pickup');
 
@@ -1079,19 +1044,19 @@
                     applyEditorChangesToKitchen();
                 } else if (counter.type === 'box_laptop' || counter.type === 'box_server') {
                     heldItem = new TechItem(counter.type === 'box_server' ? 'server' : 'laptop');
-                    player.getObjectByName('holdingSlot').add(heldItem.mesh);
+                    playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
                     heldItem.mesh.position.set(0, 0, 0);
                     playSound('pickup');
                 }
             } else if (counter.actionType === 'trash' && heldItem) {
-                player.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
                 heldItem = null;
                 playSound('drop');
             } else if (counter.heldItem && !heldItem) {
                 heldItem = counter.heldItem;
                 counter.heldItem = null;
                 counter.mesh.remove(heldItem.mesh);
-                player.getObjectByName('holdingSlot').add(heldItem.mesh);
+                playerGroup.getObjectByName('holdingSlot').add(heldItem.mesh);
                 heldItem.mesh.position.set(0, 0, 0);
                 playSound('pickup');
             }
@@ -1105,8 +1070,8 @@
             const counter = currentNearbyCounter;
 
             if (counter.useAction === 'open_door' || counter.type === 'door') {
-                const reqKey = counter.useRequiredKey || (counter.requiredKeyIds && counter.requiredKeyIds[0]);
-                if (heldItem && (heldItem.keyId === reqKey || (counter.requiredKeyIds && counter.requiredKeyIds.includes(heldItem.keyId)))) {
+                const reqKey = counter.useRequiredKey;
+                if (heldItem && heldItem.keyId === reqKey) {
                     counter.isOpen = true;
                     const panel = counter.mesh.getObjectByName('doorPanel');
                     if (panel) panel.position.x = counter.w / 2 - 0.2;
@@ -1143,7 +1108,7 @@
                 } else {
                     playSound('drop');
                 }
-                player.getObjectByName('holdingSlot').remove(heldItem.mesh);
+                playerGroup.getObjectByName('holdingSlot').remove(heldItem.mesh);
                 heldItem = null;
             }
             updateButtonStates();
@@ -1184,8 +1149,8 @@
             if (currentNearbyCounter) {
                 const c = currentNearbyCounter;
                 if (c.useAction === 'open_door' || c.type === 'door') {
-                    const reqKey = c.useRequiredKey || (c.requiredKeyIds && c.requiredKeyIds[0]);
-                    canUse = heldItem && (heldItem.keyId === reqKey || (c.requiredKeyIds && c.requiredKeyIds.includes(heldItem.keyId)));
+                    const reqKey = c.useRequiredKey;
+                    canUse = heldItem && heldItem.keyId === reqKey;
                 } else if (c.useAction === 'quiz') {
                     const reqKey = c.useRequiredKey;
                     canUse = !reqKey || (heldItem && heldItem.keyId === reqKey);
@@ -1204,7 +1169,7 @@
         }
 
         function updatePlayerMovement() {
-            if (!player || !playerPhysicsBody) return;
+            if (!playerGroup || !playerPhysicsBody) return;
 
             let dx = 0; let dz = 0;
             if (keysPressed['KeyW'] || keysPressed['ArrowUp']) dz -= 1;
@@ -1220,7 +1185,7 @@
                 const len = Math.hypot(dx, dz);
                 const speed = 0.12;
                 physicsWorld.moveBodyWithSlide(playerPhysicsBody, (dx / len) * speed, (dz / len) * speed);
-                player.rotation.y = Math.atan2(dx, dz);
+                playerGroup.rotation.y = Math.atan2(dx, dz);
             }
 
             updatePlayerAnimation(dx !== 0 || dz !== 0, heldItem !== null);
@@ -1228,7 +1193,7 @@
             let minDistance = 1.8;
             let foundCounter = null;
             kitchenCounters.forEach(c => {
-                const dist = Math.hypot(player.position.x - c.x, player.position.z - c.z);
+                const dist = Math.hypot(playerGroup.position.x - c.x, playerGroup.position.z - c.z);
                 if (dist < minDistance) { minDistance = dist; foundCounter = c; }
             });
 
@@ -1243,16 +1208,16 @@
                 hint.classList.add('opacity-0', 'translate-y-4');
             }
 
-            currentCameraLookAt.lerp(new THREE.Vector3(player.position.x * 0.5, 0.8, player.position.z * 0.5), 0.08);
+            currentCameraLookAt.lerp(new THREE.Vector3(playerGroup.position.x * 0.5, 0.8, playerGroup.position.z * 0.5), 0.08);
             camera.position.lerp(new THREE.Vector3(currentCameraLookAt.x + cameraOffset.x, currentCameraLookAt.y + cameraOffset.y, currentCameraLookAt.z + cameraOffset.z), 0.08);
             camera.lookAt(currentCameraLookAt);
         }
 
         function updateCameraWallOcclusion() {
-            if (!player || !camera) return;
+            if (!playerGroup || !camera) return;
 
             const targetPos = new THREE.Vector3();
-            player.getWorldPosition(targetPos);
+            playerGroup.getWorldPosition(targetPos);
             targetPos.y += 0.9;
 
             const camPos = camera.position.clone();
@@ -1340,6 +1305,7 @@
         }
 
         function openQuizModal() {
+            if (assetRepository.quizzes.length === 0) return;
             activeQuizIndex = Math.floor(Math.random() * assetRepository.quizzes.length);
             const quiz = assetRepository.quizzes[activeQuizIndex];
             document.getElementById('quiz-question').innerText = `"${quiz.q}"`;
@@ -1418,7 +1384,7 @@
                 if (obj.type.startsWith('box_')) ctx.fillStyle = "#ffcc00";
                 if (obj.type === 'delivery') ctx.fillStyle = "#d40511";
                 if (obj.type === 'wall') ctx.fillStyle = "#64748b";
-                if (obj.type === 'riddle') ctx.fillStyle = "#a855f7";
+                if (obj.type === 'riddle') ctx.fillStyle = "#7e22ce";
 
                 ctx.fillRect(-boxW / 2, -boxH / 2, boxW, boxH);
 
@@ -1431,8 +1397,6 @@
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText(obj.label ? obj.label.substring(0, 10) : obj.type, 0, 0);
-
-                ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, boxH / 2 + 4); ctx.stroke();
                 ctx.restore();
             });
         }
@@ -1507,53 +1471,6 @@
                     <label class="block text-[10px] text-slate-400 font-bold mb-1">Rotation</label>
                     <input type="number" step="15" value="${obj.rotation || 0}" onchange="updateSelectedObjectProp('rotation', parseFloat(this.value))" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
                 </div>
-
-                <div class="mt-3 pt-2 border-t border-slate-800 space-y-2">
-                    <div class="text-[10px] font-bold text-yellow-400 uppercase">Asset Use & Action Rules</div>
-                    
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px] text-slate-300">Allow Grab (Pickup)</span>
-                        <input type="checkbox" ${obj.allowGrab ? 'checked' : ''} onchange="updateSelectedObjectProp('allowGrab', this.checked)" class="accent-yellow-400">
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Action Type (Surface)</label>
-                        <select onchange="updateSelectedObjectProp('actionType', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
-                            <option value="none" ${obj.actionType === 'none' ? 'selected' : ''}>None (Storage / Surface)</option>
-                            <option value="config" ${obj.actionType === 'config' ? 'selected' : ''}>Configure / Process Device</option>
-                            <option value="quiz" ${obj.actionType === 'quiz' ? 'selected' : ''}>Open Security Quiz</option>
-                            <option value="deliver" ${obj.actionType === 'deliver' ? 'selected' : ''}>IT Dispatch Hatch (Score)</option>
-                            <option value="trash" ${obj.actionType === 'trash' ? 'selected' : ''}>Trash Bin (Discard)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Use Action Behavior</label>
-                        <select onchange="updateSelectedObjectProp('useAction', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
-                            <option value="none" ${obj.useAction === 'none' ? 'selected' : ''}>None</option>
-                            <option value="open_door" ${obj.useAction === 'open_door' ? 'selected' : ''}>Slide Open Door (Requires Key)</option>
-                            <option value="quiz" ${obj.useAction === 'quiz' ? 'selected' : ''}>Trigger Quiz (Requires Badge)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Required Held Key ID for Use</label>
-                        <input type="text" value="${obj.useRequiredKey || ''}" placeholder="e.g. SLIDING_DOR_KEY" onchange="updateSelectedObjectProp('useRequiredKey', this.value.toUpperCase())" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Accepts Drop Item Type</label>
-                        <input type="text" value="${obj.acceptsDrop || ''}" placeholder="e.g. laptop, server, configured, any" onchange="updateSelectedObjectProp('acceptsDrop', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
-                    </div>
-
-                    ${obj.type === 'key' ? `
-                    <div>
-                        <label class="block text-[10px] text-slate-400 font-bold mb-1">Key ID</label>
-                        <input type="text" value="${obj.keyId || 'ADMIN_KEY'}" onchange="updateSelectedObjectProp('keyId', this.value)" class="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-white">
-                    </div>
-                    ` : ''}
-                </div>
-
                 <button onclick="deleteSelectedObject()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-1.5 rounded-xl text-xs mt-3 transition">Delete Object</button>
             `;
         }
@@ -1565,19 +1482,19 @@
                 wall: 'Partition Wall', office_desk: 'Worker Desk', trash: 'Recycle Bin',
                 door: 'Secure Door', key: 'ID Badge'
             };
-            const w = (type === 'wall' || type === 'door') ? 2.5 : (type === 'delivery' ? 2.5 : 1.5);
-            const d = (type === 'wall' || type === 'door') ? 0.4 : (type === 'delivery' ? 1.5 : 1.2);
+            const w = (type === 'wall' || type === 'door') ? 2.5 : 1.5;
+            const d = (type === 'wall' || type === 'door') ? 0.4 : 1.2;
             const newObj = {
                 id: 'obj_' + Date.now(),
                 x: 0, z: 0, rotation: 0, w: w, d: d,
-                color: type === 'door' ? 0x3b82f6 : (type === 'key' ? 0x0ea5e9 : 0x1e293b),
+                color: type === 'door' ? 0xd40511 : (type === 'key' ? 0x38bdf8 : 0x1e293b),
                 type: type, label: labels[type] || type,
                 keyId: type === 'key' ? 'ADMIN_KEY' : undefined,
-                requiredKeyIds: type === 'door' ? ['ADMIN_KEY'] : undefined,
+                useAction: type === 'door' ? 'open_door' : 'none',
+                useRequiredKey: type === 'door' ? 'SLIDING_DOR_KEY' : undefined,
                 isOpen: false,
                 allowGrab: type === 'key' || type.startsWith('box_'),
-                actionType: 'none',
-                acceptsDrop: ''
+                actionType: 'none', acceptsDrop: ''
             };
             assetRepository.mapLayout.push(newObj);
             selectedMapObjectIndex = assetRepository.mapLayout.length - 1;
@@ -1599,12 +1516,88 @@
             }
         }
 
+        /* Security Check Editor Tab */
+        function renderEditorQuizzesList() {
+            const container = document.getElementById('editor-quizzes-list');
+            container.innerHTML = '';
+            assetRepository.quizzes.forEach((quiz, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 p-3 rounded-2xl flex justify-between items-center group hover:border-blue-500/50 transition cursor-pointer";
+                card.onclick = () => loadQuizIntoForm(idx);
+                card.innerHTML = `
+                    <div class="flex-1 pr-2">
+                        <div class="font-bold text-xs text-blue-300 line-clamp-1">"${quiz.q}"</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Answer: <span class="text-emerald-400 font-bold">${quiz.options[quiz.correct]}</span></div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="event.stopPropagation(); deleteQuizItem(${idx})" class="w-6 h-6 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-lg flex items-center justify-center text-xs transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function initNewQuizForm() {
+            document.getElementById('quiz-form-index').value = "-1";
+            document.getElementById('quiz-form-q').value = "";
+            document.getElementById('quiz-form-opt-0').value = "";
+            document.getElementById('quiz-form-opt-1').value = "";
+            document.getElementById('quiz-form-opt-2').value = "";
+            document.getElementById('quiz-form-opt-3').value = "";
+            document.getElementById('radio-opt-0').checked = true;
+        }
+
+        function loadQuizIntoForm(idx) {
+            const quiz = assetRepository.quizzes[idx];
+            if (!quiz) return;
+            document.getElementById('quiz-form-index').value = idx;
+            document.getElementById('quiz-form-q').value = quiz.q;
+            document.getElementById('quiz-form-opt-0').value = quiz.options[0] || "";
+            document.getElementById('quiz-form-opt-1').value = quiz.options[1] || "";
+            document.getElementById('quiz-form-opt-2').value = quiz.options[2] || "";
+            document.getElementById('quiz-form-opt-3').value = quiz.options[3] || "";
+            document.getElementById(`radio-opt-${quiz.correct}`).checked = true;
+        }
+
+        function saveQuizForm(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('quiz-form-index').value, 10);
+            const q = document.getElementById('quiz-form-q').value;
+            const options = [
+                document.getElementById('quiz-form-opt-0').value,
+                document.getElementById('quiz-form-opt-1').value,
+                document.getElementById('quiz-form-opt-2').value,
+                document.getElementById('quiz-form-opt-3').value
+            ];
+            const correctRadio = document.querySelector('input[name="correct_option"]:checked');
+            const correct = parseInt(correctRadio ? correctRadio.value : "0", 10);
+
+            if (idx === -1) {
+                assetRepository.quizzes.push({ q: q, options: options, correct: correct });
+            } else {
+                assetRepository.quizzes[idx] = { q: q, options: options, correct: correct };
+            }
+
+            renderEditorQuizzesList();
+            initNewQuizForm();
+            playSound('riddle_success');
+        }
+
+        function deleteQuizItem(index) {
+            assetRepository.quizzes.splice(index, 1);
+            renderEditorQuizzesList();
+            initNewQuizForm();
+        }
+
         function toggleEditorModal() {
             const modal = document.getElementById('editor-modal');
             modal.classList.toggle('hidden');
             if (!modal.classList.contains('hidden')) {
                 setup2DMapCanvasEvents();
                 draw2DMapCanvas();
+                renderEditorQuizzesList();
             }
         }
 
@@ -1616,11 +1609,118 @@
 
             document.getElementById('tab-content-' + t).classList.remove('hidden');
             if (t === 'map') {
-                document.getElementById('tab-btn-map').className = "flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition";
+                document.getElementById('tab-btn-map').className = "flex-1 py-2 rounded-xl font-game text-xs bg-red-700 text-yellow-300 shadow-md transition";
                 draw2DMapCanvas();
             } else {
-                document.getElementById('tab-btn-quiz').className = "flex-1 py-2 rounded-xl font-game text-xs bg-blue-600 text-white shadow-md transition";
+                document.getElementById('tab-btn-quiz').className = "flex-1 py-2 rounded-xl font-game text-xs bg-red-700 text-yellow-300 shadow-md transition";
+                renderEditorQuizzesList();
             }
+        }
+
+        function createCounterMesh(width, depth, topColor, type, labelText, options = {}) {
+            const group = new THREE.Group();
+            const baseMat = new THREE.MeshStandardMaterial({ color: options.color || 0x1e293b, roughness: 0.6 });
+
+            if (type === 'door') {
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+                const frameLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat);
+                frameLeft.position.set(-width / 2 + 0.08, 1.1, 0);
+                group.add(frameLeft);
+
+                const frameRight = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frameMat);
+                frameRight.position.set(width / 2 - 0.08, 1.1, 0);
+                group.add(frameRight);
+
+                const doorPanelMat = new THREE.MeshStandardMaterial({ color: topColor || 0xd40511, roughness: 0.3, transparent: true, opacity: options.isOpen ? 0.3 : 0.9 });
+                const panel = new THREE.Mesh(new THREE.BoxGeometry(width - 0.3, 2.0, 0.1), doorPanelMat);
+                panel.position.set(options.isOpen ? (width / 2 - 0.2) : 0, 1.0, 0);
+                panel.name = "doorPanel";
+                group.add(panel);
+                return group;
+            }
+
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(width, 1.2, depth), baseMat);
+            baseMesh.position.y = 0.6;
+            group.add(baseMesh);
+
+            const topMat = new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.2 });
+            const topMesh = new THREE.Mesh(new THREE.BoxGeometry(width + 0.1, 0.12, depth + 0.1), topMat);
+            topMesh.position.y = 1.25;
+            group.add(topMesh);
+
+            if (type.startsWith('box_')) {
+                const crateMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 });
+                const crateBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 0.8), crateMat);
+                crateBox.position.set(0, 1.48, 0);
+                group.add(crateBox);
+            } else if (type === 'config_desk' || type === 'server_rack') {
+                const termMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+                const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.05), termMat);
+                monitor.position.set(0, 1.5, 0);
+                group.add(monitor);
+            } else if (type === 'riddle') {
+                const termMat = new THREE.MeshStandardMaterial({ color: 0x7e22ce });
+                const term = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.6), termMat);
+                term.position.set(0, 1.5, 0);
+                group.add(term);
+            }
+            return group;
+        }
+
+        function buildFloorplan() {
+            kitchenCounters.forEach(c => scene.remove(c.mesh));
+            kitchenCounters = [];
+            occludableMeshes = [];
+
+            const layout = assetRepository.mapLayout;
+
+            layout.forEach(item => {
+                let mesh;
+                const rotRad = THREE.MathUtils.degToRad(item.rotation || 0);
+
+                if (item.type === 'wall') {
+                    mesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(item.w, 3, item.d),
+                        new THREE.MeshStandardMaterial({ color: item.color || 0x64748b, roughness: 0.8 })
+                    );
+                    mesh.position.set(item.x, 1.5, item.z);
+                    mesh.rotation.y = rotRad;
+                    scene.add(mesh);
+                    occludableMeshes.push(mesh);
+                } else {
+                    mesh = createCounterMesh(item.w, item.d, item.color, item.type, item.label, {
+                        keyId: item.keyId, requiredKeyIds: item.requiredKeyIds, isOpen: item.isOpen
+                    });
+                    mesh.position.set(item.x, 0, item.z);
+                    mesh.rotation.y = rotRad;
+                    scene.add(mesh);
+
+                    kitchenCounters.push({
+                        id: item.id, mesh: mesh, x: item.x, z: item.z, type: item.type, label: item.label,
+                        rotation: item.rotation || 0, keyId: item.keyId, requiredKeyIds: item.requiredKeyIds || [],
+                        isOpen: item.isOpen || false, heldItem: null, useAction: item.useAction, useRequiredKey: item.useRequiredKey,
+                        actionType: item.actionType, acceptsDrop: item.acceptsDrop, allowGrab: item.allowGrab
+                    });
+                    occludableMeshes.push(mesh);
+                }
+
+                if (item.type !== 'door' || !item.isOpen) {
+                    physicsWorld.addBody(new PhysicalBody({
+                        x: item.x, y: 0, z: item.z, width: item.w, height: 2.0, depth: item.d, isStatic: true
+                    }));
+                }
+            });
+        }
+
+        function initPlayerAvatars() {
+            playerGroup = createDHLACourierAvatarMesh(0xffcc00);
+            playerGroup.position.set(0, 0, 2);
+            scene.add(playerGroup);
+
+            playerPhysicsBody = new PhysicalBody({
+                x: 0, y: 0, z: 2, width: 0.8, height: 1.6, depth: 0.8, mesh: playerGroup
+            });
+            physicsWorld.addBody(playerPhysicsBody);
         }
 
         function applyEditorChangesToKitchen() {
@@ -1643,7 +1743,7 @@
         window.onload = () => {
             init3DScene();
             buildFloorplan();
-            initPlayers();
+            initPlayerAvatars();
             initControls();
             renderOrdersList();
 

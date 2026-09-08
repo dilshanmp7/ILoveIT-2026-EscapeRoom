@@ -22,23 +22,22 @@ function stop() {
 <template>
   <div class="controls">
     <div class="direction-pad" aria-label="Movement controls" @pointerdown="(event) => { pointerId = event.pointerId; (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId); move(event) }" @pointermove="(event) => { if (pointerId === event.pointerId) move(event) }" @pointerup="stop" @pointercancel="stop">
-      <span class="pad-center">+</span>
-      <span class="pad-arrow pad-up">▲</span>
-      <span class="pad-arrow pad-left">◀</span>
-      <span class="pad-arrow pad-right">▶</span>
-      <span class="pad-arrow pad-down">▼</span>
+      <span class="pad-knob" />
     </div>
     <div class="action-group">
-      <button type="button" class="small-button" @click="emit('dash')">Sprint</button>
-      <button type="button" class="small-button blue" @click="emit('quiz')">Security</button>
-      <button type="button" class="action-button" :disabled="!canUse" @click="emit('action')">Use</button>
-      <button type="button" class="action-button yellow" :disabled="!canGrab" @click="emit('grab')">Grab</button>
+      <div class="quick-actions">
+        <button type="button" class="small-button" @click="emit('dash')"><span>♟</span><b>Sprint</b></button>
+        <button type="button" class="small-button blue" @click="emit('quiz')"><span>⬟</span><b>Security</b></button>
+      </div>
+      <div class="main-actions">
+        <button type="button" class="action-button" :disabled="!canUse" @click="emit('action')"><span>▣</span><b>Use</b></button>
+        <button type="button" class="action-button yellow" :disabled="!canGrab" @click="emit('grab')"><span>✋</span><b>{{ canGrab ? 'Grab' : 'Grab' }}</b></button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.controls { position: absolute; inset: auto 1.5rem 1.5rem; z-index: 3; display: flex; justify-content: space-between; align-items: end; pointer-events: none; }.direction-pad { position: relative; width: 7rem; height: 7rem; border: 1px solid rgba(255,204,0,.5); border-radius: 50%; background: rgba(15,23,42,.78); pointer-events: auto; }.pad-center, .pad-arrow { position: absolute; color: #ffcc00; font-family: 'Courier New', monospace; font-size: .7rem; }.pad-center { inset: 50% auto auto 50%; transform: translate(-50%, -50%); color: #94a3b8; }.pad-arrow { transform: translate(-50%, -50%); }.pad-up { top: 22%; left: 50%; }.pad-down { top: 78%; left: 50%; }.pad-left { top: 50%; left: 22%; }.pad-right { top: 50%; left: 78%; }.action-group { display: grid; grid-template-columns: repeat(2, 4.5rem); gap: .5rem; pointer-events: auto; }.action-group button { min-height: 3.4rem; border: 1px solid #ffcc00; background: rgba(127,29,29,.88); color: white; cursor: pointer; font-family: 'Courier New', monospace; font-size: .62rem; font-weight: 700; text-transform: uppercase; }.action-group .small-button { min-height: 2.7rem; background: rgba(30,41,59,.9); color: #ffcc00; }.action-group .blue { border-color: #60a5fa; background: rgba(30,64,175,.9); color: #dbeafe; }.action-group .yellow { background: #ffcc00; color: #0f172a; }
-.action-group button:disabled { cursor: not-allowed; opacity: .45; }
-@media (min-width: 801px) { .controls { opacity: .5; }.controls:hover { opacity: 1; } }
+.controls { position: absolute; inset: auto 1.5rem 1.5rem; z-index: 3; display: flex; justify-content: space-between; align-items: end; padding: 0; pointer-events: none; font-family: 'Nunito', 'Trebuchet MS', sans-serif; }.direction-pad { position: relative; width: 9rem; height: 9rem; border: 2px solid rgba(234,179,8,.4); border-radius: 50%; background: rgba(15,23,42,.8); box-shadow: 0 16px 28px rgba(2,6,23,.4); pointer-events: auto; touch-action: none; }.pad-knob { position: absolute; top: 50%; left: 50%; width: 3.5rem; height: 3.5rem; transform: translate(-50%, -50%); border: 2px solid #dc2626; border-radius: 50%; background: linear-gradient(45deg, #facc15, #fde047); box-shadow: 0 8px 16px rgba(2,6,23,.35); }.action-group { display: flex; flex-direction: column; gap: .75rem; pointer-events: auto; }.quick-actions, .main-actions { display: flex; justify-content: flex-end; gap: .75rem; }.action-group button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; border-radius: .9rem; cursor: pointer; font-family: inherit; font-weight: 900; text-transform: uppercase; box-shadow: 0 12px 22px rgba(2,6,23,.35); transition: transform .15s ease, filter .15s ease; }.action-group button:active:not(:disabled) { transform: scale(.95); }.small-button { width: 4rem; height: 4rem; border: 2px solid rgba(234,179,8,.5); background: rgba(30,41,59,.88); color: #facc15; }.small-button span { font-size: 1.25rem; }.small-button b { font-size: .5rem; }.small-button.blue { border-color: #60a5fa; background: rgba(30,64,175,.88); color: #dbeafe; }.main-actions button { width: 5rem; height: 5rem; border: 2px solid #facc15; background: linear-gradient(45deg, #991b1b, #ef4444); color: white; }.main-actions button span { font-size: 1.5rem; }.main-actions button b { font-size: .58rem; }.main-actions .yellow { border-color: #dc2626; background: linear-gradient(45deg, #eab308, #fde047); color: #0f172a; }.action-group button:disabled { cursor: not-allowed; opacity: .45; filter: saturate(.5); }.action-group button:disabled:hover { transform: none; }
+@media (max-width: 620px) { .controls { inset: auto .8rem .8rem; }.direction-pad { width: 8rem; height: 8rem; }.action-group { gap: .55rem; }.quick-actions, .main-actions { gap: .5rem; }.small-button { width: 3.6rem; height: 3.6rem; }.main-actions button { width: 4.5rem; height: 4.5rem; } }
 </style>

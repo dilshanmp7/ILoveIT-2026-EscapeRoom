@@ -1,4 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
+import { createOfficeCounterMesh, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
 import type { MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -7,6 +8,7 @@ interface HeldItem {
   type: 'laptop' | 'server' | 'key'
   configured?: boolean
   keyId?: string
+  mesh?: THREE.Group
 }
 
 interface Counter {
@@ -37,6 +39,10 @@ export function useGameEngine() {
   let camera: THREE.PerspectiveCamera | null = null
   let renderer: THREE.WebGLRenderer | null = null
   let player: THREE.Group | null = null
+  let playerPhysicsBody: PhysicalBody | null = null
+  let physicsWorld = new KitchenPhysicsWorld()
+  const sound = new SoundFX()
+  const walkCycle = { value: 0 }
   let animationFrame = 0
   let timerId: ReturnType<typeof setInterval> | undefined
   let lastFrame = 0
@@ -47,60 +53,10 @@ export function useGameEngine() {
   let removeListeners: (() => void) | undefined
   const keys = new Set<string>()
   const counters: Counter[] = []
-  const bodies: MapAsset[] = []
+  const bodies: PhysicalBody[] = []
 
   function createMaterial(color: number) {
     return new THREE.MeshStandardMaterial({ color, roughness: 0.72 })
-  }
-
-  function createAssetMesh(asset: MapAsset) {
-    const group = new THREE.Group()
-    const baseColor = asset.type === 'delivery' ? 0xd40511 : asset.color
-    const base = new THREE.Mesh(new THREE.BoxGeometry(asset.w, asset.type === 'wall' ? 2.5 : 1, asset.d), createMaterial(baseColor))
-    base.position.y = asset.type === 'wall' ? 1.25 : 0.5
-    group.add(base)
-
-    if (asset.type.startsWith('box_')) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(.72, .52, .72), createMaterial(0xffcc00))
-      box.position.y = 1.3
-      group.add(box)
-    }
-    if (asset.type === 'config_desk' || asset.type === 'server_rack') {
-      const device = new THREE.Mesh(new THREE.BoxGeometry(.72, .52, .42), createMaterial(asset.type === 'server_rack' ? 0x111827 : 0x0f172a))
-      device.position.y = 1.35
-      group.add(device)
-    }
-    if (asset.type === 'riddle') {
-      const screen = new THREE.Mesh(new THREE.BoxGeometry(.62, .42, .08), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }))
-      screen.position.y = 1.3
-      group.add(screen)
-    }
-    if (asset.type === 'key') {
-      const badge = new THREE.Mesh(new THREE.BoxGeometry(.2, .3, .05), new THREE.MeshBasicMaterial({ color: asset.color }))
-      badge.position.y = 1.15
-      group.add(badge)
-    }
-    if (asset.type === 'door') {
-      const panel = new THREE.Mesh(new THREE.BoxGeometry(asset.w - .25, 2, .08), new THREE.MeshStandardMaterial({ color: asset.color, transparent: true, opacity: asset.isOpen ? .2 : .85 }))
-      panel.position.y = 1
-      panel.name = 'door-panel'
-      group.add(panel)
-    }
-    return group
-  }
-
-  function createPlayer() {
-    const group = new THREE.Group()
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(.3, .65, 4, 10), createMaterial(0xffcc00))
-    body.position.y = .75
-    group.add(body)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(.3, 16, 12), createMaterial(0xfde047))
-    head.position.y = 1.45
-    group.add(head)
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, .12, 16), createMaterial(0xd40511))
-    cap.position.y = 1.7
-    group.add(cap)
-    return group
   }
 
   function buildFloorplan() {
@@ -112,13 +68,15 @@ export function useGameEngine() {
     }
 
     for (const asset of floorplan.map(item => ({ ...item }))) {
-      const mesh = createAssetMesh(asset)
+      const mesh = createOfficeCounterMesh(asset.w, asset.d, asset.type === 'delivery' ? 0xd40511 : asset.color, asset.type, { isOpen: asset.isOpen })
       mesh.position.set(asset.x, 0, asset.z)
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
       mesh.userData.courierAsset = true
       scene.add(mesh)
       counters.push({ asset, mesh, heldItem: null })
-      if (asset.type === 'wall' || asset.type === 'door') bodies.push(asset)
+      if (asset.type === 'wall' || (asset.type === 'door' && !asset.isOpen)) {
+        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: asset.w, depth: asset.d, isStatic: true })))
+      }
     }
   }
 
@@ -138,16 +96,8 @@ export function useGameEngine() {
     return closest
   }
 
-  function collides(x: number, z: number) {
-    const half = .35
-    return bodies.some(body => {
-      if (body.type === 'door' && body.isOpen) return false
-      return x + half > body.x - body.w / 2 && x - half < body.x + body.w / 2 && z + half > body.z - body.d / 2 && z - half < body.z + body.d / 2
-    })
-  }
-
   function updateMovement(delta: number) {
-    if (!player) return
+    if (!player) return false
     let x = 0
     let z = 0
     if (keys.has('KeyW') || keys.has('ArrowUp')) z -= 1
@@ -158,14 +108,14 @@ export function useGameEngine() {
       x = joystick.x
       z = joystick.y
     }
-    if (!x && !z) return
+    if (!x && !z) return false
     const length = Math.hypot(x, z)
     const speed = 3.2 * delta
     const nextX = player.position.x + (x / length) * speed
     const nextZ = player.position.z + (z / length) * speed
-    if (!collides(nextX, player.position.z)) player.position.x = nextX
-    if (!collides(player.position.x, nextZ)) player.position.z = nextZ
+    if (playerPhysicsBody) physicsWorld.moveBodyWithSlide(playerPhysicsBody, nextX - player.position.x, nextZ - player.position.z)
     player.rotation.y = Math.atan2(x, z)
+    return true
   }
 
   function updateNearby() {
@@ -186,6 +136,7 @@ export function useGameEngine() {
           heldItem = null
           state.holding = ''
           state.holdingConfigured = false
+          sound.play('drop')
           return
         }
       }
@@ -199,10 +150,13 @@ export function useGameEngine() {
       heldItem = { type: 'key', keyId: nearby.asset.keyId }
       nearby.mesh.visible = false
     } else if (nearby.asset.type === 'box_laptop' || nearby.asset.type === 'box_server') {
-      heldItem = { type: nearby.asset.type === 'box_server' ? 'server' : 'laptop' }
+      const item = new TechItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
+      heldItem = { type: item.type, configured: item.isConfigured, mesh: item.mesh }
     }
     state.holding = heldItem?.type || ''
     state.holdingConfigured = Boolean(heldItem?.configured)
+    if (heldItem?.mesh) player?.getObjectByName('holdingSlot')?.add(heldItem.mesh)
+    sound.play('pickup')
   }
 
   function useNearby() {
@@ -213,6 +167,7 @@ export function useGameEngine() {
         asset.isOpen = true
         const panel = nearby.mesh.getObjectByName('door-panel')
         if (panel) panel.position.x = asset.w / 2
+        sound.play('unlock')
       }
       return
     }
@@ -227,6 +182,7 @@ export function useGameEngine() {
       if (nearby.heldItem.type === expected) {
         nearby.heldItem.configured = true
         state.score += 25
+        sound.play(nearby.heldItem.type === 'laptop' ? 'type' : 'process')
       }
       return
     }
@@ -236,6 +192,7 @@ export function useGameEngine() {
       state.holding = ''
       state.holdingConfigured = false
       state.finished = true
+      sound.play('deliver')
     }
   }
 
@@ -253,15 +210,15 @@ export function useGameEngine() {
   function dash() {
     if (!player) return
     const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y)
-    const nextX = player.position.x + direction.x * 1.2
-    const nextZ = player.position.z + direction.z * 1.2
-    if (!collides(nextX, nextZ)) player.position.set(nextX, 0, nextZ)
+    if (playerPhysicsBody) physicsWorld.moveBodyWithSlide(playerPhysicsBody, direction.x * 1.2, direction.z * 1.2)
+    sound.play('dash')
   }
 
   function frame(time: number) {
     const delta = Math.min((time - lastFrame) / 1000 || 0, .05)
     lastFrame = time
-    updateMovement(delta)
+    const isMoving = updateMovement(delta)
+    updatePlayerAnimation(player, isMoving, Boolean(heldItem), walkCycle)
     updateNearby()
     if (player && camera) {
       camera.position.lerp(new THREE.Vector3(player.position.x, 8.5, player.position.z + 8.8), .08)
@@ -301,9 +258,10 @@ export function useGameEngine() {
     const grid = new THREE.GridHelper(20, 20, 0x94a3b8, 0xcbd5e1)
     grid.position.y = .01
     scene.add(grid)
-    player = createPlayer()
-    player.position.set(0, 0, 2)
-    scene.add(player)
+    physicsWorld = new KitchenPhysicsWorld()
+    const players = initPlayers(scene, physicsWorld)
+    player = players.player
+    playerPhysicsBody = players.playerBody
     buildFloorplan()
 
     const resize = () => {
@@ -351,6 +309,8 @@ export function useGameEngine() {
     camera = null
     renderer = null
     player = null
+    playerPhysicsBody = null
+    physicsWorld = new KitchenPhysicsWorld()
   }
 
   function openEditor() { state.editorOpen = true }
