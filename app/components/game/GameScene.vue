@@ -3,7 +3,7 @@ import type { MapAsset } from '#shared/game/types';
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 
 const props = defineProps<{ engine: ReturnType<typeof useGameEngine>; floorplan: MapAsset[] }>()
-const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+const canvas = useTemplateRef<HTMLCanvasElement>('game-canvas')
 
 onMounted(() => {
   if (canvas.value) props.engine.mount(canvas.value, props.floorplan)
@@ -13,7 +13,7 @@ onBeforeUnmount(() => props.engine.unmount())
 </script>
 
 <template>
-  <canvas ref="canvas" class="game-canvas" aria-label="Interactive 3D dispatch floor" />
+  <canvas ref="game-canvas" class="game-canvas" aria-label="Interactive 3D dispatch floor" />
 </template>
 
 <style scoped>

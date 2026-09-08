@@ -3,7 +3,7 @@ import type { MapAsset } from '#shared/game/types';
 import { reactive } from 'vue';
 
 const props = defineProps<{ open: boolean; initialAssets: MapAsset[] }>()
-const emit = defineEmits<{ close: []; deploy: [layout: MapAsset[]] }>()
+const emit = defineEmits<{ close: []; deploy: [layout: MapAsset[]]; tab: [value: 'map' | 'quiz'] }>()
 const assets = reactive(props.initialAssets.map(asset => ({ ...asset })))
 const selectedId = ref(assets[0]?.id || '')
 const selected = computed(() => assets.find(asset => asset.id === selectedId.value))

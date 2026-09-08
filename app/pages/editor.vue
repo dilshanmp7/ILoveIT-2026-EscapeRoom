@@ -1,27 +1,47 @@
 <script setup lang="ts">
-import type { MapAsset } from '#shared/game/types'
+import type { MapAsset, QuizQuestion } from '#shared/game/types'
 import type { FetchError } from 'ofetch'
 import FloorplanEditor from '~/components/game/FloorplanEditor.vue'
+import QuizEditor from '~/components/game/QuizEditor.vue'
 
 useSeoMeta({ title: 'DHL IT Courier | Floorplan Editor', robots: 'noindex' })
 
 const floorplan = ref<MapAsset[]>([])
+const quizzes = ref<QuizQuestion[]>([])
 const loading = ref(true)
 const authenticated = ref(false)
 const password = ref('')
 const authenticating = ref(false)
 const errorMessage = ref('')
 const saving = ref(false)
+const activeEditor = ref<'map' | 'quiz'>('map')
 
 async function loadFloorplan() {
   loading.value = true
   try {
-    const response = await $fetch<{ layout: MapAsset[] }>('/api/game/floorplan')
-    floorplan.value = response.layout
+    const [floorplanResponse, quizResponse] = await Promise.all([
+      $fetch<{ layout: MapAsset[] }>('/api/game/floorplan'),
+      $fetch<{ quizzes: QuizQuestion[] }>('/api/game/quizzes'),
+    ])
+    floorplan.value = floorplanResponse.layout
+    quizzes.value = quizResponse.quizzes
   } catch {
     errorMessage.value = 'Unable to load the dispatch floorplan.'
   } finally {
     loading.value = false
+  }
+}
+
+async function saveQuizzes(updatedQuizzes: QuizQuestion[]) {
+  saving.value = true
+  errorMessage.value = ''
+  try {
+    const response = await $fetch<{ quizSet: { quizzes: QuizQuestion[] } }>('/api/game/quizzes', { method: 'PUT', body: { quizzes: updatedQuizzes } })
+    quizzes.value = response.quizSet.quizzes
+  } catch {
+    errorMessage.value = 'The security checks could not be deployed.'
+  } finally {
+    saving.value = false
   }
 }
 
@@ -88,7 +108,11 @@ onMounted(checkEditorAccess)
     </section>
     <div v-else-if="loading" class="editor-status">LOADING FLOORPLAN FROM SQLITE...</div>
     <div v-else-if="errorMessage" class="editor-status error" role="alert">{{ errorMessage }}</div>
-    <FloorplanEditor v-else :open="true" :initial-assets="floorplan" @close="navigateTo('/game')" @deploy="saveFloorplan" />
+    <div v-else class="editor-workspace">
+      <FloorplanEditor v-if="activeEditor === 'map'" :open="true" :initial-assets="floorplan" @close="navigateTo('/game')" @deploy="saveFloorplan" @tab="activeEditor = $event" />
+      <QuizEditor v-else :open="true" :initial-quizzes="quizzes" @close="navigateTo('/game')" @deploy="saveQuizzes" @tab="activeEditor = $event" />
+      <nav class="editor-tabs" aria-label="Editor mode"><button type="button" :class="{ active: activeEditor === 'map' }" @click="activeEditor = 'map'">2D Floorplan Editor</button><button type="button" :class="{ active: activeEditor === 'quiz' }" @click="activeEditor = 'quiz'">Security Check Editor</button></nav>
+    </div>
     <div v-if="saving" class="saving-status">DEPLOYING...</div>
   </main>
 </template>

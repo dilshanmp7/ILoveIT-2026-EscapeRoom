@@ -31,10 +31,7 @@ function formatTime(seconds: number) {
       <div class="metrics">
         <div class="metric timer"><span class="metric-icon">◷</span><span><small>SLA Time</small><strong>{{ formatTime(state.secondsRemaining) }}</strong></span></div>
         <div class="metric score-metric"><span class="metric-icon">★</span><span><small>Performance Rating</small><strong>{{ state.score }}</strong></span></div>
-        <button class="network-button" type="button" aria-label="Network status">
-          <span class="network-dot" /><span><strong>HUB: SOLO</strong><small>12 ms (SignalR Mock)</small></span>
-        </button>
-        <button class="editor-button" type="button" @click="emit('editor')"><span class="editor-icon">▦</span> Office Floorplan Editor</button>
+        
       </div>
       <div class="players-pill"><span>▰</span> DHL Courier Active</div>
     </div>

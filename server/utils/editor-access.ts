@@ -9,7 +9,7 @@ const editorTokens = new Set<string>()
 function isPasswordDisabled(event: H3Event) {
   const config = useRuntimeConfig(event)
   return config.disableEditorPassword === true
-    || config.disableEditorPassword === 'true'
+    // || config.disableEditorPassword === 'true'
     || process.env.NUXT_DISABLE_EDITOR_PASSWORD === 'true'
 }
 

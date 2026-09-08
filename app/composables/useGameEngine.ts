@@ -1,5 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { createOfficeCounterMesh, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
+import { createObjectMesh, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
 import type { MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -68,7 +68,7 @@ export function useGameEngine() {
     }
 
     for (const asset of floorplan.map(item => ({ ...item }))) {
-      const mesh = createOfficeCounterMesh(asset.w, asset.d, asset.type === 'delivery' ? 0xd40511 : asset.color, asset.type, { isOpen: asset.isOpen })
+      const mesh = createObjectMesh(asset.w, asset.d, asset.type === 'delivery' ? 0xd40511 : asset.color, asset.type, { isOpen: asset.isOpen })
       mesh.position.set(asset.x, 0, asset.z)
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
       mesh.userData.courierAsset = true
@@ -242,7 +242,6 @@ export function useGameEngine() {
     canvas.value = target
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0x0f172a)
-    scene.fog = new THREE.FogExp2(0x0f172a, .025)
     camera = new THREE.PerspectiveCamera(45, target.clientWidth / target.clientHeight, .1, 100)
     camera.position.set(0, 8.5, 10)
     renderer = new THREE.WebGLRenderer({ canvas: target, antialias: true })

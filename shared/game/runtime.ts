@@ -146,10 +146,10 @@ export class TechItem {
   }
 }
 
-export function createCourierAvatarMesh(shirtColor: number) {
+export function createCourierAvatarMesh(shirtColorHex: number) {
   const group = new THREE.Group()
   const skin = new THREE.MeshStandardMaterial({ color: 0xfde047 })
-  const clothes = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.4 })
+  const clothes = new THREE.MeshStandardMaterial({ color: shirtColorHex, roughness: 0.4 })
   const pants = new THREE.MeshStandardMaterial({ color: 0x1e293b })
   const shoes = new THREE.MeshStandardMaterial({ color: 0x111827 })
 
@@ -195,7 +195,8 @@ export function createCourierAvatarMesh(shirtColor: number) {
     eyePupil.position.set(sign * 0.11, 1.16, 0.34)
     group.add(eyePupil)
   }
-  const cap = new THREE.MeshStandardMaterial({ color: shirtColor === 0xffcc00 ? 0xd40511 : 0xffcc00 })
+  const capColor = shirtColorHex === 0xffcc00 ? 0xd40511 : 0xffcc00;
+  const cap = new THREE.MeshStandardMaterial({ color: capColor })
   const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.15, 16), cap)
   capBase.position.y = 1.4
   group.add(capBase)
@@ -241,7 +242,7 @@ export function updatePlayerAnimation(player: THREE.Group | null, isMoving: bool
   }
 }
 
-export function createOfficeCounterMesh(width: number, depth: number, topColor: number, type: MapAsset['type'], options: { isOpen?: boolean } = {}) {
+export function createObjectMesh(width: number, depth: number, topColor: number, type: MapAsset['type'], options: { isOpen?: boolean } = {}) {
   const group = new THREE.Group()
   const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 })
   if (type === 'door') {

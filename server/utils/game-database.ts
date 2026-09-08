@@ -1,7 +1,8 @@
-import type { GameSession, MapAsset } from '#shared/game/types'
+import type { GameSession, MapAsset, QuizQuestion } from '#shared/game/types'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { defaultQuizzes } from '../../shared/game/defaults'
 import seedFloorplan from '../data/floorplan.json'
 
 let database: DatabaseSync | undefined
@@ -27,6 +28,11 @@ function getDatabase() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS quiz_sets (
+      id TEXT PRIMARY KEY,
+      quizzes_json TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `)
 
   const existing = database.prepare('SELECT id FROM floorplans WHERE id = ?').get('main')
@@ -40,7 +46,23 @@ function getDatabase() {
     )
   }
 
+  const quizSet = database.prepare('SELECT id FROM quiz_sets WHERE id = ?').get('main')
+  if (!quizSet) {
+    database.prepare('INSERT INTO quiz_sets (id, quizzes_json, updated_at) VALUES (?, ?, ?)').run('main', JSON.stringify(defaultQuizzes), new Date().toISOString())
+  }
+
   return database
+}
+
+export function readQuizzes(): QuizQuestion[] {
+  const row = getDatabase().prepare('SELECT quizzes_json FROM quiz_sets WHERE id = ?').get('main') as { quizzes_json: string } | undefined
+  return row ? JSON.parse(row.quizzes_json) as QuizQuestion[] : structuredClone(defaultQuizzes)
+}
+
+export function writeQuizzes(quizzes: QuizQuestion[]) {
+  const updatedAt = new Date().toISOString()
+  getDatabase().prepare('UPDATE quiz_sets SET quizzes_json = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(quizzes), updatedAt, 'main')
+  return { id: 'main', quizzes, updatedAt }
 }
 
 export function readFloorplan(): MapAsset[] {

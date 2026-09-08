@@ -38,10 +38,10 @@ async function enterShift() {
       <div class="brand-lockup">
         <span class="brand-mark">DHL</span>
         <span class="brand-rule" />
-        <span class="brand-label">IT COURIER / 2026</span>
+        <span class="brand-label">I LOVE IT / 2026</span>
       </div>
 
-      <p class="eyebrow">Operations briefing 07</p>
+      <p class="eyebrow">Operations briefing 2026</p>
       <h1 id="access-title">The office is waiting on you.</h1>
       <p class="lede">
         Laptop. Server. Security terminal. One dispatch window. Enter the shared shift code to step onto the floor.
