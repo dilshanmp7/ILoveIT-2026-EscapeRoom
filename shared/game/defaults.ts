@@ -1,15 +1,15 @@
 import type { MapAsset, QuizQuestion } from './types'
 
 export const defaultMapLayout: MapAsset[] = [
-  { id: 'c1', x: -4, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
-  { id: 'c2', x: -2, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
-  { id: 'c3', x: 0, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_server', label: 'Servers Box', allowGrab: true, actionType: 'none', acceptsDrop: '' },
-  { id: 'c5', x: -4, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Station 1', allowGrab: false, actionType: 'config', acceptsDrop: 'laptop' },
-  { id: 'admin_comp', x: -1.5, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x2563eb, type: 'config_desk', label: 'Admin Terminal', allowGrab: false, useAction: 'quiz', useRequiredKey: 'ADMIN_KEY', acceptsDrop: '' },
-  { id: 'c7', x: 4, z: -2.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack A', allowGrab: false, actionType: 'config', acceptsDrop: 'server' },
+  { id: 'c1', x: -4, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', dropRule: { mode: 'types', types: ['laptop'], maxContents: 4 } },
+  { id: 'c2', x: -2, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_laptop', label: 'Laptops Box', allowGrab: true, actionType: 'none', dropRule: { mode: 'types', types: ['laptop'], maxContents: 4 } },
+  { id: 'c3', x: 0, z: -5.5, w: 1.5, d: 1.2, rotation: 0, color: 0x334155, type: 'box_server', label: 'Servers Box', allowGrab: true, actionType: 'none', dropRule: { mode: 'types', types: ['server'], maxContents: 4 } },
+  { id: 'c5', x: -4, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x1e293b, type: 'config_desk', label: 'Config Station 1', allowGrab: false, actionType: 'config', dropRule: { mode: 'types', types: ['laptop'] } },
+  { id: 'admin_comp', x: -1.5, z: -2.5, w: 1.5, d: 1.2, rotation: 90, color: 0x2563eb, type: 'config_desk', label: 'Admin Terminal', allowGrab: false, useAction: 'quiz', useRequiredKey: 'ADMIN_KEY', dropRule: { mode: 'none' } },
+  { id: 'c7', x: 4, z: -2.5, w: 1.5, d: 1.2, rotation: 270, color: 0x1e293b, type: 'server_rack', label: 'Server Rack A', allowGrab: false, actionType: 'config', dropRule: { mode: 'types', types: ['server'] } },
   { id: 'c9', x: 0, z: -1, w: 1.4, d: 1.4, rotation: 0, color: 0x1d4ed8, type: 'riddle', label: 'Security Terminal', allowGrab: false, actionType: 'quiz', acceptsDrop: '' },
-  { id: 'c12', x: 6, z: 4.5, w: 1.2, d: 1.2, rotation: 0, color: 0x4b5563, type: 'trash', label: 'Recycle Bin', allowGrab: false, actionType: 'trash', acceptsDrop: 'any' },
-  { id: 'c11', x: -4, z: 4.5, w: 2.5, d: 1.5, rotation: 0, color: 0xd40511, type: 'delivery', label: 'IT Dispatch Hatch', allowGrab: false, actionType: 'deliver', acceptsDrop: 'configured' },
+  { id: 'c12', x: 6, z: 4.5, w: 1.2, d: 1.2, rotation: 0, color: 0x4b5563, type: 'trash', label: 'Recycle Bin', allowGrab: false, actionType: 'trash', dropRule: { mode: 'any' } },
+  { id: 'c11', x: -4, z: 4.5, w: 2.5, d: 1.5, rotation: 0, color: 0xd40511, type: 'delivery', label: 'IT Dispatch Hatch', allowGrab: false, actionType: 'deliver', dropRule: { mode: 'configured' } },
   { id: 'key_admin', x: -6.5, z: 2, w: 0.8, d: 0.8, rotation: 0, color: 0x0ea5e9, type: 'key', label: 'Admin Badge', allowGrab: true, keyId: 'ADMIN_KEY', actionType: 'key' },
   { id: 'key_slide', x: 6.5, z: 2, w: 0.8, d: 0.8, rotation: 0, color: 0xfacc15, type: 'key', label: 'Sliding Key', allowGrab: true, keyId: 'SLIDING_DOR_KEY', actionType: 'key' },
   { id: 'slide_door', x: 0, z: 2, w: 2.5, d: 0.4, rotation: 0, color: 0x3b82f6, type: 'door', label: 'Secure Sliding Door', allowGrab: false, useAction: 'open_door', useRequiredKey: 'SLIDING_DOR_KEY', isOpen: false },

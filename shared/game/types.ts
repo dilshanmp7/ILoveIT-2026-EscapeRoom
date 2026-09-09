@@ -1,4 +1,5 @@
 export type AssetType =
+  | 'floor'
   | 'box_laptop'
   | 'box_server'
   | 'config_desk'
@@ -10,6 +11,16 @@ export type AssetType =
   | 'trash'
   | 'door'
   | 'key'
+
+export type HeldObjectType = 'laptop' | 'server' | 'key'
+
+export type DropRule =
+  | { mode: 'none' }
+  | { mode: 'floor' }
+  | { mode: 'any'; maxContents?: number }
+  | { mode: 'types'; types: HeldObjectType[]; maxContents?: number }
+  | { mode: 'configured'; maxContents?: number }
+  | { mode: 'objects'; objectIds: string[]; maxContents?: number }
 
 export interface MapAsset {
   id: string
@@ -26,6 +37,7 @@ export interface MapAsset {
   requiredKeyIds?: string[]
   isOpen?: boolean
   actionType?: 'none' | 'config' | 'quiz' | 'deliver' | 'trash' | 'key'
+  dropRule?: DropRule
   acceptsDrop?: string
   useAction?: 'none' | 'open_door' | 'quiz'
   useRequiredKey?: string
