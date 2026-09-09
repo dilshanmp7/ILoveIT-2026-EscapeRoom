@@ -192,16 +192,21 @@ export function useGameEngine() {
       }
     } else if (nearby.asset.type === 'key') {
       heldItem = { id: nearby.asset.id, type: 'key', keyId: nearby.asset.keyId }
-      nearby.mesh.visible = false
-      floorplan = floorplan.filter(asset => asset.id !== nearby?.asset.id)
+      removePickedUpAsset(nearby.asset.id)
     } else if (nearby.asset.type === 'box_laptop' || nearby.asset.type === 'box_server') {
       const item = new TechItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
       heldItem = { id: createObjectId(nearby.asset.id), type: item.type, configured: item.isConfigured, mesh: item.mesh }
+      removePickedUpAsset(nearby.asset.id)
     }
     state.holding = heldItem?.type || ''
     state.holdingConfigured = Boolean(heldItem?.configured)
     if (heldItem?.mesh) player?.getObjectByName('holdingSlot')?.add(heldItem.mesh)
     sound.play('pickup')
+  }
+
+  function removePickedUpAsset(assetId: string) {
+    floorplan = floorplan.filter(asset => asset.id !== assetId)
+    buildFloorplan()
   }
 
   function placeOnFloor(item: HeldItem) {
@@ -213,11 +218,7 @@ export function useGameEngine() {
     const distance = 1.2
     const x = Math.round((player.position.x + Math.sin(player.rotation.y) * distance) * 2) / 2
     const z = Math.round((player.position.z + Math.cos(player.rotation.y) * distance) * 2) / 2
-    if (item.mesh) {
-      player.getObjectByName('holdingSlot')?.remove(item.mesh)
-      item.mesh.position.set(x, .08, z)
-      scene.add(item.mesh)
-    }
+    if (item.mesh) player.getObjectByName('holdingSlot')?.remove(item.mesh)
     floorplan.push({
       id: item.id,
       x,
@@ -232,6 +233,7 @@ export function useGameEngine() {
       keyId: item.keyId,
       actionType: item.type === 'key' ? 'key' : 'none',
     })
+    buildFloorplan()
     heldItem = null
     state.holding = ''
     state.holdingConfigured = false

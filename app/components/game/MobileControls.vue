@@ -6,15 +6,21 @@ let pointerId: number | null = null
 function move(event: PointerEvent) {
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
-  const x = (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
-  const y = (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
-  const length = Math.hypot(x, y)
-  const scale = length > 1 ? 1 / length : 1
-  emit('move', x * scale, y * scale)
+  let x = event.clientX - (rect.left + rect.width / 2)
+  let y = event.clientY - (rect.top + rect.height / 2)
+  const distance = Math.hypot(x, y)
+  const maximum = rect.width / 2 - 20
+  if (distance > maximum) { x = x / distance * maximum; y = y / distance * maximum }
+  const knob = target.querySelector<HTMLElement>('.pad-knob')
+  if (knob) knob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+  emit('move', x / maximum, y / maximum)
 }
 
-function stop() {
+function stop(event: PointerEvent) {
+  if (pointerId !== event.pointerId) return
   pointerId = null
+  const knob = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('.pad-knob')
+  if (knob) knob.style.transform = 'translate(-50%, -50%)'
   emit('move', 0, 0)
 }
 </script>
@@ -26,12 +32,12 @@ function stop() {
     </div>
     <div class="action-group">
       <div class="quick-actions">
-        <button type="button" class="small-button" @click="emit('dash')"><span>♟</span><b>Sprint</b></button>
-        <button type="button" class="small-button blue" @click="emit('quiz')"><span>⬟</span><b>Security</b></button>
+        <button type="button" class="small-button" aria-label="Sprint" @click="emit('dash')"><i class="fa-solid fa-person-running" aria-hidden="true" /><b>Sprint</b></button>
+        <button type="button" class="small-button blue" aria-label="Security" @click="emit('quiz')"><i class="fa-solid fa-shield-halved" aria-hidden="true" /><b>Security</b></button>
       </div>
       <div class="main-actions">
-        <button type="button" class="action-button" :disabled="!canUse" @click="emit('action')"><span>▣</span><b>Use</b></button>
-        <button type="button" class="action-button yellow" :disabled="!canGrab" @click="emit('grab')"><span>✋</span><b>{{ canGrab ? 'Grab' : 'Grab' }}</b></button>
+        <button type="button" class="action-button" :disabled="!canUse" aria-label="Use" @click="emit('action')"><i class="fa-solid fa-laptop-code" aria-hidden="true" /><b>Use</b></button>
+        <button type="button" class="action-button yellow" :disabled="!canGrab" aria-label="Grab" @click="emit('grab')"><i class="fa-solid fa-hand" aria-hidden="true" /><b>Grab</b></button>
       </div>
     </div>
   </div>
