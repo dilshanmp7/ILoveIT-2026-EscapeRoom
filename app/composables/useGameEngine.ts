@@ -54,6 +54,8 @@ export function useGameEngine() {
   const keys = new Set<string>()
   const counters: Counter[] = []
   const bodies: PhysicalBody[] = []
+  const occludableMeshes: THREE.Group[] = []
+  const occlusionRaycaster = new THREE.Raycaster()
 
   function createMaterial(color: number) {
     return new THREE.MeshStandardMaterial({ color, roughness: 0.72 })
@@ -63,6 +65,7 @@ export function useGameEngine() {
     if (!scene) return
     counters.splice(0)
     bodies.splice(0)
+    occludableMeshes.splice(0)
     physicsWorld = new KitchenPhysicsWorld()
     for (const child of [...scene.children]) {
       if (child.userData.courierAsset) scene.remove(child)
@@ -74,6 +77,7 @@ export function useGameEngine() {
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
       mesh.userData.courierAsset = true
       scene.add(mesh)
+      occludableMeshes.push(mesh)
       if (asset.type !== 'wall') {
         counters.push({ asset, mesh, heldItem: null })
       }
@@ -231,6 +235,40 @@ export function useGameEngine() {
     state.quizOpen = true
   }
 
+  function updateCameraOcclusion() {
+    if (!player || !camera) return
+
+    const playerTarget = new THREE.Vector3()
+    player.getWorldPosition(playerTarget)
+    playerTarget.y += .9
+
+    const rayDirection = playerTarget.clone().sub(camera.position)
+    const distance = rayDirection.length()
+    rayDirection.normalize()
+    occlusionRaycaster.set(camera.position, rayDirection)
+    occlusionRaycaster.far = Math.max(0, distance - .2)
+
+    const occludingRoots = new Set<THREE.Group>()
+    for (const hit of occlusionRaycaster.intersectObjects(occludableMeshes, true)) {
+      let root: THREE.Object3D | null = hit.object
+      while (root && !occludableMeshes.includes(root as THREE.Group) && root.parent !== scene) root = root.parent
+      if (root && occludableMeshes.includes(root as THREE.Group)) occludingRoots.add(root as THREE.Group)
+    }
+
+    for (const root of occludableMeshes) {
+      const targetOpacity = occludingRoots.has(root) ? .2 : 1
+      root.traverse(object => {
+        if (!(object instanceof THREE.Mesh)) return
+        const materials = Array.isArray(object.material) ? object.material : [object.material]
+        for (const material of materials) {
+          material.transparent = targetOpacity < 1 || material.transparent
+          material.opacity = THREE.MathUtils.lerp(material.opacity, targetOpacity, .18)
+          material.depthWrite = material.opacity > .95
+        }
+      })
+    }
+  }
+
   function dash() {
     if (!player) return
     const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y)
@@ -248,6 +286,7 @@ export function useGameEngine() {
       camera.position.lerp(new THREE.Vector3(player.position.x, 8.5, player.position.z + 8.8), .08)
       camera.lookAt(player.position.x, .5, player.position.z)
     }
+    updateCameraOcclusion()
     renderer?.render(scene!, camera!)
     animationFrame = requestAnimationFrame(frame)
   }
