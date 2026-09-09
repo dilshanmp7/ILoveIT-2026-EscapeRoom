@@ -225,8 +225,8 @@ export function updatePlayerAnimation(player: THREE.Group | null, isMoving: bool
     if (leftLeg) leftLeg.rotation.x = swing
     if (rightLeg) rightLeg.rotation.x = -swing
     if (!isHolding) {
-      if (leftArm) { leftArm.rotation.x = -swing * 0.7; leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, 0, 0.2) }
-      if (rightArm) { rightArm.rotation.x = swing * 0.7; rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, 0, 0.2) }
+      if (leftArm) leftArm.rotation.x = -swing * 0.7
+      if (rightArm) rightArm.rotation.x = swing * 0.7
     }
   } else {
     walkCycle.value = 0
@@ -316,6 +316,16 @@ export function createObjectMesh(width: number, depth: number, topColor: number,
     group.add(screen)
   }
   return group
+}
+
+export function getRotatedAABBSize(width: number, depth: number, rotation: number) {
+  const angle = THREE.MathUtils.degToRad(rotation)
+  const cosine = Math.abs(Math.cos(angle))
+  const sine = Math.abs(Math.sin(angle))
+  return {
+    width: width * cosine + depth * sine,
+    depth: width * sine + depth * cosine,
+  }
 }
 
 export function initPlayers(scene: THREE.Scene, physics: KitchenPhysicsWorld) {

@@ -1,5 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { createObjectMesh, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
+import { createObjectMesh, getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
 import type { MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -63,6 +63,7 @@ export function useGameEngine() {
     if (!scene) return
     counters.splice(0)
     bodies.splice(0)
+    physicsWorld = new KitchenPhysicsWorld()
     for (const child of [...scene.children]) {
       if (child.userData.courierAsset) scene.remove(child)
     }
@@ -73,9 +74,12 @@ export function useGameEngine() {
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
       mesh.userData.courierAsset = true
       scene.add(mesh)
-      counters.push({ asset, mesh, heldItem: null })
-      if (asset.type === 'wall' || (asset.type === 'door' && !asset.isOpen)) {
-        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: asset.w, depth: asset.d, isStatic: true })))
+      if (asset.type !== 'wall') {
+        counters.push({ asset, mesh, heldItem: null })
+      }
+      if (asset.type !== 'door' || !asset.isOpen) {
+        const size = getRotatedAABBSize(asset.w, asset.d, asset.rotation)
+        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: true })))
       }
     }
   }
@@ -110,7 +114,7 @@ export function useGameEngine() {
     }
     if (!x && !z) return false
     const length = Math.hypot(x, z)
-    const speed = 3.2 * delta
+    const speed = 0.12
     const nextX = player.position.x + (x / length) * speed
     const nextZ = player.position.z + (z / length) * speed
     if (playerPhysicsBody) physicsWorld.moveBodyWithSlide(playerPhysicsBody, nextX - player.position.x, nextZ - player.position.z)
@@ -166,7 +170,16 @@ export function useGameEngine() {
       if (heldItem?.keyId === asset.useRequiredKey) {
         asset.isOpen = true
         const panel = nearby.mesh.getObjectByName('door-panel')
-        if (panel) panel.position.x = asset.w / 2
+        if (panel) panel.position.x = asset.w / 2 - 0.2
+        const bodyIndex = bodies.findIndex(body => body.x === asset.x && body.z === asset.z)
+        if (bodyIndex !== -1) {
+          const body = bodies[bodyIndex]
+          if (body) {
+            const physicsBodyIndex = physicsWorld.bodies.indexOf(body)
+            if (physicsBodyIndex !== -1) physicsWorld.bodies.splice(physicsBodyIndex, 1)
+            bodies.splice(bodyIndex, 1)
+          }
+        }
         sound.play('unlock')
       }
       return
@@ -181,6 +194,17 @@ export function useGameEngine() {
       const expected = asset.type === 'server_rack' ? 'server' : 'laptop'
       if (nearby.heldItem.type === expected) {
         nearby.heldItem.configured = true
+        if (nearby.heldItem.mesh) {
+          const parent = nearby.heldItem.mesh.parent
+          parent?.remove(nearby.heldItem.mesh)
+          const replacement = new TechItem(nearby.heldItem.type)
+          replacement.isConfigured = true
+          replacement.mesh = replacement.createMesh()
+          nearby.heldItem.mesh = replacement.mesh
+          const configuredItem = nearby.heldItem.mesh
+          configuredItem.position.set(0, 1.3, nearby.heldItem.type === 'server' ? 0.4 : 0)
+          parent?.add(configuredItem)
+        }
         state.score += 25
         sound.play(nearby.heldItem.type === 'laptop' ? 'type' : 'process')
       }
