@@ -316,34 +316,42 @@ export function useGameEngine() {
   }
 
   function updateCameraOcclusion() {
-    if (!player || !camera) return
+    if (!player || !camera || !scene) return
 
-    const playerTarget = new THREE.Vector3()
-    player.getWorldPosition(playerTarget)
-    playerTarget.y += .9
+    const targetPosition = new THREE.Vector3()
+    player.getWorldPosition(targetPosition)
+    targetPosition.y += .9
 
-    const rayDirection = playerTarget.clone().sub(camera.position)
+    const rayDirection = targetPosition.clone().sub(camera.position)
     const distance = rayDirection.length()
     rayDirection.normalize()
     occlusionRaycaster.set(camera.position, rayDirection)
-    occlusionRaycaster.far = Math.max(0, distance - .2)
+    occlusionRaycaster.far = distance - .2
 
-    const occludingRoots = new Set<THREE.Group>()
+    const currentlyOccluding = new Set<THREE.Group>()
     for (const hit of occlusionRaycaster.intersectObjects(occludableMeshes, true)) {
-      let root: THREE.Object3D | null = hit.object
-      while (root && !occludableMeshes.includes(root as THREE.Group) && root.parent !== scene) root = root.parent
-      if (root && occludableMeshes.includes(root as THREE.Group)) occludingRoots.add(root as THREE.Group)
+      let object: THREE.Object3D | null = hit.object
+      while (object && !occludableMeshes.includes(object as THREE.Group) && object.parent !== scene) {
+        object = object.parent
+      }
+      if (object) currentlyOccluding.add(object as THREE.Group)
     }
 
     for (const root of occludableMeshes) {
-      const targetOpacity = occludingRoots.has(root) ? .2 : 1
+      const isOccluding = currentlyOccluding.has(root)
       root.traverse(object => {
         if (!(object instanceof THREE.Mesh)) return
         const materials = Array.isArray(object.material) ? object.material : [object.material]
         for (const material of materials) {
-          material.transparent = targetOpacity < 1 || material.transparent
-          material.opacity = THREE.MathUtils.lerp(material.opacity, targetOpacity, .18)
-          material.depthWrite = material.opacity > .95
+          const meshData = object.userData as { originalOpacity?: number }
+          if (meshData.originalOpacity === undefined) meshData.originalOpacity = material.opacity
+          if (isOccluding) {
+            material.transparent = true
+            material.opacity = .25
+          } else {
+            material.opacity = meshData.originalOpacity
+            if (material.opacity >= .99) material.transparent = false
+          }
         }
       })
     }
