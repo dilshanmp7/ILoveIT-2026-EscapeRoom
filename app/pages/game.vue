@@ -50,6 +50,7 @@ useSeoMeta({
       <GameHud :state="engine.state"  />
       <GameMobileControls :can-grab="engine.state.canGrab" :can-use="engine.state.canUse" @grab="engine.pickUp" @action="engine.useNearby" @dash="engine.dash" @quiz="engine.openQuiz" @move="engine.setJoystick" />
       <GameQuizModal :quiz="engine.state.quiz" :open="engine.state.quizOpen" @answer="engine.answerQuiz" @close="engine.answerQuiz(-1)" />
+      <GameObjectSelectionModal :open="engine.state.objectSelectionOpen" :options="engine.state.objectSelectionOptions" @select="engine.selectObject" @close="engine.closeObjectSelection" />
     </section>
   </main>
 </template>

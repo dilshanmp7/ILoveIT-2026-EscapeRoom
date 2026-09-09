@@ -1,5 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { createObjectMesh, getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
+import { getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
 import type { DropRule, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -35,6 +35,8 @@ const initialState = () => ({
   quizOpen: false,
   editorOpen: false,
   finished: false,
+  objectSelectionOpen: false,
+  objectSelectionOptions: [] as { id: string; label: string; type: string }[],
 })
 
 export function useGameEngine() {
@@ -66,7 +68,7 @@ export function useGameEngine() {
     return new THREE.MeshStandardMaterial({ color, roughness: 0.72 })
   }
 
-  function buildFloorplan() {
+  async function buildFloorplan() {
     if (!scene) return
     counters.splice(0)
     bodies.splice(0)
@@ -77,7 +79,8 @@ export function useGameEngine() {
     }
 
     for (const asset of floorplan.map(item => ({ ...item }))) {
-      const mesh = createObjectMesh(asset.w, asset.d, asset.type === 'delivery' ? 0xd40511 : asset.color, asset.type, { isOpen: asset.isOpen })
+      const mesh = await loadMapObjectModel(asset)
+      if (!mesh) continue
       mesh.position.set(asset.x, 0, asset.z)
       mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
       mesh.userData.courierAsset = true
@@ -148,6 +151,7 @@ export function useGameEngine() {
   }
 
   function canDrop(item: HeldItem, asset: MapAsset, contents: HeldItem[]) {
+    if (asset.type === 'door' || asset.type === 'wall') return false
     const rule = getDropRule(asset)
     if (rule.mode === 'none') return false
     if (rule.mode === 'floor') return true
@@ -158,17 +162,18 @@ export function useGameEngine() {
     return rule.objectIds.includes(item.id)
   }
 
-  function triggerGrabDrop() {
+  async function triggerGrabDrop() {
+    if (state.objectSelectionOpen) return
     if (heldItem) {
       if (nearby && canDrop(heldItem, nearby.asset, nearby.heldItems)) {
         const targetRule = getDropRule(nearby.asset)
-        if (targetRule.mode !== 'floor' && nearby.heldItems.length === 0) {
+        if (targetRule.mode !== 'floor') {
           const holdingSlot = player?.getObjectByName('holdingSlot')
           holdingSlot?.remove(heldItem.mesh || new THREE.Group())
           nearby.heldItems.push(heldItem)
           if (heldItem.mesh) {
             nearby.mesh.add(heldItem.mesh)
-            heldItem.mesh.position.set(0, 1.3, 0)
+            heldItem.mesh.position.set(0, getSurfaceHeight(nearby.asset, nearby.heldItems.length), 0)
           }
           heldItem = null
           state.holding = ''
@@ -184,6 +189,11 @@ export function useGameEngine() {
     }
     if (!nearby || !nearby.asset.allowGrab) return
     if (nearby.heldItems.length) {
+      if (nearby.heldItems.length > 1) {
+        state.objectSelectionOptions = nearby.heldItems.map(item => ({ id: item.id, label: item.type === 'key' ? 'Key' : item.type === 'server' ? 'Server' : 'Laptop', type: item.configured ? 'Configured' : item.type }))
+        state.objectSelectionOpen = true
+        return
+      }
       heldItem = nearby.heldItems.pop() || null
       if (heldItem?.mesh) {
         nearby.mesh.remove(heldItem.mesh)
@@ -195,6 +205,7 @@ export function useGameEngine() {
       removePickedUpAsset(nearby.asset.id)
     } else if (nearby.asset.type === 'box_laptop' || nearby.asset.type === 'box_server') {
       const item = new TechItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
+      item.mesh = await item.createMeshFromAsset('grabbed')
       heldItem = { id: createObjectId(nearby.asset.id), type: item.type, configured: item.isConfigured, mesh: item.mesh }
       removePickedUpAsset(nearby.asset.id)
     }
@@ -202,6 +213,34 @@ export function useGameEngine() {
     state.holdingConfigured = Boolean(heldItem?.configured)
     if (heldItem?.mesh) player?.getObjectByName('holdingSlot')?.add(heldItem.mesh)
     sound.play('pickup')
+  }
+
+  function getSurfaceHeight(asset: MapAsset, stackIndex = 0) {
+    if (asset.type === 'box_laptop' || asset.type === 'box_server') return 0.86 + stackIndex * 0.12
+    if (asset.type === 'config_desk' || asset.type === 'office_desk' || asset.type === 'server_rack') return 1.3 + stackIndex * 0.12
+    return 0.1
+  }
+
+  function selectObject(objectId: string) {
+    if (!nearby || heldItem) return
+    const itemIndex = nearby.heldItems.findIndex(item => item.id === objectId)
+    if (itemIndex === -1) return
+    heldItem = nearby.heldItems.splice(itemIndex, 1)[0] || null
+    if (heldItem?.mesh) {
+      nearby.mesh.remove(heldItem.mesh)
+      player?.getObjectByName('holdingSlot')?.add(heldItem.mesh)
+      heldItem.mesh.position.set(0, 0, 0)
+    }
+    state.objectSelectionOpen = false
+    state.objectSelectionOptions = []
+    state.holding = heldItem?.type || ''
+    state.holdingConfigured = Boolean(heldItem?.configured)
+    sound.play('pickup')
+  }
+
+  function closeObjectSelection() {
+    state.objectSelectionOpen = false
+    state.objectSelectionOptions = []
   }
 
   function removePickedUpAsset(assetId: string) {
@@ -249,7 +288,7 @@ export function useGameEngine() {
     sound.play('drop')
   }
 
-  function useNearby() {
+  async function useNearby() {
     if (!nearby) return
     const asset = nearby.asset
     if (asset.type === 'door' || asset.useAction === 'open_door') {
@@ -283,12 +322,12 @@ export function useGameEngine() {
         if (nearby.heldItems[0].mesh) {
           const parent = nearby.heldItems[0].mesh.parent
           parent?.remove(nearby.heldItems[0].mesh)
-          const replacement = new TechItem(nearby.heldItems[0].type)
+              const replacement = new TechItem(nearby.heldItems[0].type)
           replacement.isConfigured = true
-          replacement.mesh = replacement.createMesh()
+              replacement.mesh = await replacement.createMeshFromAsset('configured')
           nearby.heldItems[0].mesh = replacement.mesh
           const configuredItem = nearby.heldItems[0].mesh
-          configuredItem.position.set(0, 1.3, nearby.heldItems[0].type === 'server' ? 0.4 : 0)
+          configuredItem.position.set(0, getSurfaceHeight(asset, 0), nearby.heldItems[0].type === 'server' ? 0.4 : 0)
           parent?.add(configuredItem)
         }
         state.score += 25
@@ -387,10 +426,11 @@ export function useGameEngine() {
 
   function setFloorplan(layout: MapAsset[]) {
     floorplan = layout.map(item => ({ ...item }))
-    if (scene) buildFloorplan()
+    if (scene) void buildFloorplan()
   }
 
-  function mount(target: HTMLCanvasElement, layout?: MapAsset[]) {
+  async function mount(target: HTMLCanvasElement, layout?: MapAsset[]) {
+    await loadObjectDefinitions()
     if (layout) setFloorplan(layout)
     canvas.value = target
     scene = new THREE.Scene()
@@ -414,7 +454,7 @@ export function useGameEngine() {
     const players = initPlayers(scene, physicsWorld)
     player = players.player
     playerPhysicsBody = players.playerBody
-    buildFloorplan()
+    await buildFloorplan()
 
     const resize = () => {
       if (!camera || !renderer) return
@@ -467,7 +507,7 @@ export function useGameEngine() {
 
   function openEditor() { state.editorOpen = true }
   function closeEditor() { state.editorOpen = false }
-  function deployEditor() { buildFloorplan(); state.editorOpen = false }
+  function deployEditor() { void buildFloorplan(); state.editorOpen = false }
 
   return {
     state: readonly(state),
@@ -480,6 +520,8 @@ export function useGameEngine() {
     dash,
     answerQuiz,
     openQuiz,
+    selectObject,
+    closeObjectSelection,
     openEditor,
     closeEditor,
     deployEditor,

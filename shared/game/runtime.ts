@@ -1,6 +1,44 @@
 import * as THREE from 'three'
 import type { MapAsset } from './types'
 
+export type ObjectVisualState = 'grabbed' | 'onFloor' | 'onTable' | 'configured' | 'opened'
+
+interface ObjectDefinition {
+  kind: 'tech' | 'badge' | 'map'
+  type?: 'laptop' | 'server'
+  configured?: boolean
+  color?: string
+  scale?: [number, number, number]
+  model?: string
+}
+
+type ObjectDefinitions = Record<string, { states: Partial<Record<ObjectVisualState, ObjectDefinition>> }>
+
+let objectDefinitions: ObjectDefinitions = {}
+const objectModelCache = new Map<string, THREE.Object3D>()
+const objectModelLoader = new THREE.ObjectLoader()
+
+export async function loadObjectDefinitions(url = '/game/objects.json') {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Unable to load object definitions: ${response.status}`)
+  objectDefinitions = await response.json() as ObjectDefinitions
+  return objectDefinitions
+}
+
+export async function loadObjectModel(type: string, state: ObjectVisualState) {
+  const definition = getObjectDefinition(type, state)
+  if (!definition?.model) return null
+  const cached = objectModelCache.get(definition.model)
+  if (cached) return cached.clone(true)
+  const model = await objectModelLoader.loadAsync(definition.model)
+  objectModelCache.set(definition.model, model)
+  return model.clone(true)
+}
+
+function getObjectDefinition(type: string, state: ObjectVisualState): ObjectDefinition | undefined {
+  return objectDefinitions[type]?.states[state] || objectDefinitions[type]?.states.grabbed
+}
+
 export class SoundFX {
   private context: AudioContext | null = null
 
@@ -117,8 +155,10 @@ export class TechItem {
     this.mesh = this.createMesh()
   }
 
-  createMesh() {
+  createMesh(state: ObjectVisualState = this.isConfigured ? 'configured' : 'grabbed') {
     const group = new THREE.Group()
+    const definition = getObjectDefinition(this.type, state)
+    if (definition?.scale) group.scale.fromArray(definition.scale)
     if (this.type === 'laptop') {
       const material = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8 })
       group.add(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), material))
@@ -142,6 +182,16 @@ export class TechItem {
       light.position.set(-0.1, 0, 0.26)
       group.add(light)
     }
+    return group
+  }
+
+  async createMeshFromAsset(state: ObjectVisualState = this.isConfigured ? 'configured' : 'grabbed') {
+    const model = await loadObjectModel(this.type, state)
+    if (!model) return this.createMesh(state)
+    const group = new THREE.Group()
+    group.add(model)
+    const definition = getObjectDefinition(this.type, state)
+    if (definition?.scale) group.scale.fromArray(definition.scale)
     return group
   }
 }
@@ -273,20 +323,37 @@ export function createObjectMesh(width: number, depth: number, topColor: number,
     group.add(wall)
     return group
   }
+  if (type.startsWith('box_')) {
+    const cartonMaterial = new THREE.MeshStandardMaterial({ color: 0xd9a441, roughness: 0.9 })
+    const carton = new THREE.Mesh(new THREE.BoxGeometry(width - 0.12, 0.8, depth - 0.12), cartonMaterial)
+    carton.position.y = 0.4
+    carton.name = 'dhl-box'
+    group.add(carton)
+    const tape = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.81, depth - 0.14), new THREE.MeshStandardMaterial({ color: 0xb7791f, roughness: 0.95 }))
+    tape.position.y = 0.4
+    tape.name = 'dhl-tape'
+    group.add(tape)
+    const label = new THREE.Mesh(new THREE.BoxGeometry(width * 0.45, 0.22, 0.012), new THREE.MeshBasicMaterial({ color: 0xf8fafc }))
+    label.position.set(0, 0.48, depth / 2 - 0.07)
+    label.name = 'dhl-label'
+    group.add(label)
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(width - 0.18, 0.06, 0.014), new THREE.MeshBasicMaterial({ color: 0xd40511 }))
+    stripe.position.set(0, 0.22, depth / 2 - 0.075)
+    stripe.name = 'dhl-stripe'
+    group.add(stripe)
+    return group
+  }
+
+  const tableMaterial = new THREE.MeshStandardMaterial({ color: topColor || 0x64748b, roughness: 0.72 })
   const base = new THREE.Mesh(new THREE.BoxGeometry(width, 1.1, depth), baseMaterial)
   base.position.y = 0.55
+  base.name = 'table-base'
   group.add(base)
-  const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, 0.1, depth + 0.05), new THREE.MeshStandardMaterial({ color: topColor || 0x64748b }))
+  const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, 0.1, depth + 0.05), tableMaterial)
   top.position.y = 1.15
+  top.name = 'table-top'
   group.add(top)
-  if (type.startsWith('box_')) {
-    const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.7), new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.9 }))
-    box.position.y = 1.45
-    group.add(box)
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.71, 0.1, 0.71), new THREE.MeshBasicMaterial({ color: 0xd40511 }))
-    stripe.position.y = 1.45
-    group.add(stripe)
-  } else if (type === 'config_desk') {
+  if (type === 'config_desk' || type === 'office_desk') {
     const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), new THREE.MeshStandardMaterial({ color: 0x000000 }))
     screen.position.set(0, 1.5, -0.2)
     group.add(screen)
@@ -334,4 +401,28 @@ export function initPlayers(scene: THREE.Scene, physics: KitchenPhysicsWorld) {
   scene.add(player)
   const body = physics.addBody(new PhysicalBody({ x: 0, y: 0, z: 2, width: 0.8, depth: 0.8, mesh: player }))
   return { player, playerBody: body }
+}
+
+export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group | null> {
+  const state: ObjectVisualState = asset.isOpen ? 'opened' : asset.type === 'key' ? 'onTable' : 'onFloor'
+  const definition = getObjectDefinition(asset.type, state)
+  if (!definition?.model) return null
+  const cached = objectModelCache.get(definition.model)
+  const model = cached ? cached.clone(true) : await objectModelLoader.loadAsync(definition.model)
+  if (!cached) objectModelCache.set(definition.model, model)
+  model.scale.set(asset.w, 1, asset.d)
+  model.userData.canGrab = Boolean(asset.allowGrab)
+  model.userData.canPlaceOnTop = Boolean(asset.dropRule || asset.acceptsDrop)
+  model.userData.dropRule = asset.dropRule || asset.acceptsDrop || 'none'
+  model.userData.assetType = asset.type
+  model.traverse(child => {
+    if (!(child instanceof THREE.Mesh)) return
+    const materials = Array.isArray(child.material) ? child.material : [child.material]
+    materials.forEach(material => {
+      if ('color' in material) material.color.set(asset.type === 'delivery' ? 0xd40511 : asset.color)
+      material.needsUpdate = true
+    })
+  })
+  if (!(model instanceof THREE.Group)) throw new Error(`Map asset ${asset.type} must have a Group root`)
+  return model
 }

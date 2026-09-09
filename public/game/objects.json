@@ -1,0 +1,121 @@
+{
+  "door": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/door.json" },
+      "opened": { "kind": "map", "model": "/models/map/door-opened.json" }
+    }
+  },
+  "key": {
+    "states": {
+      "grabbed": { "kind": "badge", "color": "#0ea5e9", "scale": [1, 1, 1] },
+      "onTable": { "kind": "map", "model": "/models/map/key.json" },
+      "onFloor": { "kind": "map", "model": "/models/map/key.json" }
+    }
+  },
+  "wall": {
+    "states": { "onFloor": { "kind": "map", "model": "/models/map/wall.json" } }
+  },
+  "config_desk": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/config-desk.json" }
+    }
+  },
+  "office_desk": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/office-desk.json" }
+    }
+  },
+  "server_rack": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/server-rack.json" }
+    }
+  },
+  "delivery": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/delivery.json" }
+    }
+  },
+  "trash": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/trash.json" }
+    }
+  },
+  "riddle": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/riddle.json" }
+    }
+  },
+  "floor": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/floor.json" }
+    }
+  },
+  "box_laptop": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/box-laptop.json" }
+    }
+  },
+  "box_server": {
+    "states": {
+      "onFloor": { "kind": "map", "model": "/models/map/box-server.json" }
+    }
+  },
+  "laptop": {
+    "states": {
+      "grabbed": {
+        "kind": "tech",
+        "type": "laptop",
+        "model": "/models/laptop/grabbed.json",
+        "scale": [1, 1, 1]
+      },
+      "onFloor": {
+        "kind": "tech",
+        "type": "laptop",
+        "model": "/models/laptop/on-floor.json",
+        "scale": [1, 1, 1]
+      },
+      "onTable": {
+        "kind": "tech",
+        "type": "laptop",
+        "model": "/models/laptop/on-table.json",
+        "scale": [1, 1, 1]
+      },
+      "configured": {
+        "kind": "tech",
+        "type": "laptop",
+        "configured": true,
+        "model": "/models/laptop/configured.json",
+        "scale": [1, 1, 1]
+      }
+    }
+  },
+  "server": {
+    "states": {
+      "grabbed": {
+        "kind": "tech",
+        "type": "server",
+        "model": "/models/server/grabbed.json",
+        "scale": [1, 1, 1]
+      },
+      "onFloor": {
+        "kind": "tech",
+        "type": "server",
+        "model": "/models/server/on-floor.json",
+        "scale": [1, 1, 1]
+      },
+      "onTable": {
+        "kind": "tech",
+        "type": "server",
+        "model": "/models/server/on-table.json",
+        "scale": [1, 1, 1]
+      },
+      "configured": {
+        "kind": "tech",
+        "type": "server",
+        "configured": true,
+        "model": "/models/server/configured.json",
+        "scale": [1, 1, 1]
+      }
+    }
+  }
+}

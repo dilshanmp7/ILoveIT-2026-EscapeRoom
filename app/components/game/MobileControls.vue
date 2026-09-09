@@ -36,8 +36,8 @@ function stop(event: PointerEvent) {
         <button type="button" class="small-button blue" aria-label="Security" @click="emit('quiz')"><i class="fa-solid fa-shield-halved" aria-hidden="true" /><b>Security</b></button>
       </div>
       <div class="main-actions">
-        <button type="button" class="action-button" :disabled="!canUse" aria-label="Use" @click="emit('action')"><i class="fa-solid fa-laptop-code" aria-hidden="true" /><b>Use</b></button>
-        <button type="button" class="action-button yellow" :disabled="!canGrab" aria-label="Grab" @click="emit('grab')"><i class="fa-solid fa-hand" aria-hidden="true" /><b>Grab</b></button>
+        <button type="button" class="action-button yellow" :disabled="!canGrab" aria-label="Grab" @click="emit('grab')"><i class="fa-solid fa-hand" aria-hidden="true" /><b>Grab (z)</b></button>
+        <button type="button" class="action-button" :disabled="!canUse" aria-label="Use" @click="emit('action')"><i class="fa-solid fa-laptop-code" aria-hidden="true" /><b>Use (x)</b></button>
       </div>
     </div>
   </div>

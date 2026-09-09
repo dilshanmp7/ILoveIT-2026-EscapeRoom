@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { QuizQuestion } from '#shared/game/types';
 
-defineProps<{ quiz: QuizQuestion | null; open: boolean }>()
+type ReadonlyQuizQuestion = Omit<QuizQuestion, 'options'> & { options: readonly string[] }
+
+defineProps<{ quiz: ReadonlyQuizQuestion | null; open: boolean }>()
 const emit = defineEmits<{ answer: [index: number]; close: [] }>()
 </script>
 

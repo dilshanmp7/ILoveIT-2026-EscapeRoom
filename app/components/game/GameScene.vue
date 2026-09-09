@@ -5,8 +5,8 @@ import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 const props = defineProps<{ engine: ReturnType<typeof useGameEngine>; floorplan: MapAsset[] }>()
 const canvas = useTemplateRef<HTMLCanvasElement>('game-canvas')
 
-onMounted(() => {
-  if (canvas.value) props.engine.mount(canvas.value, props.floorplan)
+onMounted(async () => {
+  if (canvas.value) await props.engine.mount(canvas.value, props.floorplan)
 })
 
 onBeforeUnmount(() => props.engine.unmount())
