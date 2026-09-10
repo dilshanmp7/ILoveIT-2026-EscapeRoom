@@ -1,6 +1,6 @@
-import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { GameItem, getRotatedAABBSize, initPlayers, loadKeyModel, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, PhysicsWorld, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
-import type { DropRule, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
+import { defaultQuizzes } from '#shared/game/defaults'
+import { GameItem, getObjectGeometry, getObjectInteraction, getObjectTypeDefinition, getRotatedAABBSize, initPlayers, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, PhysicsWorld, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
+import type { DropRule, Floorplan, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
 
@@ -56,7 +56,7 @@ export function useGameEngine() {
   let heldItem: HeldItem | null = null
   let isPushing = false
   let nearby: Counter | null = null
-  let floorplan = defaultMapLayout.map(item => ({ ...item }))
+  let floorplan: Floorplan = { layout: [], playerSpawn: { x: 0, z: 2 } }
   let joystick = { x: 0, y: 0 }
   let removeListeners: (() => void) | undefined
   const keys = new Set<string>()
@@ -79,21 +79,33 @@ export function useGameEngine() {
       if (child.userData.courierAsset) scene.remove(child)
     }
 
-    for (const asset of floorplan.map(item => ({ ...item }))) {
+    for (const asset of floorplan.layout.map(item => ({ ...item }))) {
       const mesh = await loadMapObjectModel(asset)
-      if (!mesh) continue
-      mesh.position.set(asset.x, 0, asset.z)
-      mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
-      mesh.userData.courierAsset = true
-      scene.add(mesh)
-      occludableMeshes.push(mesh)
-      if (asset.type !== 'wall' && asset.type !== 'floor') {
-        counters.push({ asset, mesh, heldItems: [] })
+      const geometry = getObjectGeometry(asset.type)
+      if (geometry?.countsAsCounter) {
+        if (mesh) counters.push({ asset, mesh, heldItems: [] })
       }
-      if (asset.type !== 'door' || !asset.isOpen) {
+      if (mesh) {
+        mesh.position.set(asset.x, 0, asset.z)
+        mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation)
+        mesh.userData.courierAsset = true
+        scene.add(mesh)
+        occludableMeshes.push(mesh)
+      }
+      if (!(geometry?.isBarrier && asset.isOpen)) {
         const size = getRotatedAABBSize(asset.w, asset.d, asset.rotation)
-        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: !asset.canPush, canPush: asset.canPush, mesh })))
+        bodies.push(physicsWorld.addBody(new PhysicalBody({ assetId: asset.id, x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: geometry?.isStatic ?? !asset.canPush, canPush: geometry?.canPush ?? asset.canPush ?? false, mesh })))
       }
+    }
+  }
+
+  function persistPhysicsPositions() {
+    for (const body of bodies) {
+      if (!body.assetId) continue
+      const asset = floorplan.layout.find(item => item.id === body.assetId)
+      if (!asset) continue
+      asset.x = body.x
+      asset.z = body.z
     }
   }
 
@@ -133,6 +145,7 @@ export function useGameEngine() {
     isPushing = playerPhysicsBody
       ? physicsWorld.moveBodyWithSlide(playerPhysicsBody, nextX - player.position.x, nextZ - player.position.z)
       : false
+    persistPhysicsPositions()
     player.rotation.y = Math.atan2(x, z)
     return true
   }
@@ -141,8 +154,9 @@ export function useGameEngine() {
     nearby = getNearby()
     state.nearbyId = nearby?.asset.id || ''
     state.nearbyLabel = nearby?.asset.label || ''
-    state.canGrab = Boolean(heldItem || nearby?.asset.canHold || nearby?.asset.allowGrab || nearby?.heldItems.length || nearby?.asset.actionType === 'trash')
-    state.canUse = Boolean(nearby && (nearby.asset.actionType === 'config' || nearby.asset.actionType === 'quiz' || nearby.asset.actionType === 'deliver' || nearby.asset.type === 'riddle' || nearby.asset.type === 'door' || nearby.asset.useAction === 'quiz' || nearby.asset.useAction === 'open_door'))
+    const interaction = nearby ? getObjectInteraction(nearby.asset.type) : undefined
+    state.canGrab = Boolean(heldItem || nearby?.asset.canHold || nearby?.asset.allowGrab || nearby?.heldItems.length || interaction?.canGrab || interaction?.action === 'trash')
+    state.canUse = Boolean(nearby && (interaction?.canUse || interaction?.action !== 'none' || nearby.asset.actionType === 'config' || nearby.asset.actionType === 'quiz' || nearby.asset.actionType === 'deliver'))
   }
 
   function getDropRule(asset: MapAsset): DropRule {
@@ -154,7 +168,7 @@ export function useGameEngine() {
   }
 
   function canDrop(item: HeldItem, asset: MapAsset, contents: HeldItem[]) {
-    if (asset.type === 'door' || asset.type === 'wall') return false
+    if (getObjectGeometry(asset.type)?.isBarrier) return false
     const rule = getDropRule(asset)
     if (rule.mode === 'none') return false
     if (rule.mode === 'floor') return true
@@ -185,15 +199,16 @@ export function useGameEngine() {
           return
         }
       }
-      if (nearby?.asset.type === 'floor') placeOnFloor(heldItem)
-      else if (nearby?.asset.actionType === 'trash') discardHeldItem()
+      if (nearby && getDropRule(nearby.asset).mode === 'floor') placeOnFloor(heldItem)
+      else if (nearby && getObjectInteraction(nearby.asset.type)?.action === 'trash') discardHeldItem()
       else dropHeldItemToFloor(heldItem)
       return
     }
-    if (!nearby || !(nearby.asset.canHold ?? nearby.asset.allowGrab)) return
+    const nearbyDefinition = nearby ? getObjectTypeDefinition(nearby.asset.type) : undefined
+    if (!nearby || !(nearby.asset.canHold ?? nearby.asset.allowGrab ?? nearbyDefinition?.interaction?.canGrab)) return
     if (nearby.heldItems.length) {
       if (nearby.heldItems.length > 1) {
-        state.objectSelectionOptions = nearby.heldItems.map(item => ({ id: item.id, label: item.type === 'key' ? 'Key' : item.type === 'server' ? 'Server' : 'Laptop', type: item.configured ? 'Configured' : item.type }))
+        state.objectSelectionOptions = nearby.heldItems.map(item => ({ id: item.id, label: getObjectTypeDefinition(item.type)?.editor?.label || item.type, type: item.configured ? 'Configured' : item.type }))
         state.objectSelectionOpen = true
         return
       }
@@ -203,13 +218,11 @@ export function useGameEngine() {
         player?.getObjectByName('holdingSlot')?.add(heldItem.mesh)
         heldItem.mesh.position.set(0, 0, 0)
       }
-    } else if (nearby.asset.type === 'key') {
-      heldItem = { id: nearby.asset.id, type: 'key', keyId: nearby.asset.keyId, mesh: await loadKeyModel() || undefined }
-      removePickedUpAsset(nearby.asset.id)
-    } else if (nearby.asset.type === 'box_laptop' || nearby.asset.type === 'box_server') {
-      const item = new GameItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
+    } else if (getObjectTypeDefinition(nearby.asset.type)?.source?.itemType) {
+      const sourceType = getObjectTypeDefinition(nearby.asset.type)!.source!.itemType
+      const item = new GameItem(sourceType as HeldObjectType)
       await item.createMeshFromAsset('grabbed')
-      heldItem = { id: createObjectId(nearby.asset.id), type: item.type, configured: item.isConfigured, mesh: item.mesh }
+      heldItem = { id: createObjectId(nearby.asset.id), type: item.type as HeldObjectType, keyId: nearby.asset.keyId, configured: item.isConfigured, mesh: item.mesh }
       removePickedUpAsset(nearby.asset.id)
     }
     state.holding = heldItem?.type || ''
@@ -219,9 +232,8 @@ export function useGameEngine() {
   }
 
   function getSurfaceHeight(asset: MapAsset, stackIndex = 0) {
-    if (asset.type === 'box_laptop' || asset.type === 'box_server') return 0.86 + stackIndex * 0.12
-    if (asset.type === 'config_desk' || asset.type === 'office_desk' || asset.type === 'server_rack') return 1.3 + stackIndex * 0.12
-    return 0.1
+    const geometry = getObjectGeometry(asset.type)
+    return (geometry?.surfaceHeight ?? 0.1) + stackIndex * 0.12
   }
 
   function selectObject(objectId: string) {
@@ -247,7 +259,7 @@ export function useGameEngine() {
   }
 
   function removePickedUpAsset(assetId: string) {
-    floorplan = floorplan.filter(asset => asset.id !== assetId)
+    floorplan.layout = floorplan.layout.filter(asset => asset.id !== assetId)
     buildFloorplan()
   }
 
@@ -261,19 +273,22 @@ export function useGameEngine() {
     const x = Math.round((player.position.x + Math.sin(player.rotation.y) * distance) * 2) / 2
     const z = Math.round((player.position.z + Math.cos(player.rotation.y) * distance) * 2) / 2
     if (item.mesh) player.getObjectByName('holdingSlot')?.remove(item.mesh)
-    floorplan.push({
+    const itemDefinition = getObjectTypeDefinition(item.type)
+    const dropType = itemDefinition?.dropObjectType || item.type
+    const editor = getObjectTypeDefinition(dropType)?.editor
+    floorplan.layout.push({
       id: item.id,
       x,
       z,
       w: 1.2,
       d: 1.2,
       rotation: 0,
-      color: item.type === 'key' ? 0x0ea5e9 : 0x334155,
-      type: item.type === 'server' ? 'box_server' : item.type === 'laptop' ? 'box_laptop' : 'key',
-      label: item.type === 'key' ? 'Dropped Key' : item.type === 'server' ? 'Dropped Server' : 'Dropped Laptop',
+      color: editor ? Number.parseInt(editor.color.slice(1), 16) : 0x334155,
+      type: dropType as MapAsset['type'],
+      label: `Dropped ${itemDefinition?.editor?.label || item.type}`,
       allowGrab: true,
       keyId: item.keyId,
-      actionType: item.type === 'key' ? 'key' : 'none',
+      actionType: 'none',
     })
     buildFloorplan()
     heldItem = null
@@ -294,8 +309,9 @@ export function useGameEngine() {
   async function useNearby() {
     if (!nearby) return
     const asset = nearby.asset
-    if (asset.type === 'door' || asset.useAction === 'open_door') {
-      if (heldItem?.keyId === asset.useRequiredKey) {
+    const interaction = getObjectInteraction(asset.type)
+    if (interaction?.action === 'open_door' || asset.useAction === 'open_door') {
+      if (heldItem?.keyId === (interaction.requiredKey || asset.useRequiredKey)) {
         asset.isOpen = true
         const panel = nearby.mesh.getObjectByName('door-panel')
         if (panel) panel.position.x = asset.w / 2 - 0.2
@@ -312,15 +328,16 @@ export function useGameEngine() {
       }
       return
     }
-    if (asset.useAction === 'quiz' || asset.type === 'riddle' || asset.actionType === 'quiz') {
-      if (asset.useRequiredKey && heldItem?.keyId !== asset.useRequiredKey) return
+    if (interaction?.action === 'quiz' || asset.useAction === 'quiz' || asset.actionType === 'quiz') {
+      const requiredKey = interaction?.requiredKey || asset.useRequiredKey
+      if (requiredKey && heldItem?.keyId !== requiredKey) return
       state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!
       state.quizOpen = true
       return
     }
-    if (asset.actionType === 'config' && nearby.heldItems[0] && !nearby.heldItems[0].configured) {
-      const expected = asset.type === 'server_rack' ? 'server' : 'laptop'
-      if (nearby.heldItems[0].type === expected) {
+    if ((interaction?.action === 'config' || asset.actionType === 'config') && nearby.heldItems[0] && !nearby.heldItems[0].configured) {
+      const rule = getDropRule(asset)
+      if (rule.mode === 'types' && rule.types.includes(nearby.heldItems[0].type)) {
         nearby.heldItems[0].configured = true
         if (nearby.heldItems[0].mesh) {
           const parent = nearby.heldItems[0].mesh.parent
@@ -330,11 +347,12 @@ export function useGameEngine() {
               await replacement.createMeshFromAsset('configured')
           nearby.heldItems[0].mesh = replacement.mesh
           const configuredItem = nearby.heldItems[0].mesh
-          configuredItem.position.set(0, getSurfaceHeight(asset, 0), nearby.heldItems[0].type === 'server' ? 0.4 : 0)
+          const heldOffset = getObjectTypeDefinition(nearby.heldItems[0].type)?.heldOffset || [0, 0, 0]
+          configuredItem.position.set(heldOffset[0], getSurfaceHeight(asset, 0) + heldOffset[1], heldOffset[2])
           parent?.add(configuredItem)
         }
         state.score += 25
-        sound.play(nearby.heldItems[0].type === 'laptop' ? 'type' : 'process')
+        sound.play(getObjectTypeDefinition(nearby.heldItems[0].type)?.configureSound || 'process')
       }
       return
     }
@@ -430,12 +448,14 @@ export function useGameEngine() {
     joystick = { x, y }
   }
 
-  function setFloorplan(layout: MapAsset[]) {
-    floorplan = layout.map(item => ({ ...item }))
+  function setFloorplan(value: Floorplan | MapAsset[]) {
+    floorplan = Array.isArray(value)
+      ? { layout: value.map(item => ({ ...item })), playerSpawn: { x: 0, z: 2 } }
+      : { layout: value.layout.map(item => ({ ...item })), playerSpawn: { ...value.playerSpawn } }
     if (scene) void buildFloorplan()
   }
 
-  async function mount(target: HTMLCanvasElement, layout?: MapAsset[]) {
+  async function mount(target: HTMLCanvasElement, layout?: Floorplan | MapAsset[]) {
     await loadObjectDefinitions()
     if (layout) setFloorplan(layout)
     canvas.value = target
@@ -457,7 +477,7 @@ export function useGameEngine() {
     grid.position.y = .01
     scene.add(grid)
     physicsWorld = new PhysicsWorld()
-    const players = initPlayers(scene, physicsWorld)
+    const players = initPlayers(scene, physicsWorld, floorplan.playerSpawn)
     player = players.player
     playerPhysicsBody = players.playerBody
     await buildFloorplan()

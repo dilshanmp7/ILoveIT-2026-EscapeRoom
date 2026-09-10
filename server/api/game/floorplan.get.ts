@@ -8,5 +8,5 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 401, statusMessage: 'Game access required' })
   }
 
-  return { id: 'main', name: 'Main dispatch floor', layout: readFloorplan() }
+  return { id: 'main', name: 'Main dispatch floor', ...readFloorplan() }
 })

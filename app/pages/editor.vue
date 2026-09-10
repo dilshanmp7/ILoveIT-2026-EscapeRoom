@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MapAsset, QuizQuestion } from '#shared/game/types'
+import type { Floorplan, MapAsset, PlayerSpawn, QuizQuestion } from '#shared/game/types'
 import type { FetchError } from 'ofetch'
 import FloorplanEditor from '~/components/game/FloorplanEditor.vue'
 import QuizEditor from '~/components/game/QuizEditor.vue'
@@ -7,6 +7,7 @@ import QuizEditor from '~/components/game/QuizEditor.vue'
 useSeoMeta({ title: 'DHL IT Courier | Floorplan Editor', robots: 'noindex' })
 
 const floorplan = ref<MapAsset[]>([])
+const playerSpawn = ref<PlayerSpawn>({ x: 0, z: 2 })
 const quizzes = ref<QuizQuestion[]>([])
 const loading = ref(true)
 const authenticated = ref(false)
@@ -15,15 +16,17 @@ const authenticating = ref(false)
 const errorMessage = ref('')
 const saving = ref(false)
 const activeEditor = ref<'map' | 'quiz'>('map')
+const floorplanEditorKey = ref(0)
 
 async function loadFloorplan() {
   loading.value = true
   try {
     const [floorplanResponse, quizResponse] = await Promise.all([
-      $fetch<{ layout: MapAsset[] }>('/api/game/floorplan'),
+      $fetch<Floorplan>('/api/game/floorplan'),
       $fetch<{ quizzes: QuizQuestion[] }>('/api/game/quizzes'),
     ])
     floorplan.value = floorplanResponse.layout
+    playerSpawn.value = floorplanResponse.playerSpawn
     quizzes.value = quizResponse.quizzes
   } catch {
     errorMessage.value = 'Unable to load the dispatch floorplan.'
@@ -72,18 +75,34 @@ async function enterEditor() {
   }
 }
 
-async function saveFloorplan(layout: MapAsset[]) {
+async function saveFloorplan(layout: MapAsset[], nextPlayerSpawn: PlayerSpawn) {
   saving.value = true
   errorMessage.value = ''
   try {
-    const response = await $fetch<{ floorplan: { layout: MapAsset[] } }>('/api/game/floorplan', {
+    const response = await $fetch<{ floorplan: Floorplan }>('/api/game/floorplan', {
       method: 'PUT',
-      body: { layout },
+      body: { layout, playerSpawn: nextPlayerSpawn },
     })
     floorplan.value = response.floorplan.layout
+    playerSpawn.value = response.floorplan.playerSpawn
     await navigateTo('/game')
   } catch {
     errorMessage.value = 'The floorplan could not be deployed.'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function resetFloorplan() {
+  saving.value = true
+  errorMessage.value = ''
+  try {
+    const response = await $fetch<{ floorplan: Floorplan }>('/api/game/floorplan/reset', { method: 'POST' })
+    floorplan.value = response.floorplan.layout
+    playerSpawn.value = response.floorplan.playerSpawn
+    floorplanEditorKey.value += 1
+  } catch {
+    errorMessage.value = 'The default floorplan could not be restored.'
   } finally {
     saving.value = false
   }
@@ -109,7 +128,7 @@ onMounted(checkEditorAccess)
     <div v-else-if="loading" class="editor-status">LOADING FLOORPLAN FROM SQLITE...</div>
     <div v-else-if="errorMessage" class="editor-status error" role="alert">{{ errorMessage }}</div>
     <div v-else class="editor-workspace">
-      <FloorplanEditor v-if="activeEditor === 'map'" :open="true" :initial-assets="floorplan" @close="navigateTo('/game')" @deploy="saveFloorplan" @tab="activeEditor = $event" />
+      <FloorplanEditor v-if="activeEditor === 'map'" :key="floorplanEditorKey" :open="true" :initial-assets="floorplan" :initial-player-spawn="playerSpawn" @close="navigateTo('/game')" @deploy="saveFloorplan" @reset="resetFloorplan" @tab="activeEditor = $event" />
       <QuizEditor v-else :open="true" :initial-quizzes="quizzes" @close="navigateTo('/game')" @deploy="saveQuizzes" @tab="activeEditor = $event" />
       <nav class="editor-tabs" aria-label="Editor mode"><button type="button" :class="{ active: activeEditor === 'map' }" @click="activeEditor = 'map'">2D Floorplan Editor</button><button type="button" :class="{ active: activeEditor === 'quiz' }" @click="activeEditor = 'quiz'">Security Check Editor</button></nav>
     </div>

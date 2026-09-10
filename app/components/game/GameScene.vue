@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { MapAsset } from '#shared/game/types';
+import type { Floorplan } from '#shared/game/types';
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
 
-const props = defineProps<{ engine: ReturnType<typeof useGameEngine>; floorplan: MapAsset[] }>()
+const props = defineProps<{ engine: ReturnType<typeof useGameEngine>; floorplan: Floorplan }>()
 const canvas = useTemplateRef<HTMLCanvasElement>('game-canvas')
 
 onMounted(async () => {

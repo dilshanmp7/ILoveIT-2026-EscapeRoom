@@ -1,9 +1,9 @@
-import type { GameSession, MapAsset, QuizQuestion } from '#shared/game/types'
+import type { Floorplan, GameSession, MapAsset, QuizQuestion } from '#shared/game/types'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import seedFloorplan from '../../public/game/defaultLayout.json'
 import { defaultQuizzes } from '../../shared/game/defaults'
-import seedFloorplan from '../data/floorplan.json'
 
 let database: DatabaseSync | undefined
 
@@ -65,15 +65,20 @@ export function writeQuizzes(quizzes: QuizQuestion[]) {
   return { id: 'main', quizzes, updatedAt }
 }
 
-export function readFloorplan(): MapAsset[] {
+export function readFloorplan(): Floorplan {
   const row = getDatabase().prepare('SELECT layout_json FROM floorplans WHERE id = ?').get('main') as { layout_json: string } | undefined
-  return row ? JSON.parse(row.layout_json) as MapAsset[] : structuredClone(seedFloorplan) as MapAsset[]
+  const value = row ? JSON.parse(row.layout_json) as Floorplan | MapAsset[] : structuredClone(seedFloorplan) as MapAsset[]
+  return Array.isArray(value) ? { layout: value, playerSpawn: { x: 0, z: 2 } } : { ...value, playerSpawn: value.playerSpawn || { x: 0, z: 2 } }
 }
 
-export function writeFloorplan(layout: MapAsset[]) {
+export function writeFloorplan(floorplan: Floorplan) {
   const updatedAt = new Date().toISOString()
-  getDatabase().prepare('UPDATE floorplans SET layout_json = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(layout), updatedAt, 'main')
-  return { id: 'main', name: 'Main dispatch floor', layout, updatedAt }
+  getDatabase().prepare('UPDATE floorplans SET layout_json = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(floorplan), updatedAt, 'main')
+  return { id: 'main', name: 'Main dispatch floor', ...floorplan, updatedAt }
+}
+
+export function resetFloorplan() {
+  return writeFloorplan({ layout: structuredClone(seedFloorplan) as MapAsset[], playerSpawn: { x: 0, z: 2 } })
 }
 
 export function insertGameSession(session: GameSession, accessToken: string) {

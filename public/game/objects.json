@@ -1,5 +1,22 @@
 {
   "door": {
+    "interaction": {
+      "action": "open_door",
+      "requiredKey": "SLIDING_DOR_KEY",
+      "canUse": true
+    },
+    "geometry": {
+      "isBarrier": true,
+      "isStatic": true,
+      "countsAsCounter": false
+    },
+    "editor": {
+      "label": "Secure door",
+      "detail": "Requires key",
+      "color": "#3b82f6",
+      "width": 2.5,
+      "depth": 0.4
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -18,11 +35,30 @@
     }
   },
   "key": {
+    "defaultState": "onTable",
+    "interaction": { "action": "none", "canGrab": true },
+    "geometry": {
+      "isStatic": false,
+      "canPush": false,
+      "isSurface": true,
+      "surfaceHeight": 0.1,
+      "countsAsCounter": true
+    },
+    "source": { "itemType": "key" },
+    "dropObjectType": "key",
+    "editor": {
+      "label": "ID badge",
+      "detail": "Pickup key",
+      "color": "#0ea5e9",
+      "width": 0.8,
+      "depth": 0.8
+    },
     "states": {
       "grabbed": {
         "kind": "badge",
         "model": "/models/map/key-grabbed.json",
-        "scale": [1, 1, 1],
+        "scale": [0.45, 0.45, 0.45],
+        "rotation": [-0.392699, 0, 0],
         "acceptsDrop": "none"
       },
       "onTable": {
@@ -42,6 +78,18 @@
     }
   },
   "wall": {
+    "geometry": {
+      "isBarrier": true,
+      "isStatic": true,
+      "countsAsCounter": false
+    },
+    "editor": {
+      "label": "Partition wall",
+      "detail": "Static boundary",
+      "color": "#94a3b8",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -53,6 +101,20 @@
     }
   },
   "config_desk": {
+    "interaction": { "action": "config", "canUse": true },
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Config station",
+      "detail": "Configure device",
+      "color": "#2563eb",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -64,6 +126,19 @@
     }
   },
   "office_desk": {
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Office desk",
+      "detail": "Storage surface",
+      "color": "#64748b",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -75,6 +150,20 @@
     }
   },
   "server_rack": {
+    "interaction": { "action": "config", "canUse": true },
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Server rack",
+      "detail": "Configure server",
+      "color": "#64748b",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -86,6 +175,20 @@
     }
   },
   "delivery": {
+    "interaction": { "action": "deliver", "canUse": true },
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Dispatch hatch",
+      "detail": "Score delivery",
+      "color": "#d40511",
+      "width": 2.5,
+      "depth": 1.5
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -97,6 +200,20 @@
     }
   },
   "trash": {
+    "interaction": { "action": "trash", "canUse": true },
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Recycle bin",
+      "detail": "Discard item",
+      "color": "#4b5563",
+      "width": 1.2,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -108,6 +225,20 @@
     }
   },
   "riddle": {
+    "interaction": { "action": "quiz", "canUse": true },
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 1.3,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Security terminal",
+      "detail": "Open quiz",
+      "color": "#7e22ce",
+      "width": 1.4,
+      "depth": 1.4
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -119,6 +250,12 @@
     }
   },
   "floor": {
+    "geometry": {
+      "isStatic": true,
+      "isSurface": true,
+      "surfaceHeight": 0.1,
+      "countsAsCounter": false
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -130,6 +267,21 @@
     }
   },
   "box_laptop": {
+    "source": { "itemType": "laptop" },
+    "geometry": {
+      "isStatic": false,
+      "canPush": true,
+      "isSurface": true,
+      "surfaceHeight": 0.86,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Laptop box",
+      "detail": "Pickup source",
+      "color": "#facc15",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -141,6 +293,21 @@
     }
   },
   "box_server": {
+    "source": { "itemType": "server" },
+    "geometry": {
+      "isStatic": false,
+      "canPush": true,
+      "isSurface": true,
+      "surfaceHeight": 0.86,
+      "countsAsCounter": true
+    },
+    "editor": {
+      "label": "Server box",
+      "detail": "Pickup source",
+      "color": "#facc15",
+      "width": 1.5,
+      "depth": 1.2
+    },
     "states": {
       "onFloor": {
         "kind": "map",
@@ -152,6 +319,15 @@
     }
   },
   "laptop": {
+    "dropObjectType": "box_laptop",
+    "configureSound": "type",
+    "editor": {
+      "label": "Laptop",
+      "detail": "Held device",
+      "color": "#334155",
+      "width": 1.2,
+      "depth": 1.2
+    },
     "states": {
       "grabbed": {
         "kind": "tech",
@@ -181,6 +357,16 @@
     }
   },
   "server": {
+    "dropObjectType": "box_server",
+    "heldOffset": [0, 0, 0.4],
+    "configureSound": "process",
+    "editor": {
+      "label": "Server",
+      "detail": "Held device",
+      "color": "#334155",
+      "width": 1.2,
+      "depth": 1.2
+    },
     "states": {
       "grabbed": {
         "kind": "tech",

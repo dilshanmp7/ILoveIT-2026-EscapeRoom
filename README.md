@@ -23,7 +23,7 @@ The server exposes these game routes:
 - `GET /api/game/floorplan` loads the authenticated dispatch floorplan.
 - `PUT /api/game/floorplan` saves an authenticated editor deployment.
 
-The runtime database is SQLite at `data/courier.sqlite` by default. Override the location with `NUXT_GAME_DB_PATH`. The first startup creates the database, seeds the `floorplans` table from `server/data/floorplan.json`, and creates the `game_sessions` table used for final scores. The floorplan editor is available at `/editor` after access is granted.
+The runtime database is SQLite at `data/courier.sqlite` by default. Override the location with `NUXT_GAME_DB_PATH`. The first startup creates the database, seeds the `floorplans` table from `public/game/defaultLayout.json`, and creates the `game_sessions` table used for final scores. The protected floorplan editor is available at `/editor` after access is granted and can explicitly reset the stored layout to those public defaults.
 
 The SQLite integration uses Node's built-in `node:sqlite`, so the app requires Node 22.5 or newer. Access tokens remain process-local and expire after 12 hours; the database stores sessions and scores, but a server restart invalidates existing access cookies.
 

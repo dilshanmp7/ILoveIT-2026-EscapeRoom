@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { MapAsset } from '#shared/game/types';
+import type { Floorplan } from '#shared/game/types';
 
 const engine = useGameEngine()
 definePageMeta({ middleware: ['game-gate'] })
 
 const session = ref<{ id: string; score: number } | null>(null)
-const floorplan = ref<MapAsset[] | null>(null)
+const floorplan = ref<Floorplan | null>(null)
 const sessionError = ref('')
 
 async function submitScore(completed = true) {
@@ -18,8 +18,8 @@ async function submitScore(completed = true) {
 
 onMounted(async () => {
   try {
-    const floorplanResponse = await $fetch<{ layout: MapAsset[] }>('/api/game/floorplan')
-    floorplan.value = floorplanResponse.layout
+    const floorplanResponse = await $fetch<Floorplan>('/api/game/floorplan')
+    floorplan.value = floorplanResponse
     const response = await $fetch<{ session: { id: string; score: number } }>('/api/game/session', { method: 'POST' })
     session.value = response.session
   } catch {

@@ -45,6 +45,16 @@ export interface MapAsset {
   useRequiredKey?: string
 }
 
+export interface PlayerSpawn {
+  x: number
+  z: number
+}
+
+export interface Floorplan {
+  layout: MapAsset[]
+  playerSpawn: PlayerSpawn
+}
+
 export interface QuizQuestion {
   q: string
   options: string[]

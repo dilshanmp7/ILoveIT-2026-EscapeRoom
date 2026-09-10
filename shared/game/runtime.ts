@@ -9,10 +9,37 @@ export interface ObjectDefinition {
   configured?: boolean
   color?: string
   scale?: [number, number, number]
+  rotation?: [number, number, number]
   model?: string
 }
 
-type ObjectDefinitions = Record<string, { states: Partial<Record<ObjectVisualState, ObjectDefinition>> }>
+export type ObjectAction = 'none' | 'config' | 'quiz' | 'deliver' | 'trash' | 'open_door'
+
+export interface ObjectTypeDefinition {
+  states: Partial<Record<ObjectVisualState, ObjectDefinition>>
+  defaultState?: ObjectVisualState
+  interaction?: {
+    action?: ObjectAction
+    requiredKey?: string
+    canGrab?: boolean
+    canUse?: boolean
+  }
+  geometry?: {
+    isBarrier?: boolean
+    isStatic?: boolean
+    canPush?: boolean
+    isSurface?: boolean
+    surfaceHeight?: number
+    countsAsCounter?: boolean
+  }
+  source?: { itemType: string }
+  dropObjectType?: string
+  heldOffset?: [number, number, number]
+  configureSound?: 'type' | 'process'
+  editor?: { label: string; detail: string; color: string; width: number; depth: number; enabled?: boolean }
+}
+
+export type ObjectDefinitions = Record<string, ObjectTypeDefinition>
 
 let objectDefinitions: ObjectDefinitions = {}
 const objectModelCache = new Map<string, THREE.Object3D>()
@@ -22,6 +49,10 @@ export async function loadObjectDefinitions(url = '/game/objects.json') {
   const response = await fetch(url)
   if (!response.ok) throw new Error(`Unable to load object definitions: ${response.status}`)
   objectDefinitions = await response.json() as ObjectDefinitions
+  return objectDefinitions
+}
+
+export function getObjectDefinitions() {
   return objectDefinitions
 }
 
@@ -35,8 +66,20 @@ export async function loadObjectModel(type: string, state: ObjectVisualState) {
   return model.clone(true)
 }
 
-function getObjectDefinition(type: string, state: ObjectVisualState): ObjectDefinition | undefined {
+export function getObjectTypeDefinition(type: string) {
+  return objectDefinitions[type]
+}
+
+export function getObjectDefinition(type: string, state: ObjectVisualState): ObjectDefinition | undefined {
   return objectDefinitions[type]?.states[state] || objectDefinitions[type]?.states.grabbed
+}
+
+export function getObjectInteraction(type: string) {
+  return objectDefinitions[type]?.interaction
+}
+
+export function getObjectGeometry(type: string) {
+  return objectDefinitions[type]?.geometry
 }
 
 export class SoundFX {
@@ -96,9 +139,10 @@ export class PhysicalBody {
   depth: number
   isStatic: boolean
   canPush: boolean
+  assetId: string | null
   mesh: THREE.Object3D | null
 
-  constructor(params: { x?: number; y?: number; z?: number; width?: number; depth?: number; isStatic?: boolean; canPush?: boolean; mesh?: THREE.Object3D | null }) {
+  constructor(params: { x?: number; y?: number; z?: number; width?: number; depth?: number; isStatic?: boolean; canPush?: boolean; assetId?: string; mesh?: THREE.Object3D | null }) {
     this.x = params.x || 0
     this.y = params.y || 0
     this.z = params.z || 0
@@ -106,6 +150,7 @@ export class PhysicalBody {
     this.depth = params.depth || 1
     this.isStatic = params.isStatic || false
     this.canPush = params.canPush || false
+    this.assetId = params.assetId || null
     this.mesh = params.mesh || null
   }
 
@@ -130,36 +175,41 @@ export class PhysicsWorld {
 
   moveBodyWithSlide(body: PhysicalBody, deltaX: number, deltaZ: number) {
     if (body.isStatic) return false
+    const horizontal = this.moveBodyAlongAxis(body, deltaX, 'x')
+    const vertical = this.moveBodyAlongAxis(body, deltaZ, 'z')
+    return horizontal.pushed || vertical.pushed
+  }
+
+  private moveBodyAlongAxis(body: PhysicalBody, delta: number, axis: 'x' | 'z', moving = new Set<PhysicalBody>()) {
+    if (!delta || body.isStatic || moving.has(body)) return { moved: false, pushed: false }
+    moving.add(body)
+    const start = body[axis]
+    body[axis] += delta
+    const collisions = this.bodies.filter(other => other !== body && !moving.has(other) && this.checkAABBCollision(body, other))
     let pushedBody = false
-    body.x += deltaX
-    for (const other of this.bodies) {
-      if (other !== body && this.checkAABBCollision(body, other)) {
-        if (other.canPush) {
-          pushedBody = true
-          other.x += deltaX
-          if (other.mesh) other.mesh.position.x = other.x
-          continue
-        }
-        body.x = deltaX > 0 ? other.x - other.width / 2 - body.width / 2 - 0.001 : other.x + other.width / 2 + body.width / 2 + 0.001
+    let blocked = false
+    for (const other of collisions) {
+      if (other.canPush && !other.isStatic) {
+        const otherStart = other[axis]
+        const result = this.moveBodyAlongAxis(other, delta, axis, moving)
+        pushedBody = result.moved || pushedBody
+        if (!result.moved || Math.abs((other[axis] - otherStart) - delta) > 0.001) blocked = true
+      } else {
+        blocked = true
       }
     }
-    body.z += deltaZ
-    for (const other of this.bodies) {
-      if (other !== body && this.checkAABBCollision(body, other)) {
-        if (other.canPush) {
-          pushedBody = true
-          other.z += deltaZ
-          if (other.mesh) other.mesh.position.z = other.z
-          continue
-        }
-        body.z = deltaZ > 0 ? other.z - other.depth / 2 - body.depth / 2 - 0.001 : other.z + other.depth / 2 + body.depth / 2 + 0.001
+    if (blocked) {
+      for (const other of collisions) {
+        const extent = axis === 'x' ? other.width : other.depth
+        const bodyExtent = axis === 'x' ? body.width : body.depth
+        body[axis] = delta > 0
+          ? other[axis] - extent / 2 - bodyExtent / 2 - 0.001
+          : other[axis] + extent / 2 + bodyExtent / 2 + 0.001
       }
     }
-    if (body.mesh) {
-      body.mesh.position.x = body.x
-      body.mesh.position.z = body.z
-    }
-    return pushedBody
+    moving.delete(body)
+    if (body.mesh) body.mesh.position[axis] = body[axis]
+    return { moved: Math.abs(body[axis] - start) > 0.001, pushed: pushedBody }
   }
 }
 
@@ -167,7 +217,7 @@ export class GameItem {
   isConfigured = false
   mesh: THREE.Group = new THREE.Group()
 
-  constructor(public readonly type: 'laptop' | 'server') {
+  constructor(public readonly type: string) {
     void this.createMeshFromAsset()
   }
 
@@ -177,6 +227,7 @@ export class GameItem {
     if (model) group.add(model)
     const definition = getObjectDefinition(this.type, state)
     if (definition?.scale) group.scale.fromArray(definition.scale)
+    if (definition?.rotation) group.rotation.fromArray(definition.rotation)
     this.mesh = group
     return group
   }
@@ -278,99 +329,6 @@ export function updatePlayerAnimation(player: THREE.Group | null, isMoving: bool
   }
 }
 
-export function createObjectMesh(width: number, depth: number, topColor: number, type: MapAsset['type'], options: { isOpen?: boolean } = {}) {
-  const group = new THREE.Group()
-  const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 })
-  if (type === 'door') {
-    const frame = new THREE.MeshStandardMaterial({ color: 0x1e293b })
-    for (const x of [-width / 2 + 0.08, width / 2 - 0.08]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, depth), frame)
-      post.position.set(x, 1.1, 0)
-      group.add(post)
-    }
-    const panel = new THREE.Mesh(new THREE.BoxGeometry(width - 0.3, 2, 0.1), new THREE.MeshStandardMaterial({ color: topColor, transparent: true, opacity: options.isOpen ? 0.2 : 0.8 }))
-    panel.position.set(options.isOpen ? width / 2 - 0.2 : 0, 1, 0)
-    panel.name = 'doorPanel'
-    group.add(panel)
-    return group
-  }
-  if (type === 'key') {
-    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }))
-    pedestal.position.y = 0.4
-    group.add(pedestal)
-    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.02), new THREE.MeshStandardMaterial({ color: topColor }))
-    badge.position.y = 0.9
-    group.add(badge)
-    return group
-  }
-  if (type === 'wall') {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 2.5, depth), new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.9 }))
-    wall.position.y = 1.25
-    group.add(wall)
-    return group
-  }
-  if (type.startsWith('box_')) {
-    const cartonMaterial = new THREE.MeshStandardMaterial({ color: 0xd9a441, roughness: 0.9 })
-    const carton = new THREE.Mesh(new THREE.BoxGeometry(width - 0.12, 0.8, depth - 0.12), cartonMaterial)
-    carton.position.y = 0.4
-    carton.name = 'dhl-box'
-    group.add(carton)
-    const tape = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.81, depth - 0.14), new THREE.MeshStandardMaterial({ color: 0xb7791f, roughness: 0.95 }))
-    tape.position.y = 0.4
-    tape.name = 'dhl-tape'
-    group.add(tape)
-    const label = new THREE.Mesh(new THREE.BoxGeometry(width * 0.45, 0.22, 0.012), new THREE.MeshBasicMaterial({ color: 0xf8fafc }))
-    label.position.set(0, 0.48, depth / 2 - 0.07)
-    label.name = 'dhl-label'
-    group.add(label)
-    const stripe = new THREE.Mesh(new THREE.BoxGeometry(width - 0.18, 0.06, 0.014), new THREE.MeshBasicMaterial({ color: 0xd40511 }))
-    stripe.position.set(0, 0.22, depth / 2 - 0.075)
-    stripe.name = 'dhl-stripe'
-    group.add(stripe)
-    return group
-  }
-
-  const tableMaterial = new THREE.MeshStandardMaterial({ color: topColor || 0x64748b, roughness: 0.72 })
-  const base = new THREE.Mesh(new THREE.BoxGeometry(width, 1.1, depth), baseMaterial)
-  base.position.y = 0.55
-  base.name = 'table-base'
-  group.add(base)
-  const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, 0.1, depth + 0.05), tableMaterial)
-  top.position.y = 1.15
-  top.name = 'table-top'
-  group.add(top)
-  if (type === 'config_desk' || type === 'office_desk') {
-    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.05), new THREE.MeshStandardMaterial({ color: 0x000000 }))
-    screen.position.set(0, 1.5, -0.2)
-    group.add(screen)
-    const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.2), new THREE.MeshStandardMaterial({ color: 0x333333 }))
-    keyboard.position.set(0, 1.21, 0.2)
-    group.add(keyboard)
-  } else if (type === 'server_rack') {
-    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.7), new THREE.MeshStandardMaterial({ color: 0x111827 }))
-    rack.position.y = 1.95
-    group.add(rack)
-    for (let index = 0; index < 3; index++) {
-      const light = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.02), new THREE.MeshBasicMaterial({ color: 0x22c55e }))
-      light.position.set(-0.2, 1.5 + index * 0.3, 0.36)
-      group.add(light)
-    }
-  } else if (type === 'delivery') {
-    const hatch = new THREE.Mesh(new THREE.BoxGeometry(width - 0.2, 0.8, 0.1), new THREE.MeshStandardMaterial({ color: 0xd40511, transparent: true, opacity: 0.8 }))
-    hatch.position.y = 1.6
-    group.add(hatch)
-  } else if (type === 'trash') {
-    const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x3f3f46 }))
-    bin.position.y = 1.6
-    group.add(bin)
-  } else if (type === 'riddle') {
-    const screen = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.05), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }))
-    screen.position.y = 1.5
-    group.add(screen)
-  }
-  return group
-}
-
 export function getRotatedAABBSize(width: number, depth: number, rotation: number) {
   const angle = THREE.MathUtils.degToRad(rotation)
   const cosine = Math.abs(Math.cos(angle))
@@ -381,16 +339,16 @@ export function getRotatedAABBSize(width: number, depth: number, rotation: numbe
   }
 }
 
-export function initPlayers(scene: THREE.Scene, physics: PhysicsWorld) {
+export function initPlayers(scene: THREE.Scene, physics: PhysicsWorld, spawn = { x: 0, z: 2 }) {
   const player = createCourierAvatarMesh(0xffcc00)
-  player.position.set(0, 0, 2)
+  player.position.set(spawn.x, 0, spawn.z)
   scene.add(player)
-  const body = physics.addBody(new PhysicalBody({ x: 0, y: 0, z: 2, width: 0.8, depth: 0.8, mesh: player }))
+  const body = physics.addBody(new PhysicalBody({ x: spawn.x, y: 0, z: spawn.z, width: 0.8, depth: 0.8, mesh: player }))
   return { player, playerBody: body }
 }
 
 export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group | null> {
-  const state: ObjectVisualState = asset.isOpen ? 'opened' : asset.type === 'key' ? 'onTable' : 'onFloor'
+  const state: ObjectVisualState = asset.isOpen ? 'opened' : getObjectTypeDefinition(asset.type)?.defaultState || 'onFloor'
   const definition = getObjectDefinition(asset.type, state)
   if (!definition?.model) return null
   const cached = objectModelCache.get(definition.model)
@@ -404,7 +362,7 @@ export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group |
     if (!(child instanceof THREE.Mesh)) return
     const materials = Array.isArray(child.material) ? child.material : [child.material]
     materials.forEach(material => {
-      if ('color' in material) material.color.set(asset.type === 'delivery' ? 0xd40511 : asset.color)
+      if ('color' in material) material.color.set(asset.color)
       material.needsUpdate = true
     })
   })
@@ -413,11 +371,6 @@ export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group |
 }
 
 export async function loadKeyModel(state: ObjectVisualState = 'grabbed') {
-  const model = await loadObjectModel('key', state)
-  if (!model) return null
-  const group = new THREE.Group()
-  group.add(model)
-  group.scale.setScalar(0.45)
-  group.rotation.x = -Math.PI / 8
-  return group
+  const item = new GameItem('key')
+  return item.createMeshFromAsset(state)
 }

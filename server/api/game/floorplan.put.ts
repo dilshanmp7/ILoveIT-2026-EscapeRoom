@@ -1,4 +1,4 @@
-import type { MapAsset } from '#shared/game/types'
+import type { Floorplan, MapAsset } from '#shared/game/types'
 import { createError, getCookie, readBody } from 'h3'
 import { isEditorAuthorized } from '../../utils/editor-access'
 import { writeFloorplan } from '../../utils/game-database'
@@ -22,10 +22,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Game access required' })
   }
 
-  const body = await readBody<{ layout?: unknown }>(event)
-  if (!Array.isArray(body?.layout) || body.layout.length > 100 || !body.layout.every(isMapAsset)) {
+  const body = await readBody<{ layout?: unknown; playerSpawn?: unknown }>(event)
+  const playerSpawn = body?.playerSpawn as { x?: unknown; z?: unknown } | undefined
+  if (!Array.isArray(body?.layout) || body.layout.length > 100 || !body.layout.every(isMapAsset)
+    || typeof playerSpawn?.x !== 'number' || typeof playerSpawn.z !== 'number'
+    || Math.abs(playerSpawn.x) > 10 || Math.abs(playerSpawn.z) > 8) {
     throw createError({ statusCode: 400, statusMessage: 'A valid floorplan layout is required' })
   }
 
-  return { floorplan: writeFloorplan(body.layout) }
+  return { floorplan: writeFloorplan({ layout: body.layout, playerSpawn } as Floorplan) }
 })
