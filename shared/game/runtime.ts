@@ -114,7 +114,7 @@ export class PhysicalBody {
   }
 }
 
-export class KitchenPhysicsWorld {
+export class PhysicsWorld {
   readonly bodies: PhysicalBody[] = []
 
   addBody(body: PhysicalBody) {
@@ -381,7 +381,7 @@ export function getRotatedAABBSize(width: number, depth: number, rotation: numbe
   }
 }
 
-export function initPlayers(scene: THREE.Scene, physics: KitchenPhysicsWorld) {
+export function initPlayers(scene: THREE.Scene, physics: PhysicsWorld) {
   const player = createCourierAvatarMesh(0xffcc00)
   player.position.set(0, 0, 2)
   scene.add(player)

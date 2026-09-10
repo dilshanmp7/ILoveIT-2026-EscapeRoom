@@ -1172,63 +1172,6 @@
 
 
 
-        /* Security Check Editor Tab */
-
-
-        function initNewQuizForm() {
-            document.getElementById('quiz-form-index').value = "-1";
-            document.getElementById('quiz-form-q').value = "";
-            document.getElementById('quiz-form-opt-0').value = "";
-            document.getElementById('quiz-form-opt-1').value = "";
-            document.getElementById('quiz-form-opt-2').value = "";
-            document.getElementById('quiz-form-opt-3').value = "";
-            document.getElementById('radio-opt-0').checked = true;
-        }
-
-        function loadQuizIntoForm(idx) {
-            const quiz = assetRepository.quizzes[idx];
-            if (!quiz) return;
-            document.getElementById('quiz-form-index').value = idx;
-            document.getElementById('quiz-form-q').value = quiz.q;
-            document.getElementById('quiz-form-opt-0').value = quiz.options[0] || "";
-            document.getElementById('quiz-form-opt-1').value = quiz.options[1] || "";
-            document.getElementById('quiz-form-opt-2').value = quiz.options[2] || "";
-            document.getElementById('quiz-form-opt-3').value = quiz.options[3] || "";
-            document.getElementById(`radio-opt-${quiz.correct}`).checked = true;
-        }
-
-        function saveQuizForm(e) {
-            e.preventDefault();
-            const idx = parseInt(document.getElementById('quiz-form-index').value, 10);
-            const q = document.getElementById('quiz-form-q').value;
-            const options = [
-                document.getElementById('quiz-form-opt-0').value,
-                document.getElementById('quiz-form-opt-1').value,
-                document.getElementById('quiz-form-opt-2').value,
-                document.getElementById('quiz-form-opt-3').value
-            ];
-            const correctRadio = document.querySelector('input[name="correct_option"]:checked');
-            const correct = parseInt(correctRadio ? correctRadio.value : "0", 10);
-
-            if (idx === -1) {
-                assetRepository.quizzes.push({ q: q, options: options, correct: correct });
-            } else {
-                assetRepository.quizzes[idx] = { q: q, options: options, correct: correct };
-            }
-
-            renderEditorQuizzesList();
-            initNewQuizForm();
-            playSound('riddle_success');
-        }
-
-        function deleteQuizItem(index) {
-            assetRepository.quizzes.splice(index, 1);
-            renderEditorQuizzesList();
-            initNewQuizForm();
-        }
-
-
-
 
         function applyEditorChangesToKitchen() {
             physicsWorld = new KitchenPhysicsWorld();

@@ -1,5 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { GameItem, getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, loadKeyModel, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
+import { GameItem, getRotatedAABBSize, initPlayers, loadKeyModel, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, PhysicsWorld, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
 import type { DropRule, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -47,7 +47,7 @@ export function useGameEngine() {
   let renderer: THREE.WebGLRenderer | null = null
   let player: THREE.Group | null = null
   let playerPhysicsBody: PhysicalBody | null = null
-  let physicsWorld = new KitchenPhysicsWorld()
+  let physicsWorld = new PhysicsWorld()
   const sound = new SoundFX()
   const walkCycle = { value: 0 }
   let animationFrame = 0
@@ -74,7 +74,7 @@ export function useGameEngine() {
     counters.splice(0)
     bodies.splice(0)
     occludableMeshes.splice(0)
-    physicsWorld = new KitchenPhysicsWorld()
+    physicsWorld = new PhysicsWorld()
     for (const child of [...scene.children]) {
       if (child.userData.courierAsset) scene.remove(child)
     }
@@ -456,7 +456,7 @@ export function useGameEngine() {
     const grid = new THREE.GridHelper(20, 20, 0xd40511, 0xffcc00)
     grid.position.y = .01
     scene.add(grid)
-    physicsWorld = new KitchenPhysicsWorld()
+    physicsWorld = new PhysicsWorld()
     const players = initPlayers(scene, physicsWorld)
     player = players.player
     playerPhysicsBody = players.playerBody
@@ -508,7 +508,7 @@ export function useGameEngine() {
     renderer = null
     player = null
     playerPhysicsBody = null
-    physicsWorld = new KitchenPhysicsWorld()
+    physicsWorld = new PhysicsWorld()
   }
 
   function openEditor() { state.editorOpen = true }
