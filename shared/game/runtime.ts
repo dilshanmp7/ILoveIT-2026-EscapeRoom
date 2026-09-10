@@ -3,7 +3,7 @@ import type { MapAsset } from './types'
 
 export type ObjectVisualState = 'grabbed' | 'onFloor' | 'onTable' | 'configured' | 'opened'
 
-interface ObjectDefinition {
+export interface ObjectDefinition {
   kind: 'tech' | 'badge' | 'map'
   type?: 'laptop' | 'server'
   configured?: boolean
@@ -95,15 +95,17 @@ export class PhysicalBody {
   width: number
   depth: number
   isStatic: boolean
+  canPush: boolean
   mesh: THREE.Object3D | null
 
-  constructor(params: { x?: number; y?: number; z?: number; width?: number; depth?: number; isStatic?: boolean; mesh?: THREE.Object3D | null }) {
+  constructor(params: { x?: number; y?: number; z?: number; width?: number; depth?: number; isStatic?: boolean; canPush?: boolean; mesh?: THREE.Object3D | null }) {
     this.x = params.x || 0
     this.y = params.y || 0
     this.z = params.z || 0
     this.width = params.width || 1
     this.depth = params.depth || 1
     this.isStatic = params.isStatic || false
+    this.canPush = params.canPush || false
     this.mesh = params.mesh || null
   }
 
@@ -127,16 +129,29 @@ export class KitchenPhysicsWorld {
   }
 
   moveBodyWithSlide(body: PhysicalBody, deltaX: number, deltaZ: number) {
-    if (body.isStatic) return
+    if (body.isStatic) return false
+    let pushedBody = false
     body.x += deltaX
     for (const other of this.bodies) {
       if (other !== body && this.checkAABBCollision(body, other)) {
+        if (other.canPush) {
+          pushedBody = true
+          other.x += deltaX
+          if (other.mesh) other.mesh.position.x = other.x
+          continue
+        }
         body.x = deltaX > 0 ? other.x - other.width / 2 - body.width / 2 - 0.001 : other.x + other.width / 2 + body.width / 2 + 0.001
       }
     }
     body.z += deltaZ
     for (const other of this.bodies) {
       if (other !== body && this.checkAABBCollision(body, other)) {
+        if (other.canPush) {
+          pushedBody = true
+          other.z += deltaZ
+          if (other.mesh) other.mesh.position.z = other.z
+          continue
+        }
         body.z = deltaZ > 0 ? other.z - other.depth / 2 - body.depth / 2 - 0.001 : other.z + other.depth / 2 + body.depth / 2 + 0.001
       }
     }
@@ -144,54 +159,25 @@ export class KitchenPhysicsWorld {
       body.mesh.position.x = body.x
       body.mesh.position.z = body.z
     }
+    return pushedBody
   }
 }
 
-export class TechItem {
+export class GameItem {
   isConfigured = false
-  mesh: THREE.Group
+  mesh: THREE.Group = new THREE.Group()
 
   constructor(public readonly type: 'laptop' | 'server') {
-    this.mesh = this.createMesh()
-  }
-
-  createMesh(state: ObjectVisualState = this.isConfigured ? 'configured' : 'grabbed') {
-    const group = new THREE.Group()
-    const definition = getObjectDefinition(this.type, state)
-    if (definition?.scale) group.scale.fromArray(definition.scale)
-    if (this.type === 'laptop') {
-      const material = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8 })
-      group.add(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), material))
-      if (this.isConfigured) {
-        const screen = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.02), new THREE.MeshStandardMaterial({ color: 0x111827 }))
-        screen.position.set(0, 0.15, -0.14)
-        screen.rotation.x = -Math.PI / 12
-        group.add(screen)
-        const display = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.25), new THREE.MeshBasicMaterial({ color: 0x22c55e }))
-        display.position.set(0, 0.15, -0.125)
-        display.rotation.x = -Math.PI / 12
-        group.add(display)
-      } else {
-        const lid = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), material)
-        lid.position.y = 0.04
-        group.add(lid)
-      }
-    } else {
-      group.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5 })))
-      const light = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.02), new THREE.MeshBasicMaterial({ color: this.isConfigured ? 0x22c55e : 0xef4444 }))
-      light.position.set(-0.1, 0, 0.26)
-      group.add(light)
-    }
-    return group
+    void this.createMeshFromAsset()
   }
 
   async createMeshFromAsset(state: ObjectVisualState = this.isConfigured ? 'configured' : 'grabbed') {
     const model = await loadObjectModel(this.type, state)
-    if (!model) return this.createMesh(state)
     const group = new THREE.Group()
-    group.add(model)
+    if (model) group.add(model)
     const definition = getObjectDefinition(this.type, state)
     if (definition?.scale) group.scale.fromArray(definition.scale)
+    this.mesh = group
     return group
   }
 }
@@ -412,7 +398,6 @@ export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group |
   if (!cached) objectModelCache.set(definition.model, model)
   model.scale.set(asset.w, 1, asset.d)
   model.userData.canGrab = Boolean(asset.allowGrab)
-  model.userData.canPlaceOnTop = Boolean(asset.dropRule || asset.acceptsDrop)
   model.userData.dropRule = asset.dropRule || asset.acceptsDrop || 'none'
   model.userData.assetType = asset.type
   model.traverse(child => {
@@ -425,4 +410,14 @@ export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group |
   })
   if (!(model instanceof THREE.Group)) throw new Error(`Map asset ${asset.type} must have a Group root`)
   return model
+}
+
+export async function loadKeyModel(state: ObjectVisualState = 'grabbed') {
+  const model = await loadObjectModel('key', state)
+  if (!model) return null
+  const group = new THREE.Group()
+  group.add(model)
+  group.scale.setScalar(0.45)
+  group.rotation.x = -Math.PI / 8
+  return group
 }

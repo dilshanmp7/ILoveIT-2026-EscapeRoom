@@ -32,13 +32,15 @@ export interface MapAsset {
   color: number
   type: AssetType
   label: string
+  canHold?: boolean
+  canPush?: boolean
   allowGrab?: boolean
   keyId?: string
   requiredKeyIds?: string[]
   isOpen?: boolean
   actionType?: 'none' | 'config' | 'quiz' | 'deliver' | 'trash' | 'key'
   dropRule?: DropRule
-  acceptsDrop?: string
+  acceptsDrop?: 'none' | 'floor' | 'any' | 'configured' | HeldObjectType
   useAction?: 'none' | 'open_door' | 'quiz'
   useRequiredKey?: string
 }

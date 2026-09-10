@@ -1,1 +1,39 @@
-{"metadata":{"version":4.3,"type":"Object","generator":"ObjectExporter"},"geometries":[{"uuid":"floor","type":"BoxGeometry","width":1,"height":0.02,"depth":1}],"materials":[{"uuid":"floor-mat","type":"MeshStandardMaterial","color":14872576,"roughness":0.8}],"object":{"uuid":"floor-root","type":"Group","name":"floor","children":[{"uuid":"floor-mesh","type":"Mesh","name":"floor-surface","geometry":"floor","material":"floor-mat","position":[0,0,0]}]}}
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "floor",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 0.02,
+      "depth": 1
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "floor-mat",
+      "type": "MeshStandardMaterial",
+      "color": 14872576,
+      "roughness": 0.8
+    }
+  ],
+  "object": {
+    "uuid": "floor-root",
+    "type": "Group",
+    "name": "floor",
+    "children": [
+      {
+        "uuid": "floor-mesh",
+        "type": "Mesh",
+        "name": "floor-surface",
+        "geometry": "floor",
+        "material": "floor-mat",
+        "position": [0, 0, 0]
+      }
+    ]
+  }
+}

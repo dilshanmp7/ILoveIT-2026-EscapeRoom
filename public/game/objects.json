@@ -1,63 +1,154 @@
 {
   "door": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/door.json" },
-      "opened": { "kind": "map", "model": "/models/map/door-opened.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/door.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "none"
+      },
+      "opened": {
+        "kind": "map",
+        "model": "/models/map/door-opened.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "none"
+      }
     }
   },
   "key": {
     "states": {
-      "grabbed": { "kind": "badge", "color": "#0ea5e9", "scale": [1, 1, 1] },
-      "onTable": { "kind": "map", "model": "/models/map/key.json" },
-      "onFloor": { "kind": "map", "model": "/models/map/key.json" }
+      "grabbed": {
+        "kind": "badge",
+        "model": "/models/map/key-grabbed.json",
+        "scale": [1, 1, 1],
+        "acceptsDrop": "none"
+      },
+      "onTable": {
+        "kind": "map",
+        "model": "/models/map/key.json",
+        "canHold": true,
+        "canPush": false,
+        "acceptsDrop": "none"
+      },
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/key.json",
+        "canHold": true,
+        "canPush": false,
+        "acceptsDrop": "none"
+      }
     }
   },
   "wall": {
-    "states": { "onFloor": { "kind": "map", "model": "/models/map/wall.json" } }
+    "states": {
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/wall.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "none"
+      }
+    }
   },
   "config_desk": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/config-desk.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/config-desk.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "laptop"
+      }
     }
   },
   "office_desk": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/office-desk.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/office-desk.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "any"
+      }
     }
   },
   "server_rack": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/server-rack.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/server-rack.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "server"
+      }
     }
   },
   "delivery": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/delivery.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/delivery.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "configured"
+      }
     }
   },
   "trash": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/trash.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/trash.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "any"
+      }
     }
   },
   "riddle": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/riddle.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/riddle.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "none"
+      }
     }
   },
   "floor": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/floor.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/floor.json",
+        "canHold": false,
+        "canPush": false,
+        "acceptsDrop": "floor"
+      }
     }
   },
   "box_laptop": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/box-laptop.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/box-laptop.json",
+        "canHold": true,
+        "canPush": true,
+        "acceptsDrop": "laptop"
+      }
     }
   },
   "box_server": {
     "states": {
-      "onFloor": { "kind": "map", "model": "/models/map/box-server.json" }
+      "onFloor": {
+        "kind": "map",
+        "model": "/models/map/box-server.json",
+        "canHold": true,
+        "canPush": true,
+        "acceptsDrop": "server"
+      }
     }
   },
   "laptop": {

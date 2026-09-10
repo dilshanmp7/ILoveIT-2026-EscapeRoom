@@ -1,1 +1,84 @@
-{"metadata":{"version":4.3,"type":"Object","generator":"ObjectExporter"},"geometries":[{"uuid":"base","type":"BoxGeometry","width":1,"height":1.1,"depth":1},{"uuid":"top","type":"BoxGeometry","width":1.05,"height":0.1,"depth":1.05},{"uuid":"screen","type":"BoxGeometry","width":0.5,"height":0.3,"depth":0.05}],"materials":[{"uuid":"base-mat","type":"MeshStandardMaterial","color":3355443,"roughness":0.6},{"uuid":"top-mat","type":"MeshStandardMaterial","color":8421504,"roughness":0.72},{"uuid":"screen-mat","type":"MeshStandardMaterial","color":1118481}],"object":{"uuid":"office-desk-root","type":"Group","name":"office_desk","children":[{"uuid":"base-mesh","type":"Mesh","name":"table-base","geometry":"base","material":"base-mat","position":[0,0.55,0]},{"uuid":"top-mesh","type":"Mesh","name":"table-top","geometry":"top","material":"top-mat","position":[0,1.15,0]},{"uuid":"screen-left","type":"Mesh","name":"monitor-left","geometry":"screen","material":"screen-mat","position":[-0.3,1.4,-0.1]},{"uuid":"screen-right","type":"Mesh","name":"monitor-right","geometry":"screen","material":"screen-mat","position":[0.3,1.4,-0.1]}]}}
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "base",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1.1,
+      "depth": 1
+    },
+    {
+      "uuid": "top",
+      "type": "BoxGeometry",
+      "width": 1.05,
+      "height": 0.1,
+      "depth": 1.05
+    },
+    {
+      "uuid": "screen",
+      "type": "BoxGeometry",
+      "width": 0.5,
+      "height": 0.3,
+      "depth": 0.05
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "base-mat",
+      "type": "MeshStandardMaterial",
+      "color": 3355443,
+      "roughness": 0.6
+    },
+    {
+      "uuid": "top-mat",
+      "type": "MeshStandardMaterial",
+      "color": 8421504,
+      "roughness": 0.72
+    },
+    { "uuid": "screen-mat", "type": "MeshStandardMaterial", "color": 1118481 }
+  ],
+  "object": {
+    "uuid": "office-desk-root",
+    "type": "Group",
+    "name": "office_desk",
+    "children": [
+      {
+        "uuid": "base-mesh",
+        "type": "Mesh",
+        "name": "table-base",
+        "geometry": "base",
+        "material": "base-mat",
+        "position": [0, 0.55, 0]
+      },
+      {
+        "uuid": "top-mesh",
+        "type": "Mesh",
+        "name": "table-top",
+        "geometry": "top",
+        "material": "top-mat",
+        "position": [0, 1.15, 0]
+      },
+      {
+        "uuid": "screen-left",
+        "type": "Mesh",
+        "name": "monitor-left",
+        "geometry": "screen",
+        "material": "screen-mat",
+        "position": [-0.3, 1.4, -0.1]
+      },
+      {
+        "uuid": "screen-right",
+        "type": "Mesh",
+        "name": "monitor-right",
+        "geometry": "screen",
+        "material": "screen-mat",
+        "position": [0.3, 1.4, -0.1]
+      }
+    ]
+  }
+}

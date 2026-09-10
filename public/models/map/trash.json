@@ -1,1 +1,77 @@
-{"metadata":{"version":4.3,"type":"Object","generator":"ObjectExporter"},"geometries":[{"uuid":"base","type":"BoxGeometry","width":1,"height":1.1,"depth":1},{"uuid":"top","type":"BoxGeometry","width":1.05,"height":0.1,"depth":1.05},{"uuid":"bin","type":"CylinderGeometry","radiusTop":0.3,"radiusBottom":0.25,"height":0.8,"radialSegments":16}],"materials":[{"uuid":"base-mat","type":"MeshStandardMaterial","color":3355443,"roughness":0.6},{"uuid":"top-mat","type":"MeshStandardMaterial","color":4934475,"roughness":0.72},{"uuid":"bin-mat","type":"MeshStandardMaterial","color":4144950}],"object":{"uuid":"trash-root","type":"Group","name":"trash","children":[{"uuid":"base-mesh","type":"Mesh","name":"table-base","geometry":"base","material":"base-mat","position":[0,0.55,0]},{"uuid":"top-mesh","type":"Mesh","name":"table-top","geometry":"top","material":"top-mat","position":[0,1.15,0]},{"uuid":"bin-mesh","type":"Mesh","name":"trash-bin","geometry":"bin","material":"bin-mat","position":[0,1.6,0]}]}}
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "base",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1.1,
+      "depth": 1
+    },
+    {
+      "uuid": "top",
+      "type": "BoxGeometry",
+      "width": 1.05,
+      "height": 0.1,
+      "depth": 1.05
+    },
+    {
+      "uuid": "bin",
+      "type": "CylinderGeometry",
+      "radiusTop": 0.3,
+      "radiusBottom": 0.25,
+      "height": 0.8,
+      "radialSegments": 16
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "base-mat",
+      "type": "MeshStandardMaterial",
+      "color": 3355443,
+      "roughness": 0.6
+    },
+    {
+      "uuid": "top-mat",
+      "type": "MeshStandardMaterial",
+      "color": 4934475,
+      "roughness": 0.72
+    },
+    { "uuid": "bin-mat", "type": "MeshStandardMaterial", "color": 4144950 }
+  ],
+  "object": {
+    "uuid": "trash-root",
+    "type": "Group",
+    "name": "trash",
+    "children": [
+      {
+        "uuid": "base-mesh",
+        "type": "Mesh",
+        "name": "table-base",
+        "geometry": "base",
+        "material": "base-mat",
+        "position": [0, 0.55, 0]
+      },
+      {
+        "uuid": "top-mesh",
+        "type": "Mesh",
+        "name": "table-top",
+        "geometry": "top",
+        "material": "top-mat",
+        "position": [0, 1.15, 0]
+      },
+      {
+        "uuid": "bin-mesh",
+        "type": "Mesh",
+        "name": "trash-bin",
+        "geometry": "bin",
+        "material": "bin-mat",
+        "position": [0, 1.6, 0]
+      }
+    ]
+  }
+}

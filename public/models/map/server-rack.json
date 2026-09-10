@@ -1,1 +1,108 @@
-{"metadata":{"version":4.3,"type":"Object","generator":"ObjectExporter"},"geometries":[{"uuid":"base","type":"BoxGeometry","width":1,"height":1.1,"depth":1},{"uuid":"top","type":"BoxGeometry","width":1.05,"height":0.1,"depth":1.05},{"uuid":"rack","type":"BoxGeometry","width":0.8,"height":1.5,"depth":0.7},{"uuid":"light","type":"BoxGeometry","width":0.1,"height":0.05,"depth":0.02}],"materials":[{"uuid":"base-mat","type":"MeshStandardMaterial","color":3355443,"roughness":0.6},{"uuid":"top-mat","type":"MeshStandardMaterial","color":1968640,"roughness":0.72},{"uuid":"rack-mat","type":"MeshStandardMaterial","color":1118481},{"uuid":"light-mat","type":"MeshBasicMaterial","color":2276179}],"object":{"uuid":"server-rack-root","type":"Group","name":"server_rack","children":[{"uuid":"base-mesh","type":"Mesh","name":"table-base","geometry":"base","material":"base-mat","position":[0,0.55,0]},{"uuid":"top-mesh","type":"Mesh","name":"table-top","geometry":"top","material":"top-mat","position":[0,1.15,0]},{"uuid":"rack-mesh","type":"Mesh","name":"server-rack","geometry":"rack","material":"rack-mat","position":[0,1.95,0]},{"uuid":"rack-light-1","type":"Mesh","name":"rack-light-1","geometry":"light","material":"light-mat","position":[-0.2,1.5,0.36]},{"uuid":"rack-light-2","type":"Mesh","name":"rack-light-2","geometry":"light","material":"light-mat","position":[-0.2,1.8,0.36]},{"uuid":"rack-light-3","type":"Mesh","name":"rack-light-3","geometry":"light","material":"light-mat","position":[-0.2,2.1,0.36]}]}}
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "base",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1.1,
+      "depth": 1
+    },
+    {
+      "uuid": "top",
+      "type": "BoxGeometry",
+      "width": 1.05,
+      "height": 0.1,
+      "depth": 1.05
+    },
+    {
+      "uuid": "rack",
+      "type": "BoxGeometry",
+      "width": 0.8,
+      "height": 1.5,
+      "depth": 0.7
+    },
+    {
+      "uuid": "light",
+      "type": "BoxGeometry",
+      "width": 0.1,
+      "height": 0.05,
+      "depth": 0.02
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "base-mat",
+      "type": "MeshStandardMaterial",
+      "color": 3355443,
+      "roughness": 0.6
+    },
+    {
+      "uuid": "top-mat",
+      "type": "MeshStandardMaterial",
+      "color": 1968640,
+      "roughness": 0.72
+    },
+    { "uuid": "rack-mat", "type": "MeshStandardMaterial", "color": 1118481 },
+    { "uuid": "light-mat", "type": "MeshBasicMaterial", "color": 2276179 }
+  ],
+  "object": {
+    "uuid": "server-rack-root",
+    "type": "Group",
+    "name": "server_rack",
+    "children": [
+      {
+        "uuid": "base-mesh",
+        "type": "Mesh",
+        "name": "table-base",
+        "geometry": "base",
+        "material": "base-mat",
+        "position": [0, 0.55, 0]
+      },
+      {
+        "uuid": "top-mesh",
+        "type": "Mesh",
+        "name": "table-top",
+        "geometry": "top",
+        "material": "top-mat",
+        "position": [0, 1.15, 0]
+      },
+      {
+        "uuid": "rack-mesh",
+        "type": "Mesh",
+        "name": "server-rack",
+        "geometry": "rack",
+        "material": "rack-mat",
+        "position": [0, 1.95, 0]
+      },
+      {
+        "uuid": "rack-light-1",
+        "type": "Mesh",
+        "name": "rack-light-1",
+        "geometry": "light",
+        "material": "light-mat",
+        "position": [-0.2, 1.5, 0.36]
+      },
+      {
+        "uuid": "rack-light-2",
+        "type": "Mesh",
+        "name": "rack-light-2",
+        "geometry": "light",
+        "material": "light-mat",
+        "position": [-0.2, 1.8, 0.36]
+      },
+      {
+        "uuid": "rack-light-3",
+        "type": "Mesh",
+        "name": "rack-light-3",
+        "geometry": "light",
+        "material": "light-mat",
+        "position": [-0.2, 2.1, 0.36]
+      }
+    ]
+  }
+}

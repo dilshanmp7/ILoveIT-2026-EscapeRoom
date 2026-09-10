@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "badge",
+      "type": "BoxGeometry",
+      "width": 0.15,
+      "height": 0.2,
+      "depth": 0.02
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "badge-mat",
+      "type": "MeshStandardMaterial",
+      "color": 9455615,
+      "roughness": 0.35,
+      "metalness": 0.05
+    }
+  ],
+  "object": {
+    "uuid": "key-grabbed-root",
+    "type": "Group",
+    "name": "key-grabbed",
+    "userData": {
+      "canRotate": true
+    },
+    "children": [
+      {
+        "uuid": "key-grabbed-badge",
+        "type": "Mesh",
+        "name": "key-badge",
+        "geometry": "badge",
+        "material": "badge-mat"
+      }
+    ]
+  }
+}

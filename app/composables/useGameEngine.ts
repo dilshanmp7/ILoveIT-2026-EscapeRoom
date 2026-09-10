@@ -1,5 +1,5 @@
 import { defaultMapLayout, defaultQuizzes } from '#shared/game/defaults'
-import { getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, SoundFX, TechItem, updatePlayerAnimation } from '#shared/game/runtime'
+import { GameItem, getRotatedAABBSize, initPlayers, KitchenPhysicsWorld, loadKeyModel, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
 import type { DropRule, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -54,6 +54,7 @@ export function useGameEngine() {
   let timerId: ReturnType<typeof setInterval> | undefined
   let lastFrame = 0
   let heldItem: HeldItem | null = null
+  let isPushing = false
   let nearby: Counter | null = null
   let floorplan = defaultMapLayout.map(item => ({ ...item }))
   let joystick = { x: 0, y: 0 }
@@ -91,7 +92,7 @@ export function useGameEngine() {
       }
       if (asset.type !== 'door' || !asset.isOpen) {
         const size = getRotatedAABBSize(asset.w, asset.d, asset.rotation)
-        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: true })))
+        bodies.push(physicsWorld.addBody(new PhysicalBody({ x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: !asset.canPush, canPush: asset.canPush, mesh })))
       }
     }
   }
@@ -129,7 +130,9 @@ export function useGameEngine() {
     const speed = 0.12
     const nextX = player.position.x + (x / length) * speed
     const nextZ = player.position.z + (z / length) * speed
-    if (playerPhysicsBody) physicsWorld.moveBodyWithSlide(playerPhysicsBody, nextX - player.position.x, nextZ - player.position.z)
+    isPushing = playerPhysicsBody
+      ? physicsWorld.moveBodyWithSlide(playerPhysicsBody, nextX - player.position.x, nextZ - player.position.z)
+      : false
     player.rotation.y = Math.atan2(x, z)
     return true
   }
@@ -138,7 +141,7 @@ export function useGameEngine() {
     nearby = getNearby()
     state.nearbyId = nearby?.asset.id || ''
     state.nearbyLabel = nearby?.asset.label || ''
-    state.canGrab = Boolean(heldItem || nearby?.asset.allowGrab || nearby?.heldItems.length || nearby?.asset.actionType === 'trash')
+    state.canGrab = Boolean(heldItem || nearby?.asset.canHold || nearby?.asset.allowGrab || nearby?.heldItems.length || nearby?.asset.actionType === 'trash')
     state.canUse = Boolean(nearby && (nearby.asset.actionType === 'config' || nearby.asset.actionType === 'quiz' || nearby.asset.actionType === 'deliver' || nearby.asset.type === 'riddle' || nearby.asset.type === 'door' || nearby.asset.useAction === 'quiz' || nearby.asset.useAction === 'open_door'))
   }
 
@@ -187,7 +190,7 @@ export function useGameEngine() {
       else dropHeldItemToFloor(heldItem)
       return
     }
-    if (!nearby || !nearby.asset.allowGrab) return
+    if (!nearby || !(nearby.asset.canHold ?? nearby.asset.allowGrab)) return
     if (nearby.heldItems.length) {
       if (nearby.heldItems.length > 1) {
         state.objectSelectionOptions = nearby.heldItems.map(item => ({ id: item.id, label: item.type === 'key' ? 'Key' : item.type === 'server' ? 'Server' : 'Laptop', type: item.configured ? 'Configured' : item.type }))
@@ -201,11 +204,11 @@ export function useGameEngine() {
         heldItem.mesh.position.set(0, 0, 0)
       }
     } else if (nearby.asset.type === 'key') {
-      heldItem = { id: nearby.asset.id, type: 'key', keyId: nearby.asset.keyId }
+      heldItem = { id: nearby.asset.id, type: 'key', keyId: nearby.asset.keyId, mesh: await loadKeyModel() || undefined }
       removePickedUpAsset(nearby.asset.id)
     } else if (nearby.asset.type === 'box_laptop' || nearby.asset.type === 'box_server') {
-      const item = new TechItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
-      item.mesh = await item.createMeshFromAsset('grabbed')
+      const item = new GameItem(nearby.asset.type === 'box_server' ? 'server' : 'laptop')
+      await item.createMeshFromAsset('grabbed')
       heldItem = { id: createObjectId(nearby.asset.id), type: item.type, configured: item.isConfigured, mesh: item.mesh }
       removePickedUpAsset(nearby.asset.id)
     }
@@ -322,9 +325,9 @@ export function useGameEngine() {
         if (nearby.heldItems[0].mesh) {
           const parent = nearby.heldItems[0].mesh.parent
           parent?.remove(nearby.heldItems[0].mesh)
-              const replacement = new TechItem(nearby.heldItems[0].type)
+              const replacement = new GameItem(nearby.heldItems[0].type)
           replacement.isConfigured = true
-              replacement.mesh = await replacement.createMeshFromAsset('configured')
+              await replacement.createMeshFromAsset('configured')
           nearby.heldItems[0].mesh = replacement.mesh
           const configuredItem = nearby.heldItems[0].mesh
           configuredItem.position.set(0, getSurfaceHeight(asset, 0), nearby.heldItems[0].type === 'server' ? 0.4 : 0)
@@ -409,12 +412,15 @@ export function useGameEngine() {
     const delta = Math.min((time - lastFrame) / 1000 || 0, .05)
     lastFrame = time
     const isMoving = updateMovement(delta)
-    updatePlayerAnimation(player, isMoving, Boolean(heldItem), walkCycle)
+    updatePlayerAnimation(player, isMoving, Boolean(heldItem) || isPushing, walkCycle)
     updateNearby()
     if (player && camera) {
       camera.position.lerp(new THREE.Vector3(player.position.x, 8.5, player.position.z + 8.8), .08)
       camera.lookAt(player.position.x, .5, player.position.z)
     }
+    scene?.traverse(object => {
+      if (object.userData.canRotate) object.rotation.y += .02
+    })
     updateCameraOcclusion()
     renderer?.render(scene!, camera!)
     animationFrame = requestAnimationFrame(frame)
@@ -434,20 +440,20 @@ export function useGameEngine() {
     if (layout) setFloorplan(layout)
     canvas.value = target
     scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x0f172a)
+    scene.background = new THREE.Color(0x9bd7f5)
     camera = new THREE.PerspectiveCamera(45, target.clientWidth / target.clientHeight, .1, 100)
     camera.position.set(0, 8.5, 10)
     renderer = new THREE.WebGLRenderer({ canvas: target, antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setSize(target.clientWidth, target.clientHeight, false)
-    scene.add(new THREE.AmbientLight(0xffffff, .75))
-    const light = new THREE.DirectionalLight(0xffffff, 1.2)
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xffcc00, 1.5))
+    const light = new THREE.DirectionalLight(0xffffff, 2)
     light.position.set(4, 12, 8)
     scene.add(light)
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 16), createMaterial(0xe2e8f0))
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 16), createMaterial(0xfff7d6))
     floor.rotation.x = -Math.PI / 2
     scene.add(floor)
-    const grid = new THREE.GridHelper(20, 20, 0x94a3b8, 0xcbd5e1)
+    const grid = new THREE.GridHelper(20, 20, 0xd40511, 0xffcc00)
     grid.position.y = .01
     scene.add(grid)
     physicsWorld = new KitchenPhysicsWorld()

@@ -1,1 +1,82 @@
-{"metadata":{"version":4.3,"type":"Object","generator":"ObjectExporter"},"geometries":[{"uuid":"base","type":"BoxGeometry","width":1,"height":1.1,"depth":1},{"uuid":"top","type":"BoxGeometry","width":1.05,"height":0.1,"depth":1.05},{"uuid":"hatch","type":"BoxGeometry","width":0.8,"height":0.8,"depth":0.1}],"materials":[{"uuid":"base-mat","type":"MeshStandardMaterial","color":3355443,"roughness":0.6},{"uuid":"top-mat","type":"MeshStandardMaterial","color":1396048,"roughness":0.72},{"uuid":"hatch-mat","type":"MeshStandardMaterial","color":1396048,"transparent":true,"opacity":0.8}],"object":{"uuid":"delivery-root","type":"Group","name":"delivery","children":[{"uuid":"base-mesh","type":"Mesh","name":"table-base","geometry":"base","material":"base-mat","position":[0,0.55,0]},{"uuid":"top-mesh","type":"Mesh","name":"table-top","geometry":"top","material":"top-mat","position":[0,1.15,0]},{"uuid":"hatch-mesh","type":"Mesh","name":"delivery-hatch","geometry":"hatch","material":"hatch-mat","position":[0,1.6,0]}]}}
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "base",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1.1,
+      "depth": 1
+    },
+    {
+      "uuid": "top",
+      "type": "BoxGeometry",
+      "width": 1.05,
+      "height": 0.1,
+      "depth": 1.05
+    },
+    {
+      "uuid": "hatch",
+      "type": "BoxGeometry",
+      "width": 0.8,
+      "height": 0.8,
+      "depth": 0.1
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "base-mat",
+      "type": "MeshStandardMaterial",
+      "color": 3355443,
+      "roughness": 0.6
+    },
+    {
+      "uuid": "top-mat",
+      "type": "MeshStandardMaterial",
+      "color": 1396048,
+      "roughness": 0.72
+    },
+    {
+      "uuid": "hatch-mat",
+      "type": "MeshStandardMaterial",
+      "color": 1396048,
+      "transparent": true,
+      "opacity": 0.8
+    }
+  ],
+  "object": {
+    "uuid": "delivery-root",
+    "type": "Group",
+    "name": "delivery",
+    "children": [
+      {
+        "uuid": "base-mesh",
+        "type": "Mesh",
+        "name": "table-base",
+        "geometry": "base",
+        "material": "base-mat",
+        "position": [0, 0.55, 0]
+      },
+      {
+        "uuid": "top-mesh",
+        "type": "Mesh",
+        "name": "table-top",
+        "geometry": "top",
+        "material": "top-mat",
+        "position": [0, 1.15, 0]
+      },
+      {
+        "uuid": "hatch-mesh",
+        "type": "Mesh",
+        "name": "delivery-hatch",
+        "geometry": "hatch",
+        "material": "hatch-mat",
+        "position": [0, 1.6, 0]
+      }
+    ]
+  }
+}
