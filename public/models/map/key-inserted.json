@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "version": 4.3,
+    "type": "Object",
+    "generator": "ObjectExporter"
+  },
+  "geometries": [
+    {
+      "uuid": "reader-base",
+      "type": "BoxGeometry",
+      "width": 0.34,
+      "height": 0.08,
+      "depth": 0.24
+    },
+    {
+      "uuid": "reader-slot",
+      "type": "BoxGeometry",
+      "width": 0.2,
+      "height": 0.02,
+      "depth": 0.05
+    },
+    {
+      "uuid": "badge",
+      "type": "BoxGeometry",
+      "width": 0.15,
+      "height": 0.2,
+      "depth": 0.025
+    },
+    {
+      "uuid": "badge-band",
+      "type": "BoxGeometry",
+      "width": 0.16,
+      "height": 0.035,
+      "depth": 0.03
+    },
+    {
+      "uuid": "status-light",
+      "type": "CylinderGeometry",
+      "radiusTop": 0.025,
+      "radiusBottom": 0.025,
+      "height": 0.012,
+      "radialSegments": 12
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "reader-mat",
+      "type": "MeshStandardMaterial",
+      "color": 2236962,
+      "metalness": 0.45,
+      "roughness": 0.3
+    },
+    { "uuid": "slot-mat", "type": "MeshBasicMaterial", "color": 1118481 },
+    {
+      "uuid": "badge-mat",
+      "type": "MeshStandardMaterial",
+      "color": 9455615,
+      "metalness": 0.2,
+      "roughness": 0.5
+    },
+    { "uuid": "band-mat", "type": "MeshBasicMaterial", "color": 13961233 },
+    { "uuid": "light-mat", "type": "MeshBasicMaterial", "color": 5635925 }
+  ],
+  "object": {
+    "uuid": "key-inserted-root",
+    "type": "Group",
+    "name": "key-inserted",
+    "userData": { "canRotate": false },
+    "children": [
+      {
+        "uuid": "reader-base-mesh",
+        "type": "Mesh",
+        "name": "badge-reader",
+        "geometry": "reader-base",
+        "material": "reader-mat",
+        "position": [0, 0.04, 0]
+      },
+      {
+        "uuid": "reader-slot-mesh",
+        "type": "Mesh",
+        "name": "badge-reader-slot",
+        "geometry": "reader-slot",
+        "material": "slot-mat",
+        "position": [0, 0.085, 0.03]
+      },
+      {
+        "uuid": "badge-mesh",
+        "type": "Mesh",
+        "name": "inserted-badge",
+        "geometry": "badge",
+        "material": "badge-mat",
+        "position": [0, 0.15, 0.02]
+      },
+      {
+        "uuid": "badge-band-mesh",
+        "type": "Mesh",
+        "name": "badge-band",
+        "geometry": "badge-band",
+        "material": "band-mat",
+        "position": [0, 0.15, 0.035]
+      },
+      {
+        "uuid": "status-light-mesh",
+        "type": "Mesh",
+        "name": "reader-status",
+        "geometry": "status-light",
+        "material": "light-mat",
+        "position": [0.12, 0.09, 0.04],
+        "rotation": [1.570796, 0, 0]
+      }
+    ]
+  }
+}

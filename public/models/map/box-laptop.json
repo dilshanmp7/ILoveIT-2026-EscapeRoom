@@ -38,17 +38,17 @@
     {
       "uuid": "carton-mat",
       "type": "MeshStandardMaterial",
-      "color": 14253121,
+      "color": 16763904,
       "roughness": 0.9
     },
     {
       "uuid": "tape-mat",
       "type": "MeshStandardMaterial",
-      "color": 12093215,
+      "color": 16763904,
       "roughness": 0.95
     },
-    { "uuid": "label-mat", "type": "MeshBasicMaterial", "color": 16316664 },
-    { "uuid": "stripe-mat", "type": "MeshBasicMaterial", "color": 1396048 }
+    { "uuid": "label-mat", "type": "MeshBasicMaterial", "color": 16777215 },
+    { "uuid": "stripe-mat", "type": "MeshBasicMaterial", "color": 13961233 }
   ],
   "object": {
     "uuid": "box-laptop-root",
