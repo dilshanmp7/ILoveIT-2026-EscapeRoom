@@ -58,10 +58,10 @@
   {
     "id": "admin_comp",
     "x": -1.5,
-    "z": -2.5,
+    "z": -1,
     "w": 1.5,
     "d": 1.2,
-    "rotation": 90,
+    "rotation": 180,
     "color": 2442499,
     "type": "config_desk",
     "label": "Admin Terminal",
@@ -166,8 +166,8 @@
   },
   {
     "id": "slide_door",
-    "x": 0,
-    "z": 2,
+    "x": 2,
+    "z": -1,
     "w": 2.5,
     "d": 0.4,
     "rotation": 0,
@@ -208,13 +208,13 @@
   {
     "id": "w3",
     "x": 0,
-    "z": 6.2,
-    "w": 17,
+    "z": -7,
+    "w": 20,
     "d": 0.5,
     "rotation": 0,
     "color": 9741240,
     "type": "wall",
-    "label": "Front Wall",
+    "label": "Back Wall",
     "allowGrab": false,
     "actionType": "none"
   }

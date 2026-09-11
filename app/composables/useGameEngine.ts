@@ -411,10 +411,12 @@ export function useGameEngine() {
       else if (
         nearby &&
         getObjectInteraction(nearby.asset.type)?.action === "trash"
-      )
+      ) {
         discardHeldItem();
-      else dropHeldItemToFloor(heldItem);
-      return;
+      } else dropHeldItemToFloor(heldItem);
+      {
+        return;
+      }
     }
     const nearbyDefinition = nearby
       ? getObjectTypeDefinition(nearby.asset.type)
