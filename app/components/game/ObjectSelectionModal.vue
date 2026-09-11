@@ -5,15 +5,15 @@ interface Option {
   type: string
 }
 
-const props = defineProps<{ open: boolean; options: readonly Option[] }>()
+const props = defineProps<{ open: boolean; options: readonly Option[]; title?: string; description?: string }>()
 const emit = defineEmits<{ select: [id: string]; close: [] }>()
 </script>
 
 <template>
   <div v-if="props.open" class="selection-backdrop" role="dialog" aria-modal="true" aria-labelledby="object-selection-title">
     <section class="selection-modal">
-      <h2 id="object-selection-title">SELECT OBJECT</h2>
-      <p>More than one object is within reach.</p>
+      <h2 id="object-selection-title">{{ props.title || 'SELECT OBJECT' }}</h2>
+      <p>{{ props.description || 'More than one object is within reach.' }}</p>
       <div class="selection-list">
         <button v-for="option in props.options" :key="option.id" type="button" @click="emit('select', option.id)">
           <strong>{{ option.label }}</strong>

@@ -90,5 +90,7 @@ export function insertGameSession(session: GameSession, accessToken: string) {
 export function updateStoredSession(id: string, accessToken: string, score: number, status: GameSession['status'], updatedAt: string) {
   const result = getDatabase().prepare('UPDATE game_sessions SET score = ?, status = ?, updated_at = ? WHERE id = ? AND access_token = ?').run(score, status, updatedAt, id, accessToken)
   if (!result.changes) return null
-  return getDatabase().prepare('SELECT id, status, score, created_at AS createdAt, updated_at AS updatedAt FROM game_sessions WHERE id = ?').get(id) as GameSession
+  const row = getDatabase().prepare('SELECT id, status, score, created_at AS createdAt, updated_at AS updatedAt FROM game_sessions WHERE id = ?').get(id) as Record<string, unknown> | undefined
+  if (!row || typeof row.id !== 'string' || (row.status !== 'active' && row.status !== 'completed') || typeof row.score !== 'number' || typeof row.createdAt !== 'string' || typeof row.updatedAt !== 'string') return null
+  return { id: row.id, status: row.status, score: row.score, createdAt: row.createdAt, updatedAt: row.updatedAt } satisfies GameSession
 }

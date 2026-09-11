@@ -68,7 +68,17 @@
     "allowGrab": false,
     "useAction": "quiz",
     "useRequiredKey": "ADMIN_KEY",
-    "acceptsDrop": ""
+    "acceptsDrop": "",
+    "holdingSlots": [
+      {
+        "id": "badge-reader",
+        "label": "Admin badge reader",
+        "accepts": "key",
+        "maxContents": 1,
+        "consumeOnDrop": true,
+        "insertedState": "inserted"
+      }
+    ]
   },
   {
     "id": "c7",

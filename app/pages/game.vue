@@ -51,6 +51,8 @@ useSeoMeta({
       <GameMobileControls :can-grab="engine.state.canGrab" :can-use="engine.state.canUse" @grab="engine.pickUp" @action="engine.useNearby" @dash="engine.dash" @quiz="engine.openQuiz" @move="engine.setJoystick" />
       <GameQuizModal :quiz="engine.state.quiz" :open="engine.state.quizOpen" @answer="engine.answerQuiz" @close="engine.answerQuiz(-1)" />
       <GameObjectSelectionModal :open="engine.state.objectSelectionOpen" :options="engine.state.objectSelectionOptions" @select="engine.selectObject" @close="engine.closeObjectSelection" />
+      <GameObjectSelectionModal :open="engine.state.actionSelectionOpen" :options="engine.state.actionSelectionOptions" title="SELECT ACTION" description="Choose an action for this object." @select="engine.executeAction" @close="engine.closeActionSelection" />
+      <GameMessageModal :message="engine.state.message" @close="engine.closeMessage" />
     </section>
   </main>
 </template>

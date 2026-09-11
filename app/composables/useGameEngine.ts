@@ -1,5 +1,7 @@
 import { defaultQuizzes } from '#shared/game/defaults'
-import { GameItem, getObjectGeometry, getObjectInteraction, getObjectTypeDefinition, getRotatedAABBSize, initPlayers, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, PhysicsWorld, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
+
+import type { ObjectActionContext, ObjectActionDefinition, ObjectQuizSuccess, ObjectVisualState } from '#shared/game/runtime'
+import { GameItem, getObjectActions, getObjectGeometry, getObjectInteraction, getObjectTypeDefinition, getRotatedAABBSize, initPlayers, loadMapObjectModel, loadObjectDefinitions, PhysicalBody, PhysicsWorld, SoundFX, updatePlayerAnimation } from '#shared/game/runtime'
 import type { DropRule, Floorplan, HeldObjectType, MapAsset, QuizQuestion } from '#shared/game/types'
 import * as THREE from 'three'
 import { reactive, readonly, shallowRef } from 'vue'
@@ -16,6 +18,7 @@ interface Counter {
   asset: MapAsset
   mesh: THREE.Group
   heldItems: HeldItem[]
+  state: ObjectVisualState
 }
 
 function createObjectId(prefix: string) {
@@ -37,6 +40,9 @@ const initialState = () => ({
   finished: false,
   objectSelectionOpen: false,
   objectSelectionOptions: [] as { id: string; label: string; type: string }[],
+  actionSelectionOpen: false,
+  actionSelectionOptions: [] as { id: string; label: string; type: string }[],
+  message: '',
 })
 
 export function useGameEngine() {
@@ -54,6 +60,8 @@ export function useGameEngine() {
   let timerId: ReturnType<typeof setInterval> | undefined
   let lastFrame = 0
   let heldItem: HeldItem | null = null
+  let pendingQuizSuccess: ObjectQuizSuccess | undefined
+  let pendingQuizAssetId = ''
   let isPushing = false
   let nearby: Counter | null = null
   let floorplan: Floorplan = { layout: [], playerSpawn: { x: 0, z: 2 } }
@@ -61,6 +69,7 @@ export function useGameEngine() {
   let removeListeners: (() => void) | undefined
   const keys = new Set<string>()
   const counters: Counter[] = []
+  const objectInstances = new Map<string, { asset: MapAsset; state: ObjectVisualState; mesh: THREE.Group | null; heldItems: HeldItem[] }>()
   const bodies: PhysicalBody[] = []
   const occludableMeshes: THREE.Group[] = []
   const occlusionRaycaster = new THREE.Raycaster()
@@ -71,7 +80,9 @@ export function useGameEngine() {
 
   async function buildFloorplan() {
     if (!scene) return
+    const previousInstances = new Map(objectInstances)
     counters.splice(0)
+    objectInstances.clear()
     bodies.splice(0)
     occludableMeshes.splice(0)
     physicsWorld = new PhysicsWorld()
@@ -80,10 +91,15 @@ export function useGameEngine() {
     }
 
     for (const asset of floorplan.layout.map(item => ({ ...item }))) {
-      const mesh = await loadMapObjectModel(asset)
+      const previous = previousInstances.get(asset.id)
+      const state = previous?.state || (asset.isOpen ? 'opened' : getObjectTypeDefinition(asset.type)?.defaultState || 'onFloor')
+      const instance = { asset, state, mesh: null as THREE.Group | null, heldItems: previous?.heldItems || [] }
+      objectInstances.set(asset.id, instance)
+      const mesh = await loadMapObjectModel(asset, state)
+      instance.mesh = mesh
       const geometry = getObjectGeometry(asset.type)
       if (geometry?.countsAsCounter) {
-        if (mesh) counters.push({ asset, mesh, heldItems: [] })
+        if (mesh) counters.push({ asset, mesh, heldItems: instance.heldItems, state })
       }
       if (mesh) {
         mesh.position.set(asset.x, 0, asset.z)
@@ -92,7 +108,7 @@ export function useGameEngine() {
         scene.add(mesh)
         occludableMeshes.push(mesh)
       }
-      if (!(geometry?.isBarrier && asset.isOpen)) {
+      if (!(geometry?.isBarrier && state === 'opened')) {
         const size = getRotatedAABBSize(asset.w, asset.d, asset.rotation)
         bodies.push(physicsWorld.addBody(new PhysicalBody({ assetId: asset.id, x: asset.x, y: 0, z: asset.z, width: size.width, depth: size.depth, isStatic: geometry?.isStatic ?? !asset.canPush, canPush: geometry?.canPush ?? asset.canPush ?? false, mesh })))
       }
@@ -125,6 +141,46 @@ export function useGameEngine() {
     return closest
   }
 
+  function removeBodyForAsset(assetId: string) {
+    const bodyIndex = bodies.findIndex(body => body.assetId === assetId)
+    if (bodyIndex === -1) return
+    const body = bodies[bodyIndex]
+    if (!body) return
+    const physicsBodyIndex = physicsWorld.bodies.indexOf(body)
+    if (physicsBodyIndex !== -1) physicsWorld.bodies.splice(physicsBodyIndex, 1)
+    bodies.splice(bodyIndex, 1)
+  }
+
+  async function setObjectState(assetId: string, nextState: ObjectVisualState) {
+    const instance = objectInstances.get(assetId)
+    if (!instance || instance.state === nextState) return
+    const previousMesh = instance.mesh
+    instance.state = nextState
+    const nextMesh = await loadMapObjectModel(instance.asset, nextState)
+    instance.mesh = nextMesh
+    if (previousMesh) {
+      if (scene) scene.remove(previousMesh)
+      const previousIndex = occludableMeshes.indexOf(previousMesh)
+      if (previousIndex !== -1) occludableMeshes.splice(previousIndex, 1)
+    }
+    if (nextMesh && scene) {
+      nextMesh.position.set(instance.asset.x, 0, instance.asset.z)
+      nextMesh.rotation.y = THREE.MathUtils.degToRad(instance.asset.rotation)
+      nextMesh.userData.courierAsset = true
+      scene.add(nextMesh)
+      occludableMeshes.push(nextMesh)
+    }
+    const geometry = getObjectGeometry(instance.asset.type)
+    if (geometry?.isBarrier && nextState === 'opened') removeBodyForAsset(assetId)
+  }
+
+  function emitGameEvent(event: string) {
+    for (const instance of objectInstances.values()) {
+      const reaction = getObjectTypeDefinition(instance.asset.type)?.reactions?.find(item => item.event === event)
+      if (reaction) void setObjectState(instance.asset.id, reaction.state)
+    }
+  }
+
   function updateMovement(delta: number) {
     if (!player) return false
     let x = 0
@@ -155,8 +211,31 @@ export function useGameEngine() {
     state.nearbyId = nearby?.asset.id || ''
     state.nearbyLabel = nearby?.asset.label || ''
     const interaction = nearby ? getObjectInteraction(nearby.asset.type) : undefined
-    state.canGrab = Boolean(heldItem || nearby?.asset.canHold || nearby?.asset.allowGrab || nearby?.heldItems.length || interaction?.canGrab || interaction?.action === 'trash')
-    state.canUse = Boolean(nearby && (interaction?.canUse || interaction?.action !== 'none' || nearby.asset.actionType === 'config' || nearby.asset.actionType === 'quiz' || nearby.asset.actionType === 'deliver'))
+    state.canGrab = Boolean(heldItem || nearby?.asset.canHold || nearby?.asset.allowGrab || nearby?.heldItems.length || interaction?.canGrab)
+    state.canUse = getAvailableActions().length > 0
+  }
+
+  function getAvailableActions(): ObjectActionDefinition[] {
+    if (!nearby) return []
+    return getObjectActions(nearby.asset.type, nearby.asset.actionIds)
+      .filter(action => !action.visibleWhen || action.visibleWhen(createActionContext()))
+  }
+
+  function createActionContext(): ObjectActionContext {
+    return {
+      asset: nearby!.asset,
+      state: objectInstances.get(nearby!.asset.id)?.state || 'onFloor',
+      heldItem,
+      heldItems: nearby!.heldItems,
+      emitEvent: emitGameEvent,
+      setState: state => setObjectState(nearby!.asset.id, state),
+      configureContained: () => configureContainedItem(),
+      openQuiz: success => openQuiz(success),
+      showMessage: message => { state.message = message },
+      discardHeld: () => discardHeldItem(),
+      deliverHeld: () => deliverHeldItem(),
+      addScore: amount => { state.score += amount },
+    }
   }
 
   function getDropRule(asset: MapAsset): DropRule {
@@ -179,9 +258,37 @@ export function useGameEngine() {
     return rule.objectIds.includes(item.id)
   }
 
+  function getHoldingSlot(asset: MapAsset, item: HeldItem, contents: HeldItem[]) {
+    const slots = asset.holdingSlots || getObjectTypeDefinition(asset.type)?.holdingSlots
+    return slots?.find(slot => {
+      if (slot.maxContents !== undefined && contents.length >= slot.maxContents) return false
+      if (slot.accepts === 'any') return true
+      if (slot.accepts === 'configured') return item.configured === true
+      return slot.accepts === item.type
+    })
+  }
+
   async function triggerGrabDrop() {
     if (state.objectSelectionOpen) return
     if (heldItem) {
+      const targetSlot = nearby ? getHoldingSlot(nearby.asset, heldItem, nearby.heldItems) : undefined
+      if (nearby && targetSlot) {
+        const droppedItem = heldItem
+        player?.getObjectByName('holdingSlot')?.remove(droppedItem.mesh || new THREE.Group())
+        if (!targetSlot.consumeOnDrop) {
+          nearby.heldItems.push(droppedItem)
+          if (droppedItem.mesh) {
+            nearby.mesh.add(droppedItem.mesh)
+            droppedItem.mesh.position.set(0, getSurfaceHeight(nearby.asset, nearby.heldItems.length), 0)
+          }
+        }
+        if (targetSlot.insertedState) await setObjectState(nearby.asset.id, targetSlot.insertedState)
+        heldItem = null
+        state.holding = ''
+        state.holdingConfigured = false
+        sound.play('drop')
+        return
+      }
       if (nearby && canDrop(heldItem, nearby.asset, nearby.heldItems)) {
         const targetRule = getDropRule(nearby.asset)
         if (targetRule.mode !== 'floor') {
@@ -260,6 +367,7 @@ export function useGameEngine() {
 
   function removePickedUpAsset(assetId: string) {
     floorplan.layout = floorplan.layout.filter(asset => asset.id !== assetId)
+    objectInstances.delete(assetId)
     buildFloorplan()
   }
 
@@ -306,75 +414,90 @@ export function useGameEngine() {
     sound.play('drop')
   }
 
+  async function configureContainedItem() {
+    if (!nearby?.heldItems[0] || nearby.heldItems[0].configured) return false
+    const item = nearby.heldItems[0]
+    const rule = getDropRule(nearby.asset)
+    if (rule.mode !== 'types' || !rule.types.includes(item.type)) return false
+    item.configured = true
+    if (item.mesh) {
+      const parent = item.mesh.parent
+      parent?.remove(item.mesh)
+      const replacement = new GameItem(item.type)
+      replacement.isConfigured = true
+      await replacement.createMeshFromAsset('configured')
+      item.mesh = replacement.mesh
+      const heldOffset = getObjectTypeDefinition(item.type)?.heldOffset || [0, 0, 0]
+      item.mesh.position.set(heldOffset[0], getSurfaceHeight(nearby.asset, 0) + heldOffset[1], heldOffset[2])
+      parent?.add(item.mesh)
+    }
+    state.score += 25
+    sound.play(getObjectTypeDefinition(item.type)?.configureSound || 'process')
+    return true
+  }
+
+  function deliverHeldItem() {
+    if (!heldItem?.configured) return
+    heldItem = null
+    state.holding = ''
+    state.holdingConfigured = false
+    state.score += 150
+    state.finished = true
+    sound.play('deliver')
+  }
+
   async function useNearby() {
-    if (!nearby) return
-    const asset = nearby.asset
-    const interaction = getObjectInteraction(asset.type)
-    if (interaction?.action === 'open_door' || asset.useAction === 'open_door') {
-      if (heldItem?.keyId === (interaction.requiredKey || asset.useRequiredKey)) {
-        asset.isOpen = true
-        const panel = nearby.mesh.getObjectByName('door-panel')
-        if (panel) panel.position.x = asset.w / 2 - 0.2
-        const bodyIndex = bodies.findIndex(body => body.x === asset.x && body.z === asset.z)
-        if (bodyIndex !== -1) {
-          const body = bodies[bodyIndex]
-          if (body) {
-            const physicsBodyIndex = physicsWorld.bodies.indexOf(body)
-            if (physicsBodyIndex !== -1) physicsWorld.bodies.splice(physicsBodyIndex, 1)
-            bodies.splice(bodyIndex, 1)
-          }
-        }
-        sound.play('unlock')
-      }
+    const actions = getAvailableActions()
+    if (!nearby || !actions.length) return
+    if (actions.length > 1) {
+      state.actionSelectionOptions = actions.map(action => ({ id: action.id, label: action.label, type: nearby!.asset.label }))
+      state.actionSelectionOpen = true
       return
     }
-    if (interaction?.action === 'quiz' || asset.useAction === 'quiz' || asset.actionType === 'quiz') {
-      const requiredKey = interaction?.requiredKey || asset.useRequiredKey
-      if (requiredKey && heldItem?.keyId !== requiredKey) return
-      state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!
-      state.quizOpen = true
+    await executeAction(actions[0]!.id)
+  }
+
+  async function executeAction(actionId: string) {
+    const action = getAvailableActions().find(item => item.id === actionId)
+    if (!action) return
+    state.actionSelectionOpen = false
+    state.actionSelectionOptions = []
+    const context = createActionContext()
+    if (action.canExecute && !action.canExecute(context)) {
+      if (action.blockedMessage) state.message = action.blockedMessage
       return
     }
-    if ((interaction?.action === 'config' || asset.actionType === 'config') && nearby.heldItems[0] && !nearby.heldItems[0].configured) {
-      const rule = getDropRule(asset)
-      if (rule.mode === 'types' && rule.types.includes(nearby.heldItems[0].type)) {
-        nearby.heldItems[0].configured = true
-        if (nearby.heldItems[0].mesh) {
-          const parent = nearby.heldItems[0].mesh.parent
-          parent?.remove(nearby.heldItems[0].mesh)
-              const replacement = new GameItem(nearby.heldItems[0].type)
-          replacement.isConfigured = true
-              await replacement.createMeshFromAsset('configured')
-          nearby.heldItems[0].mesh = replacement.mesh
-          const configuredItem = nearby.heldItems[0].mesh
-          const heldOffset = getObjectTypeDefinition(nearby.heldItems[0].type)?.heldOffset || [0, 0, 0]
-          configuredItem.position.set(heldOffset[0], getSurfaceHeight(asset, 0) + heldOffset[1], heldOffset[2])
-          parent?.add(configuredItem)
-        }
-        state.score += 25
-        sound.play(getObjectTypeDefinition(nearby.heldItems[0].type)?.configureSound || 'process')
-      }
-      return
-    }
-    if (asset.actionType === 'deliver' && heldItem?.configured) {
-      state.score += 150
-      heldItem = null
-      state.holding = ''
-      state.holdingConfigured = false
-      state.finished = true
-      sound.play('deliver')
-    }
+    await action.execute(context)
+  }
+
+  function closeActionSelection() {
+    state.actionSelectionOpen = false
+    state.actionSelectionOptions = []
   }
 
   function answerQuiz(index: number) {
-    if (state.quiz && index === state.quiz.correct) state.score += 100
+    if (state.quiz && index === state.quiz.correct) {
+      const success = pendingQuizSuccess
+      state.score += success?.score ?? 100
+      if (success?.event) emitGameEvent(success.event)
+      if (success?.state && pendingQuizAssetId) void setObjectState(pendingQuizAssetId, success.state)
+      if (success?.message) state.message = success.message
+    }
+    pendingQuizSuccess = undefined
+    pendingQuizAssetId = ''
     state.quizOpen = false
     state.quiz = null
   }
 
-  function openQuiz() {
+  function openQuiz(success?: ObjectQuizSuccess) {
+    pendingQuizSuccess = success
+    pendingQuizAssetId = nearby?.asset.id || ''
     state.quiz = defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!
     state.quizOpen = true
+  }
+
+  function closeMessage() {
+    state.message = ''
   }
 
   function updateCameraOcclusion() {
@@ -548,6 +671,9 @@ export function useGameEngine() {
     openQuiz,
     selectObject,
     closeObjectSelection,
+    executeAction,
+    closeActionSelection,
+    closeMessage,
     openEditor,
     closeEditor,
     deployEditor,

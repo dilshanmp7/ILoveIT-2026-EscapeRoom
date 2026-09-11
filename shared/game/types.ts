@@ -14,6 +14,16 @@ export type AssetType =
 
 export type HeldObjectType = 'laptop' | 'server' | 'key'
 
+export interface HoldingSlot {
+  id: string
+  label: string
+  accepts: 'any' | 'configured' | HeldObjectType
+  maxContents?: number
+  consumeOnDrop?: boolean
+  insertedState?: 'grabbed' | 'onFloor' | 'onTable' | 'configured' | 'opened' | 'completed'
+  insertedModel?: string
+}
+
 export type DropRule =
   | { mode: 'none' }
   | { mode: 'floor' }
@@ -43,6 +53,8 @@ export interface MapAsset {
   acceptsDrop?: 'none' | 'floor' | 'any' | 'configured' | HeldObjectType
   useAction?: 'none' | 'open_door' | 'quiz'
   useRequiredKey?: string
+  actionIds?: string[]
+  holdingSlots?: HoldingSlot[]
 }
 
 export interface PlayerSpawn {

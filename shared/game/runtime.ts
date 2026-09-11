@@ -1,16 +1,54 @@
 import * as THREE from 'three'
-import type { MapAsset } from './types'
+import { objectDefinitions } from './object-definitions'
+import type { HoldingSlot, MapAsset } from './types'
 
-export type ObjectVisualState = 'grabbed' | 'onFloor' | 'onTable' | 'configured' | 'opened'
+export type ObjectVisualState = 'grabbed' | 'onFloor' | 'onTable' | 'configured' | 'inserted' | 'opened' | 'completed'
 
 export interface ObjectDefinition {
-  kind: 'tech' | 'badge' | 'map'
-  type?: 'laptop' | 'server'
   configured?: boolean
   color?: string
   scale?: [number, number, number]
   rotation?: [number, number, number]
   model?: string
+  canHold?: boolean
+  canPush?: boolean
+  acceptsDrop?: string
+}
+
+export interface ObjectReaction {
+  event: string
+  state: ObjectVisualState
+}
+
+export interface ObjectQuizSuccess {
+  event?: string
+  state?: ObjectVisualState
+  message?: string
+  score?: number
+}
+
+export interface ObjectActionContext {
+  asset: MapAsset
+  state: ObjectVisualState
+  heldItem: { type: string; keyId?: string; configured?: boolean } | null
+  heldItems: { type: string; configured?: boolean }[]
+  emitEvent: (event: string) => void
+  setState: (state: ObjectVisualState) => Promise<void>
+  configureContained: () => Promise<boolean>
+  openQuiz: (success?: ObjectQuizSuccess) => void
+  showMessage: (message: string) => void
+  discardHeld: () => void
+  deliverHeld: () => void
+  addScore: (amount: number) => void
+}
+
+export interface ObjectActionDefinition {
+  id: string
+  label: string
+  blockedMessage?: string
+  visibleWhen?: (context: ObjectActionContext) => boolean
+  canExecute?: (context: ObjectActionContext) => boolean
+  execute: (context: ObjectActionContext) => void | Promise<void>
 }
 
 export type ObjectAction = 'none' | 'config' | 'quiz' | 'deliver' | 'trash' | 'open_door'
@@ -18,12 +56,16 @@ export type ObjectAction = 'none' | 'config' | 'quiz' | 'deliver' | 'trash' | 'o
 export interface ObjectTypeDefinition {
   states: Partial<Record<ObjectVisualState, ObjectDefinition>>
   defaultState?: ObjectVisualState
+  holdingSlots?: HoldingSlot[]
   interaction?: {
     action?: ObjectAction
     requiredKey?: string
     canGrab?: boolean
     canUse?: boolean
+    emitsEvent?: string
   }
+  reactions?: ObjectReaction[]
+  actions?: ObjectActionDefinition[]
   geometry?: {
     isBarrier?: boolean
     isStatic?: boolean
@@ -41,14 +83,11 @@ export interface ObjectTypeDefinition {
 
 export type ObjectDefinitions = Record<string, ObjectTypeDefinition>
 
-let objectDefinitions: ObjectDefinitions = {}
 const objectModelCache = new Map<string, THREE.Object3D>()
 const objectModelLoader = new THREE.ObjectLoader()
+const objectActionRegistry = new Map<string, ObjectActionDefinition>()
 
-export async function loadObjectDefinitions(url = '/game/objects.json') {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`Unable to load object definitions: ${response.status}`)
-  objectDefinitions = await response.json() as ObjectDefinitions
+export async function loadObjectDefinitions() {
   return objectDefinitions
 }
 
@@ -76,6 +115,16 @@ export function getObjectDefinition(type: string, state: ObjectVisualState): Obj
 
 export function getObjectInteraction(type: string) {
   return objectDefinitions[type]?.interaction
+}
+
+export function registerObjectAction(action: ObjectActionDefinition) {
+  objectActionRegistry.set(action.id, action)
+}
+
+export function getObjectActions(type: string, actionIds?: string[]) {
+  const actions = objectDefinitions[type]?.actions || []
+  if (!actionIds) return actions
+  return actionIds.flatMap(id => actions.find(action => action.id === id) || objectActionRegistry.get(id) || [])
 }
 
 export function getObjectGeometry(type: string) {
@@ -180,7 +229,7 @@ export class PhysicsWorld {
     return horizontal.pushed || vertical.pushed
   }
 
-  private moveBodyAlongAxis(body: PhysicalBody, delta: number, axis: 'x' | 'z', moving = new Set<PhysicalBody>()) {
+  private moveBodyAlongAxis(body: PhysicalBody, delta: number, axis: 'x' | 'z', moving = new Set<PhysicalBody>()): { moved: boolean; pushed: boolean } {
     if (!delta || body.isStatic || moving.has(body)) return { moved: false, pushed: false }
     moving.add(body)
     const start = body[axis]
@@ -347,9 +396,9 @@ export function initPlayers(scene: THREE.Scene, physics: PhysicsWorld, spawn = {
   return { player, playerBody: body }
 }
 
-export async function loadMapObjectModel(asset: MapAsset): Promise<THREE.Group | null> {
-  const state: ObjectVisualState = asset.isOpen ? 'opened' : getObjectTypeDefinition(asset.type)?.defaultState || 'onFloor'
-  const definition = getObjectDefinition(asset.type, state)
+export async function loadMapObjectModel(asset: MapAsset, state?: ObjectVisualState): Promise<THREE.Group | null> {
+  const visualState = state || getObjectTypeDefinition(asset.type)?.defaultState || 'onFloor'
+  const definition = getObjectDefinition(asset.type, visualState)
   if (!definition?.model) return null
   const cached = objectModelCache.get(definition.model)
   const model = cached ? cached.clone(true) : await objectModelLoader.loadAsync(definition.model)
