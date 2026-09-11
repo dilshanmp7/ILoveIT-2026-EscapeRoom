@@ -1,0 +1,44 @@
+import type { ObjectTypeDefinition } from "../../runtime";
+import ServerRackMesh from "./mesh/server-rack.json";
+
+export default {
+  interaction: { action: "config", canUse: true },
+  geometry: {
+    isStatic: true,
+    isSurface: true,
+    surfaceHeight: 1.3,
+    countsAsCounter: true,
+  },
+  holdingSlots: [
+    {
+      id: "server-bay",
+      label: "Server bay",
+      accepts: "server",
+      maxContents: 1,
+    },
+  ],
+  actions: [
+    {
+      id: "configure",
+      label: "Configure server",
+      canExecute: (context) =>
+        context.heldItems.some(
+          (item) => item.type === context.asset.acceptsDrop && !item.configured,
+        ),
+      execute: async (context) => {
+        await context.configureContained();
+      },
+    },
+  ],
+  editor: {
+    label: "Server rack",
+    detail: "Configure server",
+    color: "#64748b",
+    width: 1.5,
+    depth: 1.2,
+  },
+  states: {
+    onFloor: { mesh: ServerRackMesh, acceptsDrop: "server" },
+    inserted: { mesh: ServerRackMesh, acceptsDrop: "server" },
+  },
+} as ObjectTypeDefinition;

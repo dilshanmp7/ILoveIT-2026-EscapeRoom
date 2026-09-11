@@ -26,8 +26,20 @@
       "height": 1.5,
       "depth": 0.7
     },
-    { "uuid": "bay", "type": "BoxGeometry", "width": 0.68, "height": 0.2, "depth": 0.035 },
-    { "uuid": "bay-handle", "type": "BoxGeometry", "width": 0.08, "height": 0.025, "depth": 0.02 },
+    {
+      "uuid": "bay",
+      "type": "BoxGeometry",
+      "width": 0.68,
+      "height": 0.2,
+      "depth": 0.035
+    },
+    {
+      "uuid": "bay-handle",
+      "type": "BoxGeometry",
+      "width": 0.08,
+      "height": 0.025,
+      "depth": 0.02
+    },
     {
       "uuid": "light",
       "type": "BoxGeometry",
@@ -49,9 +61,27 @@
       "color": 1968640,
       "roughness": 0.72
     },
-    { "uuid": "rack-mat", "type": "MeshStandardMaterial", "color": 1118481, "metalness": 0.5, "roughness": 0.28 },
-    { "uuid": "bay-mat", "type": "MeshStandardMaterial", "color": 2236962, "metalness": 0.35, "roughness": 0.3 },
-    { "uuid": "handle-mat", "type": "MeshStandardMaterial", "color": 6316128, "metalness": 0.7, "roughness": 0.22 },
+    {
+      "uuid": "rack-mat",
+      "type": "MeshStandardMaterial",
+      "color": 1118481,
+      "metalness": 0.5,
+      "roughness": 0.28
+    },
+    {
+      "uuid": "bay-mat",
+      "type": "MeshStandardMaterial",
+      "color": 2236962,
+      "metalness": 0.35,
+      "roughness": 0.3
+    },
+    {
+      "uuid": "handle-mat",
+      "type": "MeshStandardMaterial",
+      "color": 6316128,
+      "metalness": 0.7,
+      "roughness": 0.22
+    },
     { "uuid": "light-mat", "type": "MeshBasicMaterial", "color": 2276179 },
     { "uuid": "warning-mat", "type": "MeshBasicMaterial", "color": 16753920 }
   ],
@@ -84,12 +114,54 @@
         "material": "rack-mat",
         "position": [0, 1.95, 0]
       },
-      { "uuid": "bay-1", "type": "Mesh", "name": "server-bay-1", "geometry": "bay", "material": "bay-mat", "position": [0, 1.55, 0.365] },
-      { "uuid": "bay-2", "type": "Mesh", "name": "server-bay-2", "geometry": "bay", "material": "bay-mat", "position": [0, 1.85, 0.365] },
-      { "uuid": "bay-3", "type": "Mesh", "name": "server-bay-3", "geometry": "bay", "material": "bay-mat", "position": [0, 2.15, 0.365] },
-      { "uuid": "handle-1", "type": "Mesh", "name": "bay-handle-1", "geometry": "bay-handle", "material": "handle-mat", "position": [0.18, 1.55, 0.39] },
-      { "uuid": "handle-2", "type": "Mesh", "name": "bay-handle-2", "geometry": "bay-handle", "material": "handle-mat", "position": [0.18, 1.85, 0.39] },
-      { "uuid": "handle-3", "type": "Mesh", "name": "bay-handle-3", "geometry": "bay-handle", "material": "handle-mat", "position": [0.18, 2.15, 0.39] },
+      {
+        "uuid": "bay-1",
+        "type": "Mesh",
+        "name": "server-bay-1",
+        "geometry": "bay",
+        "material": "bay-mat",
+        "position": [0, 1.55, 0.365]
+      },
+      {
+        "uuid": "bay-2",
+        "type": "Mesh",
+        "name": "server-bay-2",
+        "geometry": "bay",
+        "material": "bay-mat",
+        "position": [0, 1.85, 0.365]
+      },
+      {
+        "uuid": "bay-3",
+        "type": "Mesh",
+        "name": "server-bay-3",
+        "geometry": "bay",
+        "material": "bay-mat",
+        "position": [0, 2.15, 0.365]
+      },
+      {
+        "uuid": "handle-1",
+        "type": "Mesh",
+        "name": "bay-handle-1",
+        "geometry": "bay-handle",
+        "material": "handle-mat",
+        "position": [0.18, 1.55, 0.39]
+      },
+      {
+        "uuid": "handle-2",
+        "type": "Mesh",
+        "name": "bay-handle-2",
+        "geometry": "bay-handle",
+        "material": "handle-mat",
+        "position": [0.18, 1.85, 0.39]
+      },
+      {
+        "uuid": "handle-3",
+        "type": "Mesh",
+        "name": "bay-handle-3",
+        "geometry": "bay-handle",
+        "material": "handle-mat",
+        "position": [0.18, 2.15, 0.39]
+      },
       {
         "uuid": "rack-light-1",
         "type": "Mesh",
@@ -114,7 +186,14 @@
         "material": "light-mat",
         "position": [-0.2, 2.1, 0.36]
       },
-      { "uuid": "warning-light", "type": "Mesh", "name": "rack-warning", "geometry": "light", "material": "warning-mat", "position": [0.2, 2.35, 0.36] }
+      {
+        "uuid": "warning-light",
+        "type": "Mesh",
+        "name": "rack-warning",
+        "geometry": "light",
+        "material": "warning-mat",
+        "position": [0.2, 2.35, 0.36]
+      }
     ]
   }
 }
