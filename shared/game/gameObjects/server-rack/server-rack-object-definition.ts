@@ -22,9 +22,8 @@ export default {
       id: "configure",
       label: "Configure server",
       canExecute: (context) =>
-        context.heldItems.some(
-          (item) => item.type === context.asset.acceptsDrop && !item.configured,
-        ),
+        context.heldItem?.type === context.asset.acceptsDrop &&
+        !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();
       },

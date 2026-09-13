@@ -12,7 +12,7 @@ export default {
   geometry: {
     isStatic: true,
     isSurface: true,
-    surfaceHeight: 1.3,
+    surfaceHeight: 1.0,
     countsAsCounter: true,
   },
   holdingSlots: [
@@ -44,9 +44,8 @@ export default {
       label: "Configure device",
       visibleWhen: (context) => context.asset.useAction !== "quiz",
       canExecute: (context) =>
-        context.heldItems.some(
-          (item) => item.type === context.asset.acceptsDrop && !item.configured,
-        ),
+        context.heldItem && context.heldItem.type === context.asset.acceptsDrop &&
+        !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();
       },

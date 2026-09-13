@@ -42,7 +42,7 @@ interface HeldItem {
 interface Counter {
   asset: MapAsset;
   mesh: THREE.Group;
-  heldItems: HeldItem[];
+  heldItem: HeldItem | null;
   state: ObjectVisualState;
 }
 
@@ -100,7 +100,7 @@ export function useGameEngine() {
       asset: MapAsset;
       state: ObjectVisualState;
       mesh: THREE.Group | null;
-      heldItems: HeldItem[];
+      heldItem: HeldItem | null;
     }
   >();
   const bodies: PhysicalBody[] = [];
@@ -134,7 +134,7 @@ export function useGameEngine() {
         asset,
         state,
         mesh: null as THREE.Group | null,
-        heldItems: previous?.heldItems || [],
+        heldItem: previous?.heldItem || null,
       };
       objectInstances.set(asset.id, instance);
       const mesh = await loadMapObjectModel(asset, state);
@@ -142,7 +142,7 @@ export function useGameEngine() {
       const geometry = getObjectGeometry(asset.type);
       if (geometry?.countsAsCounter) {
         if (mesh)
-          counters.push({ asset, mesh, heldItems: instance.heldItems, state });
+          counters.push({ asset, mesh, heldItem: instance.heldItem, state });
       }
       if (mesh) {
         mesh.position.set(asset.x, 0, asset.z);
@@ -279,11 +279,11 @@ export function useGameEngine() {
       ? getObjectInteraction(nearby.asset.type)
       : undefined;
     state.canGrab = Boolean(
-      heldItem ||
-      nearby?.asset.canHold ||
+      !heldItem &&
+      (nearby?.asset.canHold ||
       nearby?.asset.allowGrab ||
-      nearby?.heldItems.length ||
-      interaction?.canGrab,
+      nearby?.heldItem ||
+      interaction?.canGrab),
     );
     state.canUse = getAvailableActions().length > 0;
   }
@@ -301,7 +301,6 @@ export function useGameEngine() {
       asset: nearby!.asset,
       state: objectInstances.get(nearby!.asset.id)?.state || "onFloor",
       heldItem,
-      heldItems: nearby!.heldItems,
       emitEvent: emitGameEvent,
       setState: (state) => setObjectState(nearby!.asset.id, state),
       configureContained: () => configureContainedItem(),
@@ -359,7 +358,11 @@ export function useGameEngine() {
     if (state.objectSelectionOpen) return;
     if (heldItem) {
       const targetSlot = nearby
-        ? getHoldingSlot(nearby.asset, heldItem, nearby.heldItems)
+        ? getHoldingSlot(
+            nearby.asset,
+            heldItem,
+            nearby.heldItem ? [nearby.heldItem] : [],
+          )
         : undefined;
       if (nearby && targetSlot) {
         const droppedItem = heldItem;
@@ -367,12 +370,12 @@ export function useGameEngine() {
           ?.getObjectByName("holdingSlot")
           ?.remove(droppedItem.mesh || new THREE.Group());
         if (!targetSlot.consumeOnDrop) {
-          nearby.heldItems.push(droppedItem);
+          nearby.heldItem = droppedItem;
           if (droppedItem.mesh) {
             nearby.mesh.add(droppedItem.mesh);
             droppedItem.mesh.position.set(
               0,
-              getSurfaceHeight(nearby.asset, nearby.heldItems.length),
+              getSurfaceHeight(nearby.asset),
               0,
             );
           }
@@ -385,17 +388,24 @@ export function useGameEngine() {
         sound.play("drop");
         return;
       }
-      if (nearby && canDrop(heldItem, nearby.asset, nearby.heldItems)) {
+      if (
+        nearby &&
+        canDrop(
+          heldItem,
+          nearby.asset,
+          nearby.heldItem ? [nearby.heldItem] : [],
+        )
+      ) {
         const targetRule = getDropRule(nearby.asset);
         if (targetRule.mode !== "floor") {
           const holdingSlot = player?.getObjectByName("holdingSlot");
           holdingSlot?.remove(heldItem.mesh || new THREE.Group());
-          nearby.heldItems.push(heldItem);
+          nearby.heldItem = heldItem;
           if (heldItem.mesh) {
             nearby.mesh.add(heldItem.mesh);
             heldItem.mesh.position.set(
               0,
-              getSurfaceHeight(nearby.asset, nearby.heldItems.length),
+              getSurfaceHeight(nearby.asset),
               0,
             );
           }
@@ -418,6 +428,7 @@ export function useGameEngine() {
         return;
       }
     }
+    if (heldItem) return;
     const nearbyDefinition = nearby
       ? getObjectTypeDefinition(nearby.asset.type)
       : undefined;
@@ -430,17 +441,9 @@ export function useGameEngine() {
       )
     )
       return;
-    if (nearby.heldItems.length) {
-      if (nearby.heldItems.length > 1) {
-        state.objectSelectionOptions = nearby.heldItems.map((item) => ({
-          id: item.id,
-          label: getObjectTypeDefinition(item.type)?.editor?.label || item.type,
-          type: item.configured ? "Configured" : item.type,
-        }));
-        state.objectSelectionOpen = true;
-        return;
-      }
-      heldItem = nearby.heldItems.pop() || null;
+    if (nearby.heldItem) {
+      heldItem = nearby.heldItem;
+      nearby.heldItem = null;
       if (heldItem?.mesh) {
         nearby.mesh.remove(heldItem.mesh);
         player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
@@ -474,11 +477,9 @@ export function useGameEngine() {
 
   function selectObject(objectId: string) {
     if (!nearby || heldItem) return;
-    const itemIndex = nearby.heldItems.findIndex(
-      (item) => item.id === objectId,
-    );
-    if (itemIndex === -1) return;
-    heldItem = nearby.heldItems.splice(itemIndex, 1)[0] || null;
+    if (!nearby.heldItem || nearby.heldItem.id !== objectId) return;
+    heldItem = nearby.heldItem;
+    nearby.heldItem = null;
     if (heldItem?.mesh) {
       nearby.mesh.remove(heldItem.mesh);
       player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
@@ -553,8 +554,8 @@ export function useGameEngine() {
   }
 
   async function configureContainedItem() {
-    if (!nearby?.heldItems[0] || nearby.heldItems[0].configured) return false;
-    const item = nearby.heldItems[0];
+    if (!nearby?.heldItem || nearby.heldItem.configured) return false;
+    const item = nearby.heldItem;
     const rule = getDropRule(nearby.asset);
     if (rule.mode !== "types" || !rule.types.includes(item.type)) return false;
     item.configured = true;
@@ -591,6 +592,7 @@ export function useGameEngine() {
   }
 
   async function useNearby() {
+    if (state.actionSelectionOpen) return;
     const actions = getAvailableActions();
     if (!nearby || !actions.length) return;
     if (actions.length > 1) {

@@ -38,7 +38,6 @@ export interface ObjectActionContext {
   asset: MapAsset;
   state: ObjectVisualState;
   heldItem: { type: string; keyId?: string; configured?: boolean } | null;
-  heldItems: { type: string; configured?: boolean }[];
   emitEvent: (event: string) => void;
   setState: (state: ObjectVisualState) => Promise<void>;
   configureContained: () => Promise<boolean>;
