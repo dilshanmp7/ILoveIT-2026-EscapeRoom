@@ -8,7 +8,6 @@ export default {
     canPush: true,
     isSurface: true,
     surfaceHeight: 0.86,
-    countsAsCounter: true,
   },
   editor: {
     label: "Laptop box",

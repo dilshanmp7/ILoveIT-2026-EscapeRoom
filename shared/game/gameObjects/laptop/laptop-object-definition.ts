@@ -14,6 +14,10 @@ export default {
     width: 1.2,
     depth: 1.2,
   },
+  interactions: {
+    canGrab: true
+  
+  },
   states: {
     grabbed: { mesh: LaptopGrabbedMesh, scale: [1, 1, 1] },
     onFloor: { mesh: LaptopOnFloorMesh, scale: [1, 1, 1] },

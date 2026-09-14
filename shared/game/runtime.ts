@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { objectDefinitions } from "./object-definitions";
-import type { HoldingSlot, MapAsset } from "./types";
+import type { GameObjectInstance, HoldingSlot } from "./types";
 
 export type ObjectVisualState =
   | "grabbed"
@@ -35,7 +35,7 @@ export interface ObjectQuizSuccess {
 }
 
 export interface ObjectActionContext {
-  asset: MapAsset;
+  asset: GameObjectInstance;
   state: ObjectVisualState;
   heldItem: { type: string; keyId?: string; configured?: boolean } | null;
   emitEvent: (event: string) => void;
@@ -84,7 +84,6 @@ export interface ObjectTypeDefinition {
     canPush?: boolean;
     isSurface?: boolean;
     surfaceHeight?: number;
-    countsAsCounter?: boolean;
   };
   source?: { itemType: string };
   dropObjectType?: string;
@@ -559,7 +558,7 @@ export function initPlayers(
 }
 
 export async function loadMapObjectModel(
-  asset: MapAsset,
+  asset: GameObjectInstance,
   state?: ObjectVisualState,
 ): Promise<THREE.Group | null> {
   const visualState =
@@ -586,9 +585,4 @@ export async function loadMapObjectModel(
   if (!(model instanceof THREE.Group))
     throw new Error(`Map asset ${asset.type} must have a Group root`);
   return model;
-}
-
-export async function loadKeyModel(state: ObjectVisualState = "grabbed") {
-  const item = new GameItem("key");
-  return item.createMeshFromAsset(state);
 }

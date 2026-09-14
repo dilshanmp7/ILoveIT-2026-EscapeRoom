@@ -7,7 +7,6 @@ export default {
     isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
-    countsAsCounter: true,
   },
   holdingSlots: [
     {
@@ -22,7 +21,7 @@ export default {
       id: "configure",
       label: "Configure server",
       canExecute: (context) =>
-        context.heldItem?.type === context.asset.acceptsDrop &&
+        context.heldItem !== null && context.heldItem.type === context.asset.acceptsDrop &&
         !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();

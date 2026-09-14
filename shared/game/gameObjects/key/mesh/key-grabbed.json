@@ -6,20 +6,35 @@
   },
   "geometries": [
     {
-      "uuid": "badge",
+      "uuid": "key-head-geo",
+      "type": "CylinderGeometry",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.12,
+      "height": 0.03,
+      "radialSegments": 24
+    },
+    {
+      "uuid": "key-shaft-geo",
       "type": "BoxGeometry",
-      "width": 0.15,
-      "height": 0.2,
+      "width": 0.06,
+      "height": 0.4,
+      "depth": 0.02
+    },
+    {
+      "uuid": "key-tooth-geo",
+      "type": "BoxGeometry",
+      "width": 0.08,
+      "height": 0.06,
       "depth": 0.02
     }
   ],
   "materials": [
     {
-      "uuid": "badge-mat",
+      "uuid": "key-mat",
       "type": "MeshStandardMaterial",
-      "color": 9455615,
-      "roughness": 0.35,
-      "metalness": 0.05
+      "color": 16766720,
+      "roughness": 0.2,
+      "metalness": 0.9
     }
   ],
   "object": {
@@ -31,11 +46,29 @@
     },
     "children": [
       {
-        "uuid": "key-grabbed-badge",
+        "uuid": "key-head-mesh",
         "type": "Mesh",
-        "name": "key-badge",
-        "geometry": "badge",
-        "material": "badge-mat"
+        "name": "key-head",
+        "geometry": "key-head-geo",
+        "material": "key-mat",
+        "position": [0, 0.2, 0],
+        "rotation": [1.570796, 0, 0]
+      },
+      {
+        "uuid": "key-shaft-mesh",
+        "type": "Mesh",
+        "name": "key-shaft",
+        "geometry": "key-shaft-geo",
+        "material": "key-mat",
+        "position": [0, -0.05, 0]
+      },
+      {
+        "uuid": "key-tooth-mesh",
+        "type": "Mesh",
+        "name": "key-tooth",
+        "geometry": "key-tooth-geo",
+        "material": "key-mat",
+        "position": [-0.05, -0.2, 0]
       }
     ]
   }

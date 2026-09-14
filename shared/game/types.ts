@@ -38,7 +38,7 @@ export type DropRule =
   | { mode: "configured"; maxContents?: number }
   | { mode: "objects"; objectIds: string[]; maxContents?: number };
 
-export interface MapAsset {
+export interface GameObjectInstance {
   id: string;
   x: number;
   z: number;
@@ -69,7 +69,7 @@ export interface PlayerSpawn {
 }
 
 export interface Floorplan {
-  layout: MapAsset[];
+  layout: GameObjectInstance[];
   playerSpawn: PlayerSpawn;
 }
 

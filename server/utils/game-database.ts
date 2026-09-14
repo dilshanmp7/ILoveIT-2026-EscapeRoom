@@ -1,8 +1,8 @@
 import type {
-  Floorplan,
-  GameSession,
-  MapAsset,
-  QuizQuestion,
+    Floorplan,
+    GameObjectInstance,
+    GameSession,
+    QuizQuestion,
 } from "#shared/game/types";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -92,8 +92,8 @@ export function readFloorplan(): Floorplan {
     .prepare("SELECT layout_json FROM floorplans WHERE id = ?")
     .get("main") as { layout_json: string } | undefined;
   const value = row
-    ? (JSON.parse(row.layout_json) as Floorplan | MapAsset[])
-    : (structuredClone(seedFloorplan) as MapAsset[]);
+    ? (JSON.parse(row.layout_json) as Floorplan | GameObjectInstance[])
+    : (structuredClone(seedFloorplan) as GameObjectInstance[]);
   return Array.isArray(value)
     ? { layout: value, playerSpawn: { x: 0, z: 2 } }
     : { ...value, playerSpawn: value.playerSpawn || { x: 0, z: 2 } };
@@ -111,7 +111,7 @@ export function writeFloorplan(floorplan: Floorplan) {
 
 export function resetFloorplan() {
   return writeFloorplan({
-    layout: structuredClone(seedFloorplan) as MapAsset[],
+    layout: structuredClone(seedFloorplan) as GameObjectInstance[],
     playerSpawn: { x: 0, z: 2 },
   });
 }

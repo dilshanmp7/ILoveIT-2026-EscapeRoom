@@ -13,7 +13,6 @@ export default {
     isStatic: true,
     isSurface: true,
     surfaceHeight: 1.0,
-    countsAsCounter: true,
   },
   holdingSlots: [
     {

@@ -24,8 +24,8 @@ import {
 import type {
   DropRule,
   Floorplan,
+  GameObjectInstance,
   HeldObjectType,
-  MapAsset,
   QuizQuestion,
 } from "#shared/game/types";
 import * as THREE from "three";
@@ -34,17 +34,19 @@ import { reactive, readonly, shallowRef } from "vue";
 interface HeldItem {
   id: string;
   type: HeldObjectType;
+  dragAssetId?: string;
   configured?: boolean;
   keyId?: string;
   mesh?: THREE.Group;
 }
 
-interface Counter {
-  asset: MapAsset;
-  mesh: THREE.Group;
+interface RuntimeGameObjectInstance extends GameObjectInstance {
+  mesh: THREE.Group | null;
   heldItem: HeldItem | null;
   state: ObjectVisualState;
 }
+
+type NearbyGameObject = RuntimeGameObjectInstance & { mesh: THREE.Group };
 
 function createObjectId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -88,21 +90,12 @@ export function useGameEngine() {
   let pendingQuizSuccess: ObjectQuizSuccess | undefined;
   let pendingQuizAssetId = "";
   let isPushing = false;
-  let nearby: Counter | null = null;
+  let nearby: NearbyGameObject | null = null;
   let floorplan: Floorplan = { layout: [], playerSpawn: { x: 0, z: 2 } };
   let joystick = { x: 0, y: 0 };
   let removeListeners: (() => void) | undefined;
   const keys = new Set<string>();
-  const counters: Counter[] = [];
-  const objectInstances = new Map<
-    string,
-    {
-      asset: MapAsset;
-      state: ObjectVisualState;
-      mesh: THREE.Group | null;
-      heldItem: HeldItem | null;
-    }
-  >();
+  const objectInstances = new Map<string, RuntimeGameObjectInstance>();
   const bodies: PhysicalBody[] = [];
   const occludableMeshes: THREE.Group[] = [];
   const occlusionRaycaster = new THREE.Raycaster();
@@ -114,7 +107,6 @@ export function useGameEngine() {
   async function buildFloorplan() {
     if (!scene) return;
     const previousInstances = new Map(objectInstances);
-    counters.splice(0);
     objectInstances.clear();
     bodies.splice(0);
     occludableMeshes.splice(0);
@@ -131,7 +123,7 @@ export function useGameEngine() {
           ? "opened"
           : getObjectTypeDefinition(asset.type)?.defaultState || "onFloor");
       const instance = {
-        asset,
+        ...asset,
         state,
         mesh: null as THREE.Group | null,
         heldItem: previous?.heldItem || null,
@@ -140,10 +132,6 @@ export function useGameEngine() {
       const mesh = await loadMapObjectModel(asset, state);
       instance.mesh = mesh;
       const geometry = getObjectGeometry(asset.type);
-      if (geometry?.countsAsCounter) {
-        if (mesh)
-          counters.push({ asset, mesh, heldItem: instance.heldItem, state });
-      }
       if (mesh) {
         mesh.position.set(asset.x, 0, asset.z);
         mesh.rotation.y = THREE.MathUtils.degToRad(asset.rotation);
@@ -184,15 +172,21 @@ export function useGameEngine() {
 
   function getNearby() {
     if (!player) return null;
-    let closest: Counter | null = null;
+    let closest: NearbyGameObject | null = null;
     let distance = 1.85;
-    for (const counter of counters) {
-      const dx = player.position.x - counter.asset.x;
-      const dz = player.position.z - counter.asset.z;
+    for (const gameObject of objectInstances.values()) {
+      if (!gameObject.mesh) continue;
+      const hasInteraction =
+        Boolean(getObjectInteraction(gameObject.type)) ||
+        Boolean(getObjectTypeDefinition(gameObject.type)?.source?.itemType) ||
+        Boolean(gameObject.canHold || gameObject.allowGrab);
+      if (!hasInteraction) continue;
+      const dx = player.position.x - gameObject.x;
+      const dz = player.position.z - gameObject.z;
       const nextDistance = Math.hypot(dx, dz);
       if (nextDistance < distance) {
         distance = nextDistance;
-        closest = counter;
+        closest = gameObject as NearbyGameObject;
       }
     }
     return closest;
@@ -214,7 +208,7 @@ export function useGameEngine() {
     if (!instance || instance.state === nextState) return;
     const previousMesh = instance.mesh;
     instance.state = nextState;
-    const nextMesh = await loadMapObjectModel(instance.asset, nextState);
+    const nextMesh = await loadMapObjectModel(instance, nextState);
     instance.mesh = nextMesh;
     if (previousMesh) {
       if (scene) scene.remove(previousMesh);
@@ -222,13 +216,13 @@ export function useGameEngine() {
       if (previousIndex !== -1) occludableMeshes.splice(previousIndex, 1);
     }
     if (nextMesh && scene) {
-      nextMesh.position.set(instance.asset.x, 0, instance.asset.z);
-      nextMesh.rotation.y = THREE.MathUtils.degToRad(instance.asset.rotation);
+      nextMesh.position.set(instance.x, 0, instance.z);
+      nextMesh.rotation.y = THREE.MathUtils.degToRad(instance.rotation);
       nextMesh.userData.courierAsset = true;
       scene.add(nextMesh);
       occludableMeshes.push(nextMesh);
     }
-    const geometry = getObjectGeometry(instance.asset.type);
+    const geometry = getObjectGeometry(instance.type);
     if (geometry?.isBarrier && nextState === "opened")
       removeBodyForAsset(assetId);
   }
@@ -236,9 +230,9 @@ export function useGameEngine() {
   function emitGameEvent(event: string) {
     for (const instance of objectInstances.values()) {
       const reaction = getObjectTypeDefinition(
-        instance.asset.type,
+        instance.type,
       )?.reactions?.find((item) => item.event === event);
-      if (reaction) void setObjectState(instance.asset.id, reaction.state);
+      if (reaction) void setObjectState(instance.id, reaction.state);
     }
   }
 
@@ -266,6 +260,15 @@ export function useGameEngine() {
           nextZ - player.position.z,
         )
       : false;
+    if (heldItem?.dragAssetId) {
+      const draggedBody = bodies.find(
+        (body) => body.assetId === heldItem?.dragAssetId,
+      );
+      if (draggedBody) {
+        draggedBody.x = player.position.x;
+        draggedBody.z = player.position.z;
+      }
+    }
     persistPhysicsPositions();
     player.rotation.y = Math.atan2(x, z);
     return true;
@@ -273,15 +276,15 @@ export function useGameEngine() {
 
   function updateNearby() {
     nearby = getNearby();
-    state.nearbyId = nearby?.asset.id || "";
-    state.nearbyLabel = nearby?.asset.label || "";
+    state.nearbyId = nearby?.id || "";
+    state.nearbyLabel = nearby?.label || "";
     const interaction = nearby
-      ? getObjectInteraction(nearby.asset.type)
+      ? getObjectInteraction(nearby.type)
       : undefined;
     state.canGrab = Boolean(
       !heldItem &&
-      (nearby?.asset.canHold ||
-      nearby?.asset.allowGrab ||
+      (nearby?.canHold ||
+      nearby?.allowGrab ||
       nearby?.heldItem ||
       interaction?.canGrab),
     );
@@ -290,7 +293,7 @@ export function useGameEngine() {
 
   function getAvailableActions(): ObjectActionDefinition[] {
     if (!nearby) return [];
-    return getObjectActions(nearby.asset.type, nearby.asset.actionIds).filter(
+    return getObjectActions(nearby.type, nearby.actionIds).filter(
       (action) =>
         !action.visibleWhen || action.visibleWhen(createActionContext()),
     );
@@ -298,11 +301,11 @@ export function useGameEngine() {
 
   function createActionContext(): ObjectActionContext {
     return {
-      asset: nearby!.asset,
-      state: objectInstances.get(nearby!.asset.id)?.state || "onFloor",
+      asset: nearby!,
+      state: nearby!.state,
       heldItem,
       emitEvent: emitGameEvent,
-      setState: (state) => setObjectState(nearby!.asset.id, state),
+      setState: (state) => setObjectState(nearby!.id, state),
       configureContained: () => configureContainedItem(),
       openQuiz: (success) => openQuiz(success),
       showMessage: (message) => {
@@ -316,7 +319,7 @@ export function useGameEngine() {
     };
   }
 
-  function getDropRule(asset: MapAsset): DropRule {
+  function getDropRule(asset: GameObjectInstance): DropRule {
     if (asset.dropRule) return asset.dropRule;
     if (asset.acceptsDrop === "any") return { mode: "any" };
     if (asset.acceptsDrop === "configured") return { mode: "configured" };
@@ -325,7 +328,7 @@ export function useGameEngine() {
     return { mode: "none" };
   }
 
-  function canDrop(item: HeldItem, asset: MapAsset, contents: HeldItem[]) {
+  function canDrop(item: HeldItem, asset: GameObjectInstance, contents: HeldItem[]) {
     if (getObjectGeometry(asset.type)?.isBarrier) return false;
     const rule = getDropRule(asset);
     if (rule.mode === "none") return false;
@@ -339,7 +342,7 @@ export function useGameEngine() {
   }
 
   function getHoldingSlot(
-    asset: MapAsset,
+    asset: GameObjectInstance,
     item: HeldItem,
     contents: HeldItem[],
   ) {
@@ -359,13 +362,14 @@ export function useGameEngine() {
     if (heldItem) {
       const targetSlot = nearby
         ? getHoldingSlot(
-            nearby.asset,
+            nearby,
             heldItem,
             nearby.heldItem ? [nearby.heldItem] : [],
           )
         : undefined;
       if (nearby && targetSlot) {
         const droppedItem = heldItem;
+        droppedItem.dragAssetId = undefined;
         player
           ?.getObjectByName("holdingSlot")
           ?.remove(droppedItem.mesh || new THREE.Group());
@@ -375,13 +379,13 @@ export function useGameEngine() {
             nearby.mesh.add(droppedItem.mesh);
             droppedItem.mesh.position.set(
               0,
-              getSurfaceHeight(nearby.asset),
+              getSurfaceHeight(nearby),
               0,
             );
           }
         }
         if (targetSlot.insertedState)
-          await setObjectState(nearby.asset.id, targetSlot.insertedState);
+          await setObjectState(nearby.id, targetSlot.insertedState);
         heldItem = null;
         state.holding = "";
         state.holdingConfigured = false;
@@ -392,20 +396,21 @@ export function useGameEngine() {
         nearby &&
         canDrop(
           heldItem,
-          nearby.asset,
+          nearby,
           nearby.heldItem ? [nearby.heldItem] : [],
         )
       ) {
-        const targetRule = getDropRule(nearby.asset);
+        const targetRule = getDropRule(nearby);
         if (targetRule.mode !== "floor") {
           const holdingSlot = player?.getObjectByName("holdingSlot");
           holdingSlot?.remove(heldItem.mesh || new THREE.Group());
+          heldItem.dragAssetId = undefined;
           nearby.heldItem = heldItem;
           if (heldItem.mesh) {
             nearby.mesh.add(heldItem.mesh);
             heldItem.mesh.position.set(
               0,
-              getSurfaceHeight(nearby.asset),
+              getSurfaceHeight(nearby),
               0,
             );
           }
@@ -416,11 +421,11 @@ export function useGameEngine() {
           return;
         }
       }
-      if (nearby && getDropRule(nearby.asset).mode === "floor")
+      if (nearby && getDropRule(nearby).mode === "floor")
         placeOnFloor(heldItem);
       else if (
         nearby &&
-        getObjectInteraction(nearby.asset.type)?.action === "trash"
+        getObjectInteraction(nearby.type)?.action === "trash"
       ) {
         discardHeldItem();
       } else dropHeldItemToFloor(heldItem);
@@ -430,13 +435,13 @@ export function useGameEngine() {
     }
     if (heldItem) return;
     const nearbyDefinition = nearby
-      ? getObjectTypeDefinition(nearby.asset.type)
+      ? getObjectTypeDefinition(nearby.type)
       : undefined;
     if (
       !nearby ||
       !(
-        nearby.asset.canHold ??
-        nearby.asset.allowGrab ??
+        nearby.canHold ??
+        nearby.allowGrab ??
         nearbyDefinition?.interaction?.canGrab
       )
     )
@@ -444,24 +449,25 @@ export function useGameEngine() {
     if (nearby.heldItem) {
       heldItem = nearby.heldItem;
       nearby.heldItem = null;
+      if (heldItem && nearby.canPush) heldItem.dragAssetId = nearby.id;
       if (heldItem?.mesh) {
         nearby.mesh.remove(heldItem.mesh);
         player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
         heldItem.mesh.position.set(0, 0, 0);
       }
-    } else if (getObjectTypeDefinition(nearby.asset.type)?.source?.itemType) {
-      const sourceType = getObjectTypeDefinition(nearby.asset.type)!.source!
+    } else if (getObjectTypeDefinition(nearby.type)?.source?.itemType) {
+      const sourceType = getObjectTypeDefinition(nearby.type)!.source!
         .itemType;
       const item = new GameItem(sourceType as HeldObjectType);
       await item.createMeshFromAsset("grabbed");
       heldItem = {
-        id: createObjectId(nearby.asset.id),
+        id: createObjectId(nearby.id),
         type: item.type as HeldObjectType,
-        keyId: nearby.asset.keyId,
+        keyId: nearby.keyId,
         configured: item.isConfigured,
         mesh: item.mesh,
       };
-      removePickedUpAsset(nearby.asset.id);
+      removePickedUpAsset(nearby.id);
     }
     state.holding = heldItem?.type || "";
     state.holdingConfigured = Boolean(heldItem?.configured);
@@ -470,7 +476,7 @@ export function useGameEngine() {
     sound.play("pickup");
   }
 
-  function getSurfaceHeight(asset: MapAsset, stackIndex = 0) {
+  function getSurfaceHeight(asset: GameObjectInstance, stackIndex = 0) {
     const geometry = getObjectGeometry(asset.type);
     return (geometry?.surfaceHeight ?? 0.1) + stackIndex * 0.12;
   }
@@ -480,6 +486,7 @@ export function useGameEngine() {
     if (!nearby.heldItem || nearby.heldItem.id !== objectId) return;
     heldItem = nearby.heldItem;
     nearby.heldItem = null;
+    if (heldItem && nearby.canPush) heldItem.dragAssetId = nearby.id;
     if (heldItem?.mesh) {
       nearby.mesh.remove(heldItem.mesh);
       player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
@@ -519,6 +526,7 @@ export function useGameEngine() {
         (player.position.z + Math.cos(player.rotation.y) * distance) * 2,
       ) / 2;
     if (item.mesh) player.getObjectByName("holdingSlot")?.remove(item.mesh);
+    item.dragAssetId = undefined;
     const itemDefinition = getObjectTypeDefinition(item.type);
     const dropType = itemDefinition?.dropObjectType || item.type;
     const editor = getObjectTypeDefinition(dropType)?.editor;
@@ -530,7 +538,7 @@ export function useGameEngine() {
       d: 1.2,
       rotation: 0,
       color: editor ? Number.parseInt(editor.color.slice(1), 16) : 0x334155,
-      type: dropType as MapAsset["type"],
+      type: dropType as GameObjectInstance["type"],
       label: `Dropped ${itemDefinition?.editor?.label || item.type}`,
       allowGrab: true,
       keyId: item.keyId,
@@ -556,7 +564,7 @@ export function useGameEngine() {
   async function configureContainedItem() {
     if (!nearby?.heldItem || nearby.heldItem.configured) return false;
     const item = nearby.heldItem;
-    const rule = getDropRule(nearby.asset);
+    const rule = getDropRule(nearby);
     if (rule.mode !== "types" || !rule.types.includes(item.type)) return false;
     item.configured = true;
     if (item.mesh) {
@@ -571,7 +579,7 @@ export function useGameEngine() {
       ];
       item.mesh.position.set(
         heldOffset[0],
-        getSurfaceHeight(nearby.asset, 0) + heldOffset[1],
+        getSurfaceHeight(nearby, 0) + heldOffset[1],
         heldOffset[2],
       );
       parent?.add(item.mesh);
@@ -599,7 +607,7 @@ export function useGameEngine() {
       state.actionSelectionOptions = actions.map((action) => ({
         id: action.id,
         label: action.label,
-        type: nearby!.asset.label,
+        type: nearby!.label,
       }));
       state.actionSelectionOpen = true;
       return;
@@ -642,7 +650,7 @@ export function useGameEngine() {
 
   function openQuiz(success?: ObjectQuizSuccess) {
     pendingQuizSuccess = success;
-    pendingQuizAssetId = nearby?.asset.id || "";
+    pendingQuizAssetId = nearby?.id || "";
     state.quiz =
       defaultQuizzes[Math.floor(Math.random() * defaultQuizzes.length)]!;
     state.quizOpen = true;
@@ -749,7 +757,7 @@ export function useGameEngine() {
     joystick = { x, y };
   }
 
-  function setFloorplan(value: Floorplan | MapAsset[]) {
+  function setFloorplan(value: Floorplan | GameObjectInstance[]) {
     floorplan = Array.isArray(value)
       ? {
           layout: value.map((item) => ({ ...item })),
@@ -764,7 +772,7 @@ export function useGameEngine() {
 
   async function mount(
     target: HTMLCanvasElement,
-    layout?: Floorplan | MapAsset[],
+    layout?: Floorplan | GameObjectInstance[],
   ) {
     await loadObjectDefinitions();
     if (layout) setFloorplan(layout);

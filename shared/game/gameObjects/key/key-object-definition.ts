@@ -10,7 +10,6 @@ export default {
     isStatic: false,
     isSurface: true,
     surfaceHeight: 0.1,
-    countsAsCounter: true,
   },
   source: { itemType: "key" },
   dropObjectType: "key",

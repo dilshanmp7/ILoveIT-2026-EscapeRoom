@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { getObjectDefinitions, loadObjectDefinitions } from '#shared/game/runtime';
-import type { HoldingSlot, MapAsset, PlayerSpawn } from '#shared/game/types';
+import type { GameObjectInstance, HoldingSlot, PlayerSpawn } from '#shared/game/types';
 import { computed, onMounted, reactive, ref } from 'vue';
 
-const props = defineProps<{ open: boolean; initialAssets: MapAsset[]; initialPlayerSpawn: PlayerSpawn }>()
-const emit = defineEmits<{ close: []; deploy: [layout: MapAsset[], playerSpawn: PlayerSpawn]; reset: []; tab: [value: 'map' | 'quiz'] }>()
+const props = defineProps<{ open: boolean; initialAssets: GameObjectInstance[]; initialPlayerSpawn: PlayerSpawn }>()
+const emit = defineEmits<{ close: []; deploy: [layout: GameObjectInstance[], playerSpawn: PlayerSpawn]; reset: []; tab: [value: 'map' | 'quiz'] }>()
 const assets = reactive(props.initialAssets.map(asset => ({ ...asset })))
 const playerSpawn = reactive({ ...props.initialPlayerSpawn })
 const selectedId = ref(assets[0]?.id || '')
@@ -15,7 +15,7 @@ const selected = computed(() => assets.find(asset => asset.id === selectedId.val
 const definitions = ref(getObjectDefinitions())
 const palette = computed(() => Object.entries(definitions.value)
   .filter(([, definition]) => definition.editor?.enabled !== false && definition.editor)
-  .map(([type, definition]) => ({ type: type as MapAsset['type'], ...definition.editor! })))
+  .map(([type, definition]) => ({ type: type as GameObjectInstance['type'], ...definition.editor! })))
 
 const actionTypes = [
   { value: 'none', label: 'None (Storage / Surface)' },
@@ -31,7 +31,7 @@ const useActions = [
   { value: 'quiz', label: 'Trigger Quiz (Requires Badge)' },
 ] as const
 
-function mapPosition(asset: MapAsset) {
+function mapPosition(asset: GameObjectInstance) {
   return {
     left: `${50 + asset.x * 4.7}%`,
     top: `${50 + asset.z * 5.8}%`,
@@ -50,11 +50,11 @@ function selectAsset(id: string) {
   selectedId.value = id
 }
 
-function updateAsset<K extends keyof MapAsset>(property: K, value: MapAsset[K]) {
+function updateAsset<K extends keyof GameObjectInstance>(property: K, value: GameObjectInstance[K]) {
   if (selected.value) selected.value[property] = value
 }
 
-function holdingSlotsJson(asset: MapAsset) {
+function holdingSlotsJson(asset: GameObjectInstance) {
   return asset.holdingSlots?.length ? JSON.stringify(asset.holdingSlots, null, 2) : ''
 }
 
@@ -68,7 +68,7 @@ function updateHoldingSlots(value: string) {
   }
 }
 
-function beginDrag(event: PointerEvent, asset: MapAsset) {
+function beginDrag(event: PointerEvent, asset: GameObjectInstance) {
   selectedId.value = asset.id;
   draggingId.value = asset.id;
   (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
@@ -102,7 +102,7 @@ function dragSpawn(event: PointerEvent) {
   playerSpawn.z = Math.round((((event.clientY - rect.top) / rect.height * 16) - 8) * 2) / 2
 }
 
-function addAsset(type: MapAsset['type']) {
+function addAsset(type: GameObjectInstance['type']) {
   const paletteItem = palette.value.find(item => item.type === type)
   const definition = definitions.value[type]
   if (!paletteItem || !definition) return
@@ -121,7 +121,7 @@ function addAsset(type: MapAsset['type']) {
     useAction: definition.interaction?.action === 'open_door' || definition.interaction?.action === 'quiz' ? definition.interaction.action : 'none' as const,
     useRequiredKey: definition.interaction?.requiredKey,
   }
-  assets.push(asset as MapAsset)
+  assets.push(asset as GameObjectInstance)
   selectedId.value = asset.id
 }
 

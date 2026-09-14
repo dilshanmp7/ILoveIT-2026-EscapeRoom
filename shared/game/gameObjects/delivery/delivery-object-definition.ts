@@ -8,7 +8,6 @@ export default {
     isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
-    countsAsCounter: true,
   },
   actions: [
     {

@@ -1,12 +1,12 @@
-import type { Floorplan, MapAsset } from '#shared/game/types'
+import type { Floorplan, GameObjectInstance } from '#shared/game/types'
 import { createError, getCookie, readBody } from 'h3'
 import { isEditorAuthorized } from '../../utils/editor-access'
 import { writeFloorplan } from '../../utils/game-database'
 import { ACCESS_COOKIE, isAccessTokenValid } from '../../utils/game-session'
 
-function isMapAsset(value: unknown): value is MapAsset {
+function isGameObjectInstance(value: unknown): value is GameObjectInstance {
   if (!value || typeof value !== 'object') return false
-  const asset = value as Partial<MapAsset>
+  const asset = value as Partial<GameObjectInstance>
   return typeof asset.id === 'string'
     && typeof asset.x === 'number'
     && typeof asset.z === 'number'
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<{ layout?: unknown; playerSpawn?: unknown }>(event)
   const playerSpawn = body?.playerSpawn as { x?: unknown; z?: unknown } | undefined
-  if (!Array.isArray(body?.layout) || body.layout.length > 100 || !body.layout.every(isMapAsset)
+  if (!Array.isArray(body?.layout) || body.layout.length > 100 || !body.layout.every(isGameObjectInstance)
     || typeof playerSpawn?.x !== 'number' || typeof playerSpawn.z !== 'number'
     || Math.abs(playerSpawn.x) > 10 || Math.abs(playerSpawn.z) > 8) {
     throw createError({ statusCode: 400, statusMessage: 'A valid floorplan layout is required' })
