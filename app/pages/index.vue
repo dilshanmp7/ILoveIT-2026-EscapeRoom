@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { FetchError } from 'ofetch'
 
+const route = useRoute()
 const accessCode = ref('')
 const isSubmitting = ref(false)
+const isCodeValid = ref(false)
 const errorMessage = ref('')
 
 useSeoMeta({
@@ -13,6 +15,19 @@ useSeoMeta({
 async function enterShift() {
   if (!accessCode.value.trim() || isSubmitting.value) return
 
+  if (isCodeValid.value) {
+    await navigateTo('/game')
+    return
+  }
+
+  await navigateTo({ path: '/', query: { code: accessCode.value.trim() } })
+}
+
+async function validateQueryCode() {
+  const queryCode = typeof route.query.code === 'string' ? route.query.code.trim() : ''
+  if (!queryCode) return
+
+  accessCode.value = queryCode
   isSubmitting.value = true
   errorMessage.value = ''
 
@@ -21,14 +36,17 @@ async function enterShift() {
       method: 'POST',
       body: { code: accessCode.value },
     })
-    await navigateTo('/game')
+    isCodeValid.value = true
   } catch (error) {
     const fetchError = error as FetchError
     errorMessage.value = fetchError.data?.statusMessage || 'That code did not unlock the dispatch floor.'
+    isCodeValid.value = false
   } finally {
     isSubmitting.value = false
   }
 }
+
+onMounted(validateQueryCode)
 </script>
 
 <template>
@@ -51,9 +69,9 @@ async function enterShift() {
         <label for="access-code">Shared dispatch code</label>
         <div class="input-row">
           <input id="access-code" v-model="accessCode" name="access-code" type="password" autocomplete="off"
-            placeholder="ENTER CODE" :disabled="isSubmitting" @input="errorMessage = ''">
+            placeholder="ENTER CODE" :disabled="isSubmitting" @input="errorMessage = ''; isCodeValid = false">
           <button type="submit" :disabled="isSubmitting || !accessCode.trim()">
-            {{ isSubmitting ? 'Checking' : 'Enter floor' }}
+            {{ isSubmitting ? 'Checking' : isCodeValid ? 'Enter' : 'Check code' }}
             <span aria-hidden="true">↗</span>
           </button>
         </div>
@@ -62,11 +80,7 @@ async function enterShift() {
 
       <NuxtLink class="editor-link" to="/editor">Open floorplan editor <span aria-hidden="true">↗</span></NuxtLink>
 
-      <!-- <div class="briefing-strip">
-        <span><strong>03:00</strong> SLA window</span>
-        <span><strong>01</strong> active courier</span>
-        <span><strong>150</strong> delivery points</span>
-      </div> -->
+
     </section>
 
     <aside class="access-aside" aria-label="Dispatch floor preview">
