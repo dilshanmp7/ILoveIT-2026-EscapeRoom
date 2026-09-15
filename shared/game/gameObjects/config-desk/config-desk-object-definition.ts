@@ -28,7 +28,8 @@ export default {
       label: "Use admin terminal",
       blockedMessage: "Admin badge required",
       visibleWhen: (context) =>
-        context.asset.useAction === "quiz" && context.state !== "completed",
+        context.asset.actionIds?.includes("admin-terminal-quiz") === true &&
+        context.state !== "completed",
       canExecute: requiresKey("ADMIN_KEY"),
       execute: (context) =>
         context.openQuiz({
@@ -41,9 +42,11 @@ export default {
     {
       id: "configure",
       label: "Configure device",
-      visibleWhen: (context) => context.asset.useAction !== "quiz",
+      visibleWhen: (context) =>
+        context.asset.actionIds?.includes("configure") === true,
       canExecute: (context) =>
-        context.heldItem && context.heldItem.type === context.asset.acceptsDrop &&
+        context.heldItem &&
+        context.heldItem.type === context.asset.acceptsDrop &&
         !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();

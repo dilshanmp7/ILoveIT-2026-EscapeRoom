@@ -5,7 +5,13 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 const props = defineProps<{ open: boolean; initialAssets: GameObjectInstance[]; initialPlayerSpawn: PlayerSpawn }>()
 const emit = defineEmits<{ close: []; deploy: [layout: GameObjectInstance[], playerSpawn: PlayerSpawn]; reset: []; tab: [value: 'map' | 'quiz'] }>()
-const assets = reactive(props.initialAssets.map(asset => ({ ...asset })))
+const assets = reactive(props.initialAssets.map(asset => ({
+  ...asset,
+  canHold: Boolean(asset.canHold),
+  canPush: Boolean(asset.canBePushed),
+  allowGrab: Boolean(asset.canBeGrabbed),
+  position: { ...asset.position },
+})))
 const playerSpawn = reactive({ ...props.initialPlayerSpawn })
 const selectedId = ref(assets[0]?.id || '')
 const draggingId = ref('')
@@ -17,27 +23,23 @@ const palette = computed(() => Object.entries(definitions.value)
   .filter(([, definition]) => definition.editor?.enabled !== false && definition.editor)
   .map(([type, definition]) => ({ type: type as GameObjectInstance['type'], ...definition.editor! })))
 
-const actionTypes = [
-  { value: 'none', label: 'None (Storage / Surface)' },
-  { value: 'config', label: 'Configure / Process Device' },
-  { value: 'quiz', label: 'Open Security Quiz' },
-  { value: 'deliver', label: 'IT Dispatch Hatch (Score)' },
-  { value: 'trash', label: 'Trash Bin (Discard)' },
-] as const
-
-const useActions = [
-  { value: 'none', label: 'None' },
-  { value: 'open_door', label: 'Slide Open Door (Requires Key)' },
-  { value: 'quiz', label: 'Trigger Quiz (Requires Badge)' },
-] as const
+function deploy() {
+  emit('deploy', assets.map(asset => ({
+    ...asset,
+    position: { ...asset.position },
+    holdingSlots: asset.holdingSlots?.map(slot => ({ ...slot })),
+    actionIds: asset.actionIds ? [...asset.actionIds] : undefined,
+    requiredKeyIds: asset.requiredKeyIds ? [...asset.requiredKeyIds] : undefined,
+  })), { ...playerSpawn })
+}
 
 function mapPosition(asset: GameObjectInstance) {
   return {
-    left: `${50 + asset.x * 4.7}%`,
-    top: `${50 + asset.z * 5.8}%`,
+    left: `${50 + asset.position.x * 4.7}%`,
+    top: `${50 + asset.position.z * 5.8}%`,
     width: `${Math.max(2.8, asset.w * 4.7)}%`,
     height: `${Math.max(2.8, asset.d * 5.8)}%`,
-    transform: `translate(-50%, -50%) rotate(${asset.rotation || 0}deg)`,
+    transform: `translate(-50%, -50%) rotate(${asset.position.rotation || 0}deg)`,
     backgroundColor: colorHex(asset.color),
   }
 }
@@ -80,8 +82,8 @@ function dragAsset(event: PointerEvent) {
   const rect = canvas.getBoundingClientRect()
   const asset = assets.find(item => item.id === draggingId.value)
   if (!asset) return
-  asset.x = Math.round((((event.clientX - rect.left) / rect.width * 20) - 10) * 2) / 2
-  asset.z = Math.round((((event.clientY - rect.top) / rect.height * 16) - 8) * 2) / 2
+  asset.position.x = Math.round((((event.clientX - rect.left) / rect.width * 20) - 10) * 2) / 2
+  asset.position.z = Math.round((((event.clientY - rect.top) / rect.height * 16) - 8) * 2) / 2
 }
 
 function endDrag() {
@@ -106,22 +108,22 @@ function addAsset(type: GameObjectInstance['type']) {
   const paletteItem = palette.value.find(item => item.type === type)
   const definition = definitions.value[type]
   if (!paletteItem || !definition) return
-  const asset = {
+  const asset: GameObjectInstance = {
     id: `editor-${Date.now()}`,
-    x: 0,
-    z: 0, w: paletteItem.width, d: paletteItem.depth,
-    rotation: 0,
+    position: { x: 0, z: 0, rotation: 0 },
+    w: paletteItem.width,
+    d: paletteItem.depth,
     color: Number.parseInt(paletteItem.color.slice(1), 16),
     type,
     label: paletteItem.label,
-    allowGrab: definition.interaction?.canGrab,
-    actionType: definition.interaction?.action === 'config' || definition.interaction?.action === 'quiz' || definition.interaction?.action === 'deliver' || definition.interaction?.action === 'trash' ? definition.interaction.action : 'none' as const,
-    acceptsDrop: '',
-    holdingSlots: [],
-    useAction: definition.interaction?.action === 'open_door' || definition.interaction?.action === 'quiz' ? definition.interaction.action : 'none' as const,
-    useRequiredKey: definition.interaction?.requiredKey,
+    canHold: Boolean(definition.interaction?.canGrab || definition.holdingSlots?.length),
+    canBePushed: Boolean(definition.geometry?.canPush),
+    canBeGrabbed: Boolean(definition.interaction?.canGrab),
+    actionIds: definition.actions?.map(action => action.id) || [],
+    acceptsDrop: 'none',
+    holdingSlots: definition.holdingSlots?.map(slot => ({ ...slot })) || [],
   }
-  assets.push(asset as GameObjectInstance)
+  assets.push(asset)
   selectedId.value = asset.id
 }
 
@@ -181,29 +183,27 @@ function deleteSelected() {
             <div class="field"><label for="asset-label">Label</label><input id="asset-label" v-model="selected.label"
                 type="text"></div>
             <div class="field-grid">
-              <div class="field"><label for="asset-x">X position</label><input id="asset-x" v-model.number="selected.x"
-                  type="number" step=".5"></div>
-              <div class="field"><label for="asset-z">Z position</label><input id="asset-z" v-model.number="selected.z"
-                  type="number" step=".5"></div>
+              <div class="field"><label for="asset-x">X position</label><input id="asset-x"
+                  v-model.number="selected.position.x" type="number" step=".5"></div>
+              <div class="field"><label for="asset-z">Z position</label><input id="asset-z"
+                  v-model.number="selected.position.z" type="number" step=".5"></div>
             </div>
             <div class="field"><label for="asset-rotation">Rotation</label><input id="asset-rotation"
-                v-model.number="selected.rotation" type="number" step="15"></div>
+                v-model.number="selected.position.rotation" type="number" step="15"></div>
             <div class="rule-group">
               <h3>Asset use &amp; action rules</h3><label class="check-field"><span>Allow grab (pickup)</span><input
                   v-model="selected.allowGrab" type="checkbox"></label>
-              <div class="field"><label for="asset-action">Action type (surface)</label><select id="asset-action"
-                  v-model="selected.actionType">
-                  <option v-for="action in actionTypes" :key="action.value" :value="action.value">{{ action.label }}
-                  </option>
-                </select></div>
-              <div class="field"><label for="asset-use">Use action behavior</label><select id="asset-use"
-                  v-model="selected.useAction">
-                  <option v-for="action in useActions" :key="action.value" :value="action.value">{{ action.label }}
-                  </option>
-                </select></div>
+              <div class="field"><label>Object actions</label>
+                <div class="action-list"><span v-for="action in definitions[selected.type]?.actions || []"
+                    :key="action.id">{{ action.label
+                    }}</span><span v-if="!definitions[selected.type]?.actions?.length">None declared</span></div>
+              </div>
+              <div class="field"><label>Configured action IDs</label><input
+                  :value="selected.actionIds?.join(', ') || ''" placeholder="Object-defined actions" type="text"
+                  @change="updateAsset('actionIds', ($event.target as HTMLInputElement).value.split(',').map(value => value.trim()).filter(Boolean))">
+              </div>
               <div class="field"><label for="asset-key">Required held key ID</label><input id="asset-key"
-                  :value="selected.requiredKeyIds?.join(', ') || selected.useRequiredKey || ''"
-                  placeholder="e.g. SLIDING_DOR_KEY" type="text"
+                  :value="selected.requiredKeyIds?.join(', ') || ''" placeholder="e.g. SLIDING_DOR_KEY" type="text"
                   @change="updateAsset('requiredKeyIds', ($event.target as HTMLInputElement).value.split(',').map(value => value.trim()).filter(Boolean))">
               </div>
               <div class="field"><label for="asset-drop">Accepts drop item type</label><input id="asset-drop"
@@ -220,7 +220,7 @@ function deleteSelected() {
           for="spawn-z">Z <input id="spawn-z" v-model.number="playerSpawn.z" type="number" min="-8" max="8"
             step=".5"></label><span class="spawn-help">Players appear here in a new game.</span></div>
       <footer class="editor-footer"><span class="asset-status">{{ assets.length }} components in floorplan</span><button
-          type="button" class="deploy-button" @click="emit('deploy', assets, { ...playerSpawn })">Deploy floorplan
+          type="button" class="deploy-button" @click="deploy">Deploy floorplan
           ↗</button></footer>
     </section>
   </div>

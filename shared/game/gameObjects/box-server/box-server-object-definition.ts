@@ -19,7 +19,7 @@ export default {
   states: {
     onFloor: {
       mesh: BoxServerMesh,
-      canHold: true,
+      canHold: false,
       canPush: true,
       acceptsDrop: "server",
     },

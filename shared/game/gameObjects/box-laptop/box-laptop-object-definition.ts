@@ -19,7 +19,7 @@ export default {
   states: {
     onFloor: {
       mesh: BoxLaptopMesh,
-      canHold: true,
+      canHold: false,
       canPush: true,
       acceptsDrop: "laptop",
     },

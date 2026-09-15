@@ -1,8 +1,8 @@
 import type {
-    Floorplan,
-    GameObjectInstance,
-    GameSession,
-    QuizQuestion,
+  Floorplan,
+  GameObjectInstance,
+  GameSession,
+  QuizQuestion,
 } from "#shared/game/types";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -94,9 +94,38 @@ export function readFloorplan(): Floorplan {
   const value = row
     ? (JSON.parse(row.layout_json) as Floorplan | GameObjectInstance[])
     : (structuredClone(seedFloorplan) as GameObjectInstance[]);
-  return Array.isArray(value)
-    ? { layout: value, playerSpawn: { x: 0, z: 2 } }
-    : { ...value, playerSpawn: value.playerSpawn || { x: 0, z: 2 } };
+  const layout = Array.isArray(value) ? value : value.layout;
+  const normalizedLayout = layout.map((asset) => {
+    const legacyAsset = asset as GameObjectInstance & {
+      x?: number;
+      z?: number;
+      rotation?: number;
+    };
+    return legacyAsset.position
+      ? {
+          ...asset,
+          canHold: Boolean(asset.canHold),
+          canPush: Boolean(asset.canBePushed),
+          allowGrab: Boolean(asset.canBeGrabbed),
+        }
+      : {
+          ...asset,
+          canHold: Boolean(asset.canHold),
+          canPush: Boolean(asset.canBePushed),
+          allowGrab: Boolean(asset.canBeGrabbed),
+          position: {
+            x: legacyAsset.x || 0,
+            z: legacyAsset.z || 0,
+            rotation: legacyAsset.rotation || 0,
+          },
+        };
+  });
+  return {
+    layout: normalizedLayout,
+    playerSpawn: Array.isArray(value)
+      ? { x: 0, z: 2 }
+      : value.playerSpawn || { x: 0, z: 2 },
+  };
 }
 
 export function writeFloorplan(floorplan: Floorplan) {

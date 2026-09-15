@@ -9,7 +9,15 @@ export default {
     requiredKey: "SLIDING_DOR_KEY",
     canUse: true,
   },
-  reactions: [{ event: "quizz_admin_terminal_done", state: "opened" }],
+  canHold: false,
+  canPush: false,
+
+  reactions: {
+    quizz_admin_terminal_done: ({ emitter }) =>
+      emitter.type === "config_desk" && emitter.id === "admin_comp"
+        ? "opened"
+        : undefined,
+  },
   actions: [
     {
       id: "use-key",

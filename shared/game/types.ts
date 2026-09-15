@@ -1,16 +1,4 @@
-export type AssetType =
-  | "floor"
-  | "box_laptop"
-  | "box_server"
-  | "config_desk"
-  | "server_rack"
-  | "riddle"
-  | "delivery"
-  | "wall"
-  | "office_desk"
-  | "trash"
-  | "door"
-  | "key";
+export type AssetType = string;
 
 export type HeldObjectType = "laptop" | "server" | "key";
 
@@ -40,17 +28,19 @@ export type DropRule =
 
 export interface GameObjectInstance {
   id: string;
-  x: number;
-  z: number;
+  position: {
+    x: number;
+    z: number;
+    rotation: number;
+  };
   w: number;
   d: number;
-  rotation: number;
   color: number;
   type: AssetType;
   label: string;
-  canHold?: boolean;
-  canPush?: boolean;
-  allowGrab?: boolean;
+  canHold: boolean;
+  canBePushed: boolean;
+  canBeGrabbed: boolean;
   keyId?: string;
   requiredKeyIds?: string[];
   isOpen?: boolean;

@@ -15,15 +15,13 @@ export default {
     depth: 1.2,
   },
   interactions: {
-    canGrab: true
-  
+    canGrab: true,
   },
   states: {
     grabbed: { mesh: LaptopGrabbedMesh, scale: [1, 1, 1] },
     onFloor: { mesh: LaptopOnFloorMesh, scale: [1, 1, 1] },
     onTable: { mesh: LaptopOnTableMesh, scale: [1, 1, 1] },
     configured: {
-      configured: true,
       mesh: LaptopConfiguredMesh,
       scale: [1, 1, 1],
     },

@@ -20,7 +20,6 @@ export default {
     onFloor: { mesh: ServerOnFloorMesh, scale: [1, 1, 1] },
     onTable: { mesh: ServerOnTableMesh, scale: [1, 1, 1] },
     configured: {
-      configured: true,
       mesh: ServerConfiguredMesh,
       scale: [1, 1, 1],
     },

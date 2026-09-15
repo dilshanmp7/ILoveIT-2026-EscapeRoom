@@ -2,7 +2,6 @@ import type { ObjectTypeDefinition } from "../../runtime";
 import TrashMesh from "./mesh/trash.json";
 
 export default {
-  interaction: { action: "trash", canUse: true },
   geometry: {
     isStatic: true,
     isSurface: true,

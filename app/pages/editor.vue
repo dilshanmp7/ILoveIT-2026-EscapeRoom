@@ -86,8 +86,9 @@ async function saveFloorplan(layout: GameObjectInstance[], nextPlayerSpawn: Play
     floorplan.value = response.floorplan.layout
     playerSpawn.value = response.floorplan.playerSpawn
     await navigateTo('/game')
-  } catch {
-    errorMessage.value = 'The floorplan could not be deployed.'
+  } catch (error) {
+    const fetchError = error as FetchError
+    errorMessage.value = fetchError.data?.statusMessage || 'The floorplan could not be deployed.'
   } finally {
     saving.value = false
   }

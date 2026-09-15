@@ -11,8 +11,7 @@ export type ObjectVisualState =
   | "opened"
   | "completed";
 
-export interface ObjectDefinition {
-  configured?: boolean;
+export interface GameObjectDefinition {
   color?: string;
   scale?: [number, number, number];
   rotation?: [number, number, number];
@@ -22,10 +21,23 @@ export interface ObjectDefinition {
   acceptsDrop?: string;
 }
 
-export interface ObjectReaction {
-  event: string;
-  state: ObjectVisualState;
+export type EventType = string;
+export interface ObjectEventState {
+  objects: readonly GameObjectInstance[];
+  score: number;
 }
+
+export interface ObjectEventContext {
+  event: EventType;
+  emitter: GameObjectInstance;
+  emitterState: ObjectVisualState;
+  game: ObjectEventState;
+}
+
+export type ObjectReaction = (
+  context: ObjectEventContext,
+) => ObjectVisualState | undefined;
+export type ObjectReactions = Record<EventType, ObjectReaction>;
 
 export interface ObjectQuizSuccess {
   event?: string;
@@ -38,7 +50,7 @@ export interface ObjectActionContext {
   asset: GameObjectInstance;
   state: ObjectVisualState;
   heldItem: { type: string; keyId?: string; configured?: boolean } | null;
-  emitEvent: (event: string) => void;
+  emitEvent: (event: EventType) => void;
   setState: (state: ObjectVisualState) => Promise<void>;
   configureContained: () => Promise<boolean>;
   openQuiz: (success?: ObjectQuizSuccess) => void;
@@ -57,26 +69,16 @@ export interface ObjectActionDefinition {
   execute: (context: ObjectActionContext) => void | Promise<void>;
 }
 
-export type ObjectAction =
-  | "none"
-  | "config"
-  | "quiz"
-  | "deliver"
-  | "trash"
-  | "open_door";
-
 export interface ObjectTypeDefinition {
-  states: Partial<Record<ObjectVisualState, ObjectDefinition>>;
-  defaultState?: ObjectVisualState;
+  states: Partial<Record<ObjectVisualState, GameObjectDefinition>>;
   holdingSlots?: HoldingSlot[];
   interaction?: {
-    action?: ObjectAction;
     requiredKey?: string;
     canGrab?: boolean;
     canUse?: boolean;
     emitsEvent?: string;
   };
-  reactions?: ObjectReaction[];
+  reactions?: ObjectReactions;
   actions?: ObjectActionDefinition[];
   geometry?: {
     isBarrier?: boolean;
@@ -129,7 +131,7 @@ export function getObjectTypeDefinition(type: string) {
 export function getObjectDefinition(
   type: string,
   state: ObjectVisualState,
-): ObjectDefinition | undefined {
+): GameObjectDefinition | undefined {
   return (
     objectDefinitions[type]?.states[state] ||
     objectDefinitions[type]?.states.grabbed
@@ -561,15 +563,14 @@ export async function loadMapObjectModel(
   asset: GameObjectInstance,
   state?: ObjectVisualState,
 ): Promise<THREE.Group | null> {
-  const visualState =
-    state || getObjectTypeDefinition(asset.type)?.defaultState || "onFloor";
+  const visualState = state || "onFloor";
   const definition = getObjectDefinition(asset.type, visualState);
   if (!definition?.mesh) return null;
   const model = objectModelLoader.parse(
     definition.mesh as Parameters<typeof objectModelLoader.parse>[0],
   );
   model.scale.set(asset.w, 1, asset.d);
-  model.userData.canGrab = Boolean(asset.allowGrab);
+  model.userData.canGrab = Boolean(asset.canBeGrabbed);
   model.userData.dropRule = asset.dropRule || asset.acceptsDrop || "none";
   model.userData.assetType = asset.type;
   model.traverse((child) => {

@@ -4,10 +4,10 @@ import KeyInsertedMesh from "./mesh/key-inserted.json";
 import KeyOnTableMesh from "./mesh/key.json";
 
 export default {
-  defaultState: "onTable",
   interaction: { action: "none", canGrab: true },
   geometry: {
-    isStatic: false,
+    isStatic: true,
+    canPush: false,
     isSurface: true,
     surfaceHeight: 0.1,
   },
