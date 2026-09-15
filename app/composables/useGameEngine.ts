@@ -328,9 +328,10 @@ export function useGameEngine() {
     return { mode: "none" };
   }
 
-  function canDrop(item: HeldItem, asset: GameObjectInstance, contents: HeldItem[]) {
+  function canDrop(item: HeldItem, asset: RuntimeGameObjectInstance) {
     if (getObjectGeometry(asset.type)?.isBarrier) return false;
     const rule = getDropRule(asset);
+    const contents = asset.heldItem ? [asset.heldItem] : [];
     if (rule.mode === "none") return false;
     if (rule.mode === "floor") return true;
     if (rule.maxContents !== undefined && contents.length >= rule.maxContents)
@@ -397,7 +398,6 @@ export function useGameEngine() {
         canDrop(
           heldItem,
           nearby,
-          nearby.heldItem ? [nearby.heldItem] : [],
         )
       ) {
         const targetRule = getDropRule(nearby);
@@ -633,15 +633,21 @@ export function useGameEngine() {
     state.actionSelectionOptions = [];
   }
 
-  function answerQuiz(index: number) {
-    if (state.quiz && index === state.quiz.correct) {
-      const success = pendingQuizSuccess;
-      state.score += success?.score ?? 100;
-      if (success?.event) emitGameEvent(success.event);
-      if (success?.state && pendingQuizAssetId)
-        void setObjectState(pendingQuizAssetId, success.state);
-      if (success?.message) state.message = success.message;
+  function answerQuiz(optionId: number) {
+    if (optionId < 0) {
+      pendingQuizSuccess = undefined;
+      pendingQuizAssetId = "";
+      state.quizOpen = false;
+      state.quiz = null;
+      return;
     }
+    if (!state.quiz || optionId !== state.quiz.correct) return;
+    const success = pendingQuizSuccess;
+    state.score += success?.score ?? 100;
+    if (success?.event) emitGameEvent(success.event);
+    if (success?.state && pendingQuizAssetId)
+      void setObjectState(pendingQuizAssetId, success.state);
+    if (success?.message) state.message = success.message;
     pendingQuizSuccess = undefined;
     pendingQuizAssetId = "";
     state.quizOpen = false;

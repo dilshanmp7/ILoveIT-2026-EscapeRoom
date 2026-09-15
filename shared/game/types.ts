@@ -73,9 +73,14 @@ export interface Floorplan {
   playerSpawn: PlayerSpawn;
 }
 
+export interface QuizOption {
+  id: number;
+  text: string;
+}
+
 export interface QuizQuestion {
   q: string;
-  options: string[];
+  options: QuizOption[];
   correct: number;
 }
 

@@ -1,17 +1,32 @@
 [
   {
     "q": "I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?",
-    "options": ["Keyboard", "Database", "Warehouse", "Van"],
-    "correct": 0
-  },
-  {
-    "q": "I have a screen but no face. I process data but have no brain. What am I?",
-    "options": ["Router", "Monitor/Laptop", "Scanner", "Barcode"],
+    "options": [
+      { "id": 1, "text": "Keyboard" },
+      { "id": 2, "text": "Database" },
+      { "id": 3, "text": "Warehouse" },
+      { "id": 4, "text": "Van" }
+    ],
     "correct": 1
   },
   {
-    "q": "What travels around the world but stays in one corner?",
-    "options": ["Email", "IP Address", "Postage Stamp", "Data Packet"],
+    "q": "I have a screen but no face. I process data but have no brain. What am I?",
+    "options": [
+      { "id": 1, "text": "Router" },
+      { "id": 2, "text": "Monitor/Laptop" },
+      { "id": 3, "text": "Scanner" },
+      { "id": 4, "text": "Barcode" }
+    ],
     "correct": 2
+  },
+  {
+    "q": "What travels around the world but stays in one corner?",
+    "options": [
+      { "id": 1, "text": "Email" },
+      { "id": 2, "text": "IP Address" },
+      { "id": 3, "text": "Postage Stamp" },
+      { "id": 4, "text": "Data Packet" }
+    ],
+    "correct": 3
   }
 ]

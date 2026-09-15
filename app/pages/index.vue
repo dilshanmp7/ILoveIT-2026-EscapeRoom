@@ -13,28 +13,28 @@ useSeoMeta({
 })
 
 async function enterShift() {
-  if (!accessCode.value.trim() || isSubmitting.value) return
+  if (isSubmitting.value) return
 
   if (isCodeValid.value) {
     await navigateTo('/game')
     return
   }
 
-  await navigateTo({ path: '/', query: { code: accessCode.value.trim() } })
+  await validateCode(accessCode.value)
 }
 
-async function validateQueryCode() {
-  const queryCode = typeof route.query.code === 'string' ? route.query.code.trim() : ''
-  if (!queryCode) return
+async function validateCode(code: string) {
+  const normalizedCode = code.trim()
+  if (!normalizedCode || isSubmitting.value) return
 
-  accessCode.value = queryCode
+  accessCode.value = normalizedCode
   isSubmitting.value = true
   errorMessage.value = ''
 
   try {
     await $fetch('/api/access/verify', {
       method: 'POST',
-      body: { code: accessCode.value },
+      body: { code: normalizedCode },
     })
     isCodeValid.value = true
   } catch (error) {
@@ -44,6 +44,11 @@ async function validateQueryCode() {
   } finally {
     isSubmitting.value = false
   }
+}
+
+async function validateQueryCode() {
+  const queryCode = typeof route.query.code === 'string' ? route.query.code.trim() : ''
+  if (queryCode) await validateCode(queryCode)
 }
 
 onMounted(validateQueryCode)
@@ -66,11 +71,12 @@ onMounted(validateQueryCode)
       </p>
 
       <form class="access-form" @submit.prevent="enterShift">
-        <label for="access-code">Shared dispatch code</label>
+        <label v-if="!isCodeValid" for="access-code">Shared dispatch code</label>
         <div class="input-row">
-          <input id="access-code" v-model="accessCode" name="access-code" type="password" autocomplete="off"
-            placeholder="ENTER CODE" :disabled="isSubmitting" @input="errorMessage = ''; isCodeValid = false">
-          <button type="submit" :disabled="isSubmitting || !accessCode.trim()">
+          <input v-if="!isCodeValid" id="access-code" v-model="accessCode" name="access-code" type="password"
+            autocomplete="off" placeholder="ENTER CODE" :disabled="isSubmitting"
+            @input="errorMessage = ''; isCodeValid = false">
+          <button type="submit" :disabled="isSubmitting || (!isCodeValid && !accessCode.trim())">
             {{ isSubmitting ? 'Checking' : isCodeValid ? 'Enter' : 'Check code' }}
             <span aria-hidden="true">↗</span>
           </button>

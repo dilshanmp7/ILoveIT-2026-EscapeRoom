@@ -1,15 +1,53 @@
 <script setup lang="ts">
 import type { QuizQuestion } from '#shared/game/types';
+import { nextTick, ref, watch } from 'vue';
 
-type ReadonlyQuizQuestion = Omit<QuizQuestion, 'options'> & { options: readonly string[] }
+const props = defineProps<{ quiz: QuizQuestion | null; open: boolean }>()
+const emit = defineEmits<{ answer: [optionId: number]; close: [] }>()
+const selectedIndex = ref(0)
+const shaking = ref(false)
+const modal = ref<HTMLElement | null>(null)
 
-defineProps<{ quiz: ReadonlyQuizQuestion | null; open: boolean }>()
-const emit = defineEmits<{ answer: [index: number]; close: [] }>()
+watch(() => props.open, async (open) => {
+  if (!open) return
+  selectedIndex.value = 0
+  await nextTick()
+  modal.value?.focus()
+})
+
+function submitAnswer(optionId: number) {
+  if (shaking.value) return
+  if (props.quiz?.correct !== optionId) {
+    shaking.value = true
+    window.setTimeout(() => {
+      shaking.value = false
+      emit('answer', optionId)
+    }, 320)
+    return
+  }
+  emit('answer', optionId)
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  if (!props.quiz || !props.open || shaking.value) return
+  if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+    event.preventDefault()
+    selectedIndex.value = (selectedIndex.value + 1) % props.quiz.options.length
+  } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+    event.preventDefault()
+    selectedIndex.value = (selectedIndex.value - 1 + props.quiz.options.length) % props.quiz.options.length
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    const option = props.quiz.options[selectedIndex.value]
+    if (option) submitAnswer(option.id)
+  }
+}
 </script>
 
 <template>
   <div v-if="open && quiz" class="modal-backdrop" @click.self="emit('close')">
-    <section class="quiz-modal" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
+    <section ref="modal" class="quiz-modal" :class="{ shake: shaking }" role="dialog" aria-modal="true"
+      aria-labelledby="quiz-title" tabindex="-1" @keydown.stop="handleKeydown">
       <div class="modal-heading">
         <div><span class="eyebrow">Security clearance</span>
           <h2 id="quiz-title">IT security check</h2>
@@ -18,9 +56,9 @@ const emit = defineEmits<{ answer: [index: number]; close: [] }>()
       <p class="question">{{ quiz.q }}</p>
       <div class="options">
 
-        <button v-for="(option, index) in quiz.options" :key="option" type="button" @click="emit('answer', index)">
-          <span v-if="quiz.correct === index">*</span>{{
-            option }} <span>→</span></button>
+        <button v-for="(option, index) in quiz.options" :key="option.id" type="button"
+          :class="{ selected: selectedIndex === index }" @click="selectedIndex = index; submitAnswer(option.id)">
+          <span v-if="quiz.correct === option.id">*</span>{{ option.text }} <span>→</span></button>
       </div>
     </section>
   </div>
@@ -44,6 +82,10 @@ const emit = defineEmits<{ answer: [index: number]; close: [] }>()
   border: 1px solid rgba(96, 165, 250, .6);
   background: #0f172a;
   box-shadow: 0 24px 70px rgba(0, 0, 0, .4);
+}
+
+.quiz-modal.shake {
+  animation: quiz-shake .32s ease-in-out;
 }
 
 .modal-heading {
@@ -103,7 +145,28 @@ h2 {
   background: #1e40af;
 }
 
+.options button.selected {
+  border-color: #60a5fa;
+  background: #1e40af;
+}
+
 .options span {
   color: #ffcc00;
+}
+
+@keyframes quiz-shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-.5rem);
+  }
+
+  75% {
+    transform: translateX(.5rem);
+  }
 }
 </style>
