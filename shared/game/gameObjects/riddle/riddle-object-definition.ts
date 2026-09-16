@@ -1,10 +1,9 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import RiddleMesh from "./mesh/riddle.json";
 
 export default {
   interaction: { action: "quiz", canUse: true },
   geometry: {
-    isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
   },
@@ -12,7 +11,7 @@ export default {
     {
       id: "quiz",
       label: "Open security quiz",
-      visibleWhen: (context) => context.state !== "completed",
+      isVisible: (context) => context.state !== "completed",
       execute: (context) => context.openQuiz(),
     },
   ],
@@ -23,5 +22,8 @@ export default {
     width: 1.4,
     depth: 1.4,
   },
-  states: { onFloor: { mesh: RiddleMesh }, completed: { mesh: RiddleMesh } },
+  visualStates: {
+    onFloor: { mesh: RiddleMesh },
+    completed: { mesh: RiddleMesh },
+  },
 } as ObjectTypeDefinition;

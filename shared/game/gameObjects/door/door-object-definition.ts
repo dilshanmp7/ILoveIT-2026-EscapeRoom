@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import { requiresKey } from "../definition-helpers";
 import DoorOpenedMesh from "./mesh/door-opened.json";
 import DoorMesh from "./mesh/door.json";
@@ -34,5 +34,8 @@ export default {
     width: 2.5,
     depth: 0.4,
   },
-  states: { onFloor: { mesh: DoorMesh }, opened: { mesh: DoorOpenedMesh } },
+  visualStates: {
+    onFloor: { mesh: DoorMesh },
+    opened: { mesh: DoorOpenedMesh },
+  },
 } as ObjectTypeDefinition;

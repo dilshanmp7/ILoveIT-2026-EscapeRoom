@@ -1,9 +1,8 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import OfficeDeskMesh from "./mesh/office-desk.json";
 
 export default {
   geometry: {
-    isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
   },
@@ -22,5 +21,5 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  states: { onFloor: { mesh: OfficeDeskMesh, acceptsDrop: "any" } },
+  visualStates: { onFloor: { mesh: OfficeDeskMesh, acceptsDrop: "any" } },
 } as ObjectTypeDefinition;

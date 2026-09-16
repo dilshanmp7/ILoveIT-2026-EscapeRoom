@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import LaptopConfiguredMesh from "./mesh/configured.json";
 import LaptopGrabbedMesh from "./mesh/grabbed.json";
 import LaptopOnFloorMesh from "./mesh/on-floor.json";
@@ -17,7 +17,7 @@ export default {
   interactions: {
     canGrab: true,
   },
-  states: {
+  visualStates: {
     grabbed: { mesh: LaptopGrabbedMesh, scale: [1, 1, 1] },
     onFloor: { mesh: LaptopOnFloorMesh, scale: [1, 1, 1] },
     onTable: { mesh: LaptopOnTableMesh, scale: [1, 1, 1] },

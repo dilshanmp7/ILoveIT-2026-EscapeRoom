@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import WallMesh from "./mesh/wall.json";
 
 export default {
@@ -10,5 +10,5 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  states: { onFloor: { mesh: WallMesh } },
+  visualStates: { onFloor: { mesh: WallMesh } },
 } as ObjectTypeDefinition;

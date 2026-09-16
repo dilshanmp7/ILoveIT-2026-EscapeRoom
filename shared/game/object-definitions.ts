@@ -12,7 +12,7 @@ import serverRackDefinition from "./gameObjects/server-rack/server-rack-object-d
 import serverDefinition from "./gameObjects/server/server-object-definition";
 import trashDefinition from "./gameObjects/trash/trash-object-definition";
 import wallDefinition from "./gameObjects/wall/wall-object-definition";
-import type { ObjectDefinitions } from "./runtime";
+import type { ObjectDefinitions } from "./types";
 export const objectDefinitions: ObjectDefinitions = {
   box_laptop: boxLaptopDefinition,
   box_server: boxServerDefinition,

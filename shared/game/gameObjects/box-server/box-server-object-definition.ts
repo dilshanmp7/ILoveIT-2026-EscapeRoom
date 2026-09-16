@@ -1,10 +1,9 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import BoxServerMesh from "./mesh/box-server.json";
 
 export default {
   source: { itemType: "server" },
   geometry: {
-    isStatic: false,
     canPush: true,
     isSurface: true,
     surfaceHeight: 0.86,
@@ -16,7 +15,7 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  states: {
+  visualStates: {
     onFloor: {
       mesh: BoxServerMesh,
       canHold: false,

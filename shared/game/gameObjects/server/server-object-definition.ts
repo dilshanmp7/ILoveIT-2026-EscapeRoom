@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import ServerConfiguredMesh from "./mesh/configured.json";
 import ServerGrabbedMesh from "./mesh/grabbed.json";
 import ServerOnFloorMesh from "./mesh/on-floor.json";
@@ -15,7 +15,7 @@ export default {
     width: 1.2,
     depth: 1.2,
   },
-  states: {
+  visualStates: {
     grabbed: { mesh: ServerGrabbedMesh, scale: [1, 1, 1] },
     onFloor: { mesh: ServerOnFloorMesh, scale: [1, 1, 1] },
     onTable: { mesh: ServerOnTableMesh, scale: [1, 1, 1] },

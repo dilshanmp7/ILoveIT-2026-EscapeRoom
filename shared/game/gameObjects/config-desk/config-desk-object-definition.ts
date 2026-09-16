@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import { requiresKey } from "../definition-helpers";
 import ConfigDeskMesh from "./mesh/config-desk.json";
 
@@ -7,10 +7,8 @@ export default {
     action: "config",
     canUse: true,
     requiredKey: "ADMIN_KEY",
-    emitsEvent: "eventA",
   },
   geometry: {
-    isStatic: true,
     isSurface: true,
     surfaceHeight: 1.0,
   },
@@ -27,7 +25,7 @@ export default {
       id: "admin-terminal-quiz",
       label: "Use admin terminal",
       blockedMessage: "Admin badge required",
-      visibleWhen: (context) =>
+      isVisible: (context) =>
         context.asset.actionIds?.includes("admin-terminal-quiz") === true &&
         context.state !== "completed",
       canExecute: requiresKey("ADMIN_KEY"),
@@ -42,7 +40,7 @@ export default {
     {
       id: "configure",
       label: "Configure device",
-      visibleWhen: (context) =>
+      isVisible: (context) =>
         context.asset.actionIds?.includes("configure") === true,
       canExecute: (context) =>
         context.heldItem &&
@@ -60,7 +58,7 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  states: {
+  visualStates: {
     onFloor: { mesh: ConfigDeskMesh, acceptsDrop: "laptop" },
     inserted: { mesh: ConfigDeskMesh, acceptsDrop: "laptop" },
   },

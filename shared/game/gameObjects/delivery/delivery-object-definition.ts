@@ -1,11 +1,10 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import { hasConfiguredItem } from "../definition-helpers";
 import DeliveryMesh from "./mesh/delivery.json";
 
 export default {
   interaction: { action: "deliver", canUse: true },
   geometry: {
-    isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
   },
@@ -24,5 +23,5 @@ export default {
     width: 2.5,
     depth: 1.5,
   },
-  states: { onFloor: { mesh: DeliveryMesh, acceptsDrop: "configured" } },
+  visualStates: { onFloor: { mesh: DeliveryMesh, acceptsDrop: "configured" } },
 } as ObjectTypeDefinition;

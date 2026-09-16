@@ -1,9 +1,8 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import TrashMesh from "./mesh/trash.json";
 
 export default {
   geometry: {
-    isStatic: true,
     isSurface: true,
     surfaceHeight: 1.3,
   },
@@ -22,5 +21,5 @@ export default {
     width: 1.2,
     depth: 1.2,
   },
-  states: { onFloor: { mesh: TrashMesh, acceptsDrop: "any" } },
+  visualStates: { onFloor: { mesh: TrashMesh, acceptsDrop: "any" } },
 } as ObjectTypeDefinition;

@@ -1,4 +1,4 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import KeyGrabbedMesh from "./mesh/key-grabbed.json";
 import KeyInsertedMesh from "./mesh/key-inserted.json";
 import KeyOnTableMesh from "./mesh/key.json";
@@ -6,7 +6,6 @@ import KeyOnTableMesh from "./mesh/key.json";
 export default {
   interaction: { action: "none", canGrab: true },
   geometry: {
-    isStatic: true,
     canPush: false,
     isSurface: true,
     surfaceHeight: 0.1,
@@ -20,7 +19,7 @@ export default {
     width: 0.8,
     depth: 0.8,
   },
-  states: {
+  visualStates: {
     grabbed: {
       mesh: KeyGrabbedMesh,
       scale: [0.45, 0.45, 0.45] as [number, number, number],

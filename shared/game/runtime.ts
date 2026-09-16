@@ -1,111 +1,20 @@
 import * as THREE from "three";
 import { objectDefinitions } from "./object-definitions";
-import type { GameObjectInstance, HoldingSlot } from "./types";
-
-export type ObjectVisualState =
-  | "grabbed"
-  | "onFloor"
-  | "onTable"
-  | "configured"
-  | "inserted"
-  | "opened"
-  | "completed";
-
-export interface GameObjectDefinition {
-  color?: string;
-  scale?: [number, number, number];
-  rotation?: [number, number, number];
-  mesh?: object;
-  canHold?: boolean;
-  canPush?: boolean;
-  acceptsDrop?: string;
-}
-
-export type EventType = string;
-export interface ObjectEventState {
-  objects: readonly GameObjectInstance[];
-  score: number;
-}
-
-export interface ObjectEventContext {
-  event: EventType;
-  emitter: GameObjectInstance;
-  emitterState: ObjectVisualState;
-  game: ObjectEventState;
-}
-
-export type ObjectReaction = (
-  context: ObjectEventContext,
-) => ObjectVisualState | undefined;
-export type ObjectReactions = Record<EventType, ObjectReaction>;
-
-export interface ObjectQuizSuccess {
-  event?: string;
-  state?: ObjectVisualState;
-  message?: string;
-  score?: number;
-}
-
-export interface ObjectActionContext {
-  asset: GameObjectInstance;
-  state: ObjectVisualState;
-  heldItem: { type: string; keyId?: string; configured?: boolean } | null;
-  emitEvent: (event: EventType) => void;
-  setState: (state: ObjectVisualState) => Promise<void>;
-  configureContained: () => Promise<boolean>;
-  openQuiz: (success?: ObjectQuizSuccess) => void;
-  showMessage: (message: string) => void;
-  discardHeld: () => void;
-  deliverHeld: () => void;
-  addScore: (amount: number) => void;
-}
-
-export interface ObjectActionDefinition {
-  id: string;
-  label: string;
-  blockedMessage?: string;
-  visibleWhen?: (context: ObjectActionContext) => boolean;
-  canExecute?: (context: ObjectActionContext) => boolean;
-  execute: (context: ObjectActionContext) => void | Promise<void>;
-}
-
-export interface ObjectTypeDefinition {
-  states: Partial<Record<ObjectVisualState, GameObjectDefinition>>;
-  holdingSlots?: HoldingSlot[];
-  interaction?: {
-    requiredKey?: string;
-    canGrab?: boolean;
-    canUse?: boolean;
-    emitsEvent?: string;
-  };
-  reactions?: ObjectReactions;
-  actions?: ObjectActionDefinition[];
-  geometry?: {
-    isBarrier?: boolean;
-    isStatic?: boolean;
-    canPush?: boolean;
-    isSurface?: boolean;
-    surfaceHeight?: number;
-  };
-  source?: { itemType: string };
-  dropObjectType?: string;
-  heldOffset?: [number, number, number];
-  configureSound?: "type" | "process";
-  editor?: {
-    label: string;
-    detail: string;
-    color: string;
-    width: number;
-    depth: number;
-    enabled?: boolean;
-  };
-}
-
-export type ObjectDefinitions = Record<string, ObjectTypeDefinition>;
+import type {
+  GameObjectInstance,
+  GameObjectVisualStateDefinition,
+  ObjectActionDefinition,
+  ObjectVisualStateType,
+  SoundEffect,
+} from "./types";
 
 const objectModelCache = new Map<string, THREE.Object3D>();
 const objectModelLoader = new THREE.ObjectLoader();
 const objectActionRegistry = new Map<string, ObjectActionDefinition>();
+
+export function createMaterial(color: number) {
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+}
 
 export async function loadObjectDefinitions() {
   return objectDefinitions;
@@ -115,7 +24,7 @@ export function getObjectDefinitions() {
   return objectDefinitions;
 }
 
-export async function loadObjectModel(type: string, state: ObjectVisualState) {
+export async function loadObjectModel(type: string, state: ObjectVisualStateType) {
   const definition = getObjectDefinition(type, state);
   if (!definition?.mesh) return null;
   const model = objectModelLoader.parse(
@@ -130,52 +39,16 @@ export function getObjectTypeDefinition(type: string) {
 
 export function getObjectDefinition(
   type: string,
-  state: ObjectVisualState,
-): GameObjectDefinition | undefined {
+  state: ObjectVisualStateType,
+): GameObjectVisualStateDefinition | undefined {
   return (
-    objectDefinitions[type]?.states[state] ||
-    objectDefinitions[type]?.states.grabbed
+    objectDefinitions[type]?.visualStates[state] ||
+    objectDefinitions[type]?.visualStates.grabbed
   );
 }
 
-export function getObjectInteraction(type: string) {
-  return objectDefinitions[type]?.interaction;
-}
-
-export function registerObjectAction(action: ObjectActionDefinition) {
-  objectActionRegistry.set(action.id, action);
-}
-
-export function getObjectActions(type: string, actionIds?: string[]) {
-  const actions = objectDefinitions[type]?.actions || [];
-  if (!actionIds) return actions;
-  return actionIds.flatMap(
-    (id) =>
-      actions.find((action) => action.id === id) ||
-      objectActionRegistry.get(id) ||
-      [],
-  );
-}
-
-export function getObjectGeometry(type: string) {
-  return objectDefinitions[type]?.geometry;
-}
-
-export class SoundFX {
-  private context: AudioContext | null = null;
-
-  private init() {
-    if (typeof window === "undefined" || this.context) return;
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (AudioContextClass) this.context = new AudioContextClass();
-  }
-
-  private playTone(
-    frequency: number,
-    type: OscillatorType,
+export function 
+  
     duration: number,
     volume = 0.1,
   ) {
@@ -199,17 +72,7 @@ export class SoundFX {
     }
   }
 
-  play(
-    effect:
-      | "type"
-      | "process"
-      | "pickup"
-      | "drop"
-      | "unlock"
-      | "deliver"
-      | "riddle_success"
-      | "dash",
-  ) {
+  play(effect: SoundEffect) {
     this.init();
     if (effect === "type") {
       this.playTone(800, "square", 0.05, 0.05);
@@ -354,7 +217,7 @@ export class GameItem {
   }
 
   async createMeshFromAsset(
-    state: ObjectVisualState = this.isConfigured ? "configured" : "grabbed",
+    state: ObjectVisualStateType = this.isConfigured ? "configured" : "grabbed",
   ) {
     const model = await loadObjectModel(this.type, state);
     const group = new THREE.Group();
@@ -561,7 +424,7 @@ export function initPlayers(
 
 export async function loadMapObjectModel(
   asset: GameObjectInstance,
-  state?: ObjectVisualState,
+  state?: ObjectVisualStateType,
 ): Promise<THREE.Group | null> {
   const visualState = state || "onFloor";
   const definition = getObjectDefinition(asset.type, visualState);

@@ -1,10 +1,9 @@
-import type { ObjectTypeDefinition } from "../../runtime";
+import type { ObjectTypeDefinition } from "../../types";
 import BoxLaptopMesh from "./mesh/box-laptop.json";
 
 export default {
   source: { itemType: "laptop" },
   geometry: {
-    isStatic: false,
     canPush: true,
     isSurface: true,
     surfaceHeight: 0.86,
@@ -16,7 +15,7 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  states: {
+  visualStates: {
     onFloor: {
       mesh: BoxLaptopMesh,
       canHold: false,
@@ -24,4 +23,7 @@ export default {
       acceptsDrop: "laptop",
     },
   },
+  canBePushed: () => true,
+  canBeDragged: () => true,
+  canBeGrabbed: () => false,
 } as ObjectTypeDefinition;
