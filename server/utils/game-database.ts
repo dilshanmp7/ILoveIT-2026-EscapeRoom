@@ -29,6 +29,7 @@ function getDatabase() {
     );
     CREATE TABLE IF NOT EXISTS game_sessions (
       id TEXT PRIMARY KEY,
+      session_key TEXT,
       access_token TEXT NOT NULL,
       status TEXT NOT NULL,
       score INTEGER NOT NULL DEFAULT 0,
@@ -44,6 +45,7 @@ function getDatabase() {
     );
   `);
   for (const column of [
+    "ALTER TABLE game_sessions ADD COLUMN session_key TEXT",
     "ALTER TABLE game_sessions ADD COLUMN floorplan_json TEXT NOT NULL DEFAULT '{}'",
     "ALTER TABLE game_sessions ADD COLUMN quizzes_json TEXT NOT NULL DEFAULT '[]'",
   ]) {
@@ -163,16 +165,18 @@ export function resetFloorplan() {
 
 export function insertGameSession(
   session: GameSession,
+  sessionKey: string,
   accessToken: string,
   floorplan: Floorplan,
   quizzes: QuizQuestion[],
 ) {
   getDatabase()
     .prepare(
-      `INSERT INTO game_sessions (id, access_token, status, score, floorplan_json, quizzes_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO game_sessions (id, session_key, access_token, status, score, floorplan_json, quizzes_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       session.id,
+      sessionKey,
       accessToken,
       session.status,
       session.score,
@@ -183,14 +187,15 @@ export function insertGameSession(
     );
 }
 
-export function readGameSession(id: string, accessToken: string) {
+export function readGameSession(sessionKey: string, accessToken: string) {
   const row = getDatabase()
     .prepare(
-      "SELECT id, status, score, floorplan_json, quizzes_json, created_at AS createdAt, updated_at AS updatedAt FROM game_sessions WHERE id = ? AND access_token = ?",
+      "SELECT id, session_key, status, score, floorplan_json, quizzes_json, created_at AS createdAt, updated_at AS updatedAt FROM game_sessions WHERE session_key = ? AND access_token = ?",
     )
-    .get(id, accessToken) as
+    .get(sessionKey, accessToken) as
     | {
         id: string;
+        session_key: string | null;
         status: GameSession["status"];
         score: number;
         floorplan_json: string;
@@ -205,6 +210,7 @@ export function readGameSession(id: string, accessToken: string) {
   return {
     session: {
       id: row.id,
+      sessionKey: row.session_key || row.id,
       status: row.status,
       score: row.score,
       createdAt: row.createdAt,

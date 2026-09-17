@@ -33,11 +33,9 @@ export function isAccessTokenValid(token: string | undefined) {
   return true;
 }
 
-export function createGameSession(accessToken: string, existingId?: string) {
-  if (existingId) {
-    const existing = readGameSession(existingId, accessToken);
-    if (existing) return existing;
-  }
+export function createGameSession(accessToken: string, sessionKey: string) {
+  const existing = readGameSession(sessionKey, accessToken);
+  if (existing) return existing;
   const now = new Date().toISOString();
   const session: GameSession & { accessToken: string } = {
     id: randomUUID(),
@@ -47,9 +45,15 @@ export function createGameSession(accessToken: string, existingId?: string) {
     updatedAt: now,
     accessToken,
   };
-  insertGameSession(session, accessToken, readFloorplan(), readQuizzes());
+  insertGameSession(
+    session,
+    sessionKey,
+    accessToken,
+    readFloorplan(),
+    readQuizzes(),
+  );
   return {
-    session: toPublicSession(session),
+    session: { ...toPublicSession(session), sessionKey },
     floorplan: readFloorplan(),
     quizzes: readQuizzes(),
   };

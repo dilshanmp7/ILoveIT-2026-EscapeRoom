@@ -203,6 +203,7 @@ export interface QuizQuestion {
 
 export interface GameSession {
   id: string;
+  sessionKey: string;
   status: "active" | "completed";
   score: number;
   createdAt: string;

@@ -3,9 +3,12 @@ import type { FetchError } from 'ofetch'
 
 const route = useRoute()
 const accessCode = ref('')
+const sessionKey = ref('')
 const isSubmitting = ref(false)
 const isCodeValid = ref(false)
 const errorMessage = ref('')
+const sessionKeyRef = useTemplateRef<HTMLInputElement | null>('session-key')
+const accessCodeRef = useTemplateRef<HTMLInputElement | null>('access-code')
 
 useSeoMeta({
   title: 'DHL IT Courier | Access the Shift',
@@ -16,7 +19,8 @@ async function enterShift() {
   if (isSubmitting.value) return
 
   if (isCodeValid.value) {
-    await navigateTo('/game')
+    if (!sessionKey.value.trim()) return
+    await navigateTo({ path: '/game', query: { session: sessionKey.value.trim() } })
     return
   }
 
@@ -37,10 +41,13 @@ async function validateCode(code: string) {
       body: { code: normalizedCode },
     })
     isCodeValid.value = true
+    await nextTick();
+    sessionKeyRef.value?.focus()
   } catch (error) {
     const fetchError = error as FetchError
     errorMessage.value = fetchError.data?.statusMessage || 'That code did not unlock the dispatch floor.'
     isCodeValid.value = false
+    accessCodeRef.value?.focus()
   } finally {
     isSubmitting.value = false
   }
@@ -48,7 +55,8 @@ async function validateCode(code: string) {
 
 async function validateQueryCode() {
   const queryCode = typeof route.query.code === 'string' ? route.query.code.trim() : ''
-  if (queryCode) await validateCode(queryCode)
+  if (queryCode) { await validateCode(queryCode) }
+  else { accessCodeRef.value?.focus() }
 }
 
 onMounted(validateQueryCode)
@@ -71,16 +79,26 @@ onMounted(validateQueryCode)
       </p>
 
       <form class="access-form" @submit.prevent="enterShift">
-        <label v-if="!isCodeValid" for="access-code">Shared dispatch code</label>
-        <div class="input-row">
-          <input v-if="!isCodeValid" id="access-code" v-model="accessCode" name="access-code" type="password"
-            autocomplete="off" placeholder="ENTER CODE" :disabled="isSubmitting"
-            @input="errorMessage = ''; isCodeValid = false">
-          <button type="submit" :disabled="isSubmitting || (!isCodeValid && !accessCode.trim())">
-            {{ isSubmitting ? 'Checking' : isCodeValid ? 'Enter' : 'Check code' }}
-            <span aria-hidden="true">↗</span>
-          </button>
-        </div>
+        <template v-if="isCodeValid">
+          <label for="session-key">Session key</label>
+          <div class="input-row">
+            <input id="session-key" v-model="sessionKey" ref="session-key" name="session-key" type="text"
+              autocomplete="off" placeholder="ENTER SESSION KEY">
+            <button type="submit" :disabled="!sessionKey.trim()">Enter <span aria-hidden="true">↗</span></button>
+          </div>
+        </template>
+        <template v-else>
+          <label for="access-code">Shared dispatch code</label>
+          <div class="input-row">
+            <input v-if="!isCodeValid" id="access-code" ref="access-code" v-model="accessCode" name="access-code"
+              type="password" autocomplete="off" placeholder="ENTER CODE" :disabled="isSubmitting"
+              @input="errorMessage = ''; isCodeValid = false">
+            <button type="submit" :disabled="isSubmitting || (!isCodeValid && !accessCode.trim())">
+              {{ isSubmitting ? 'Checking' : 'Check code' }}
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </template>
         <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
       </form>
 

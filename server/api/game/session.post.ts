@@ -14,6 +14,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const body = await readBody<{ sessionId?: string }>(event);
-  return createGameSession(accessToken!, body?.sessionId);
+  const body = await readBody<{ sessionKey?: string }>(event);
+  const sessionKey = body?.sessionKey?.trim();
+  if (!sessionKey) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "A session key is required",
+    });
+  }
+  return createGameSession(accessToken!, sessionKey);
 });
