@@ -37,19 +37,6 @@ export default {
           score: 100,
         }),
     },
-    {
-      id: "configure",
-      label: "Configure device",
-      isVisible: (context) =>
-        context.asset.actionIds?.includes("configure") === true,
-      canExecute: (context) =>
-        context.heldItem &&
-        context.heldItem.type === "laptop" &&
-        !context.heldItem.configured,
-      execute: async (context) => {
-        await context.configureContained();
-      },
-    },
   ],
   editor: {
     label: "Config station",

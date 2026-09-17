@@ -15,19 +15,7 @@ export default {
       maxContents: 1,
     },
   ],
-  actions: [
-    {
-      id: "configure",
-      label: "Configure server",
-      canExecute: (context) =>
-        context.heldItem !== null &&
-        context.heldItem.type === "server" &&
-        !context.heldItem.configured,
-      execute: async (context) => {
-        await context.configureContained();
-      },
-    },
-  ],
+  actions: [],
   editor: {
     label: "Server rack",
     detail: "Configure server",

@@ -134,7 +134,6 @@ export class GameObject implements GameObjectInstance {
   canBeGrabbed() {
     return (
       this.allowGrab ??
-      this.definition.canBeGrabbed?.() ??
       Boolean(
         this.definition.interaction?.canGrab ||
         this.definition.interactions?.canGrab,
@@ -165,11 +164,7 @@ export class GameObject implements GameObjectInstance {
   }
 
   getHeldOffset() {
-    return this.definition.heldOffset || [0, 0, 0];
-  }
-
-  getConfigureSound(): SoundEffect {
-    return this.definition.configureSound || "process";
+    return this.visualState.heldOffset || [0, 0, 0];
   }
 
   getAvailableActions(context: ObjectActionContext) {
@@ -493,6 +488,22 @@ export class GamePhysics {
     this.bodies.splice(index, 1);
   }
 
+  syncObjectPositions(layout: GameObjectRecord[]) {
+    for (const body of this.bodies) {
+      if (!body.assetId) continue;
+      const asset = layout.find((item) => item.id === body.assetId);
+      if (!asset) continue;
+      asset.position.x = body.x;
+      asset.position.z = body.z;
+    }
+  }
+
+  dragBodyToPlayer(body: PhysicalBody, player: Player) {
+    body.x = player.mesh.position.x;
+    body.z = player.mesh.position.z;
+    if (body.mesh) body.mesh.position.set(body.x, body.mesh.position.y, body.z);
+  }
+
   movePlayer(player: Player, x: number, z: number, speed: number) {
     const length = Math.hypot(x, z);
     if (!length) return false;
@@ -501,6 +512,29 @@ export class GamePhysics {
       (x / length) * speed,
       (z / length) * speed,
     );
+  }
+
+  movePlayerWithInput(player: Player, x: number, z: number, speed: number) {
+    if (!x && !z) return false;
+    const moved = this.movePlayer(player, x, z, speed);
+    this.facePlayer(player, x, z);
+    return moved;
+  }
+
+  dash(player: Player, distance: number) {
+    const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      player.mesh.rotation.y,
+    );
+    return this.world.moveBodyWithSlide(
+      player.body,
+      direction.x * distance,
+      direction.z * distance,
+    );
+  }
+
+  facePlayer(player: Player, x: number, z: number) {
+    player.mesh.rotation.y = Math.atan2(x, z);
   }
 
   findNearby(

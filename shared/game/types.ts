@@ -46,7 +46,6 @@ export interface ObjectActionContext {
   acceptHeldItem: () => Promise<boolean>;
   emitEvent: (event: EventType) => void;
   setState: (state: ObjectVisualStateType) => Promise<void>;
-  configureContained: () => Promise<boolean>;
   openQuiz: (success?: ObjectQuizSuccess) => void;
   showMessage: (message: string) => void;
   discardHeld: () => void;
@@ -69,7 +68,7 @@ export interface GameObjectVisualStateDefinition {
   scale?: [number, number, number];
   rotation?: [number, number, number];
   mesh?: object;
-  canHold?: boolean;
+  heldOffset?: [number, number, number];
 }
 
 export type ObjectDefinitions = Record<string, ObjectTypeDefinition>;
@@ -89,7 +88,6 @@ export interface ObjectTypeDefinition {
     requiredKey?: string;
   };
   interactions?: ObjectTypeDefinition["interaction"];
-  configureSound?: SoundEffect;
   dropObjectType?: string;
   geometry?: {
     isBarrier?: boolean;
@@ -99,11 +97,6 @@ export interface ObjectTypeDefinition {
     surfaceHeight?: number;
   };
 
-  canBePushed?: () => boolean;
-  canBeDragged?: () => boolean;
-  canBeGrabbed?: () => boolean;
-
-  heldOffset?: [number, number, number];
   editor?: {
     label: string;
     detail: string;
@@ -164,7 +157,6 @@ export interface GameObjectInstance extends GameObjectRecord {
   getSurfaceHeight: () => number;
   getSourceType: () => string | undefined;
   getHeldOffset: () => [number, number, number];
-  getConfigureSound: () => SoundEffect;
   getAvailableActions: (
     context: ObjectActionContext,
   ) => ObjectActionDefinition[];

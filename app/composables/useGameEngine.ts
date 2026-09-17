@@ -132,21 +132,6 @@ export function useGameEngine() {
     }
   }
 
-  function persistPhysicsPositions() {
-    for (const body of bodies) {
-      if (!body.assetId) continue;
-      const asset = floorplan.layout.find((item) => item.id === body.assetId);
-      if (!asset) continue;
-      asset.position.x = body.x;
-      asset.position.z = body.z;
-    }
-  }
-
-  function getNearby() {
-    if (!player) return null;
-    return physics.findNearby(player, objectInstances.values());
-  }
-
   function removeBodyForAsset(assetId: string) {
     const bodyIndex = bodies.findIndex((body) => body.assetId === assetId);
     if (bodyIndex === -1) return;
@@ -215,41 +200,28 @@ export function useGameEngine() {
       z = joystick.y;
     }
     if (!x && !z) return false;
-    const length = Math.hypot(x, z);
-    const speed = 0.12;
-    const nextX = player.mesh.position.x + (x / length) * speed;
-    const nextZ = player.mesh.position.z + (z / length) * speed;
-    isPushing = player.body
-      ? physics.movePlayer(
-          player,
-          nextX - player.mesh.position.x,
-          nextZ - player.mesh.position.z,
-          speed,
-        )
-      : false;
+    isPushing = physics.movePlayerWithInput(player, x, z, 0.12);
     if (heldItem?.dragAssetId) {
       const draggedBody = bodies.find(
         (body) => body.assetId === heldItem?.dragAssetId,
       );
-      if (draggedBody) {
-        draggedBody.x = player.mesh.position.x;
-        draggedBody.z = player.mesh.position.z;
-      }
+      if (draggedBody) physics.dragBodyToPlayer(draggedBody, player);
     }
-    persistPhysicsPositions();
-    player.mesh.rotation.y = Math.atan2(x, z);
+    physics.syncObjectPositions(floorplan.layout);
     return true;
   }
 
   function updateNearby() {
-    nearby = getNearby();
-    state.nearbyId = nearby?.id || "";
-    state.nearbyLabel = nearby?.label || "";
-    state.canGrab = Boolean(
-      !heldItem &&
-      (nearby?.canHold || nearby?.canBeGrabbed || nearby?.heldItem),
-    );
-    state.canUse = getAvailableActions().length > 0;
+    if (!player) return;
+
+    nearby = physics.findNearby(player, objectInstances.values());
+    if (state.nearbyId != (nearby?.id ?? "")) {
+      console.log("Nearby changed:", nearby?.canBeGrabbed());
+      state.nearbyId = nearby?.id || "";
+      state.nearbyLabel = nearby?.label || "";
+      state.canGrab = Boolean(!heldItem && nearby?.canBeGrabbed());
+      state.canUse = getAvailableActions().length > 0;
+    }
   }
 
   function getAvailableActions(): ObjectActionDefinition[] {
@@ -269,7 +241,6 @@ export function useGameEngine() {
       acceptHeldItem: () => acceptHeldItem(),
       emitEvent: (event) => emitGameEvent(event, nearby!),
       setState: (state) => setObjectState(nearby!.id, state),
-      configureContained: () => configureContainedItem(),
       openQuiz: (success) => openQuiz(success),
       showMessage: (message) => {
         state.message = message;
@@ -445,29 +416,6 @@ export function useGameEngine() {
     sound.play("drop");
   }
 
-  async function configureContainedItem() {
-    if (!nearby?.heldItem || nearby.heldItem.configured) return false;
-    const item = nearby.heldItem;
-    const slot = nearby.getHoldingSlot(item);
-    if (!slot || !nearby.canAccept(item) || item.configured) return false;
-    item.configured = true;
-    if (item.mesh) {
-      const parent = item.mesh.parent;
-      parent?.remove(item.mesh);
-      await item.loadMesh("configured");
-      const heldOffset = item.getHeldOffset();
-      item.mesh.position.set(
-        heldOffset[0],
-        getSurfaceHeight(nearby, 0) + heldOffset[1],
-        heldOffset[2],
-      );
-      parent?.add(item.mesh);
-    }
-    state.score += 25;
-    sound.play(item.getConfigureSound());
-    return true;
-  }
-
   function deliverHeldItem() {
     if (!heldItem?.configured) return;
     heldItem = null;
@@ -598,16 +546,7 @@ export function useGameEngine() {
 
   function dash() {
     if (!player) return;
-    const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      player.mesh.rotation.y,
-    );
-    if (player.body)
-      physics.world.moveBodyWithSlide(
-        player.body,
-        direction.x * 1.2,
-        direction.z * 1.2,
-      );
+    physics.dash(player, 1.2);
     sound.play("dash");
   }
 
