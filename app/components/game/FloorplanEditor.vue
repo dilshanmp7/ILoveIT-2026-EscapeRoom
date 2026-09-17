@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { getObjectDefinitions, loadObjectDefinitions } from '#shared/game/runtime';
-import type { GameObjectInstance, HoldingSlot, PlayerSpawn } from '#shared/game/types';
+import type { GameObjectRecord, HoldingSlot, PlayerSpawn } from '#shared/game/types';
 import { computed, onMounted, reactive, ref } from 'vue';
 
-const props = defineProps<{ open: boolean; initialAssets: GameObjectInstance[]; initialPlayerSpawn: PlayerSpawn }>()
-const emit = defineEmits<{ close: []; deploy: [layout: GameObjectInstance[], playerSpawn: PlayerSpawn]; reset: []; tab: [value: 'map' | 'quiz'] }>()
-const assets = reactive(props.initialAssets.map(asset => ({
+const props = defineProps<{ open: boolean; initialAssets: GameObjectRecord[]; initialPlayerSpawn: PlayerSpawn }>()
+const emit = defineEmits<{ close: []; deploy: [layout: GameObjectRecord[], playerSpawn: PlayerSpawn]; reset: []; tab: [value: 'map' | 'quiz'] }>()
+const assets = reactive<GameObjectRecord[]>(props.initialAssets.map(asset => ({
   ...asset,
   canHold: Boolean(asset.canHold),
   canPush: Boolean(asset.canBePushed),
@@ -104,11 +104,11 @@ function dragSpawn(event: PointerEvent) {
   playerSpawn.z = Math.round((((event.clientY - rect.top) / rect.height * 16) - 8) * 2) / 2
 }
 
-function addAsset(type: GameObjectInstance['type']) {
+function addAsset(type: GameObjectRecord['type']) {
   const paletteItem = palette.value.find(item => item.type === type)
   const definition = definitions.value[type]
   if (!paletteItem || !definition) return
-  const asset: GameObjectInstance = {
+  const asset: GameObjectRecord = {
     id: `editor-${Date.now()}`,
     position: { x: 0, z: 0, rotation: 0 },
     w: paletteItem.width,
@@ -117,11 +117,9 @@ function addAsset(type: GameObjectInstance['type']) {
     type,
     label: paletteItem.label,
     canHold: Boolean(definition.interaction?.canGrab || definition.holdingSlots?.length),
-    canBePushed: Boolean(definition.geometry?.),
-    canBeDragged: Boolean(definition.geometry?.canDrag),
-    canBeGrabbed: Boolean(definition.interaction?.canGrab),
+    canPush: Boolean(definition.geometry?.canPush),
+    allowGrab: Boolean(definition.interaction?.canGrab),
     actionIds: definition.actions?.map(action => action.id) || [],
-    acceptsDrop: 'none',
     holdingSlots: definition.holdingSlots?.map(slot => ({ ...slot })) || [],
   }
   assets.push(asset)
@@ -207,8 +205,6 @@ function deleteSelected() {
                   :value="selected.requiredKeyIds?.join(', ') || ''" placeholder="e.g. SLIDING_DOR_KEY" type="text"
                   @change="updateAsset('requiredKeyIds', ($event.target as HTMLInputElement).value.split(',').map(value => value.trim()).filter(Boolean))">
               </div>
-              <div class="field"><label for="asset-drop">Accepts drop item type</label><input id="asset-drop"
-                  v-model="selected.acceptsDrop" placeholder="laptop, server, configured, any" type="text"></div>
               <div v-if="selected.type === 'key'" class="field"><label for="asset-key-id">Key ID</label><input
                   id="asset-key-id" v-model="selected.keyId" type="text"></div>
             </div>

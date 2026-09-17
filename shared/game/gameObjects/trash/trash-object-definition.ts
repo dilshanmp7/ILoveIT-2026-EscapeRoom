@@ -21,5 +21,6 @@ export default {
     width: 1.2,
     depth: 1.2,
   },
-  visualStates: { onFloor: { mesh: TrashMesh, acceptsDrop: "any" } },
+  holdingSlots: [{ id: "trash", label: "Trash", accepts: "any" }],
+  visualStates: { onFloor: { mesh: TrashMesh } },
 } as ObjectTypeDefinition;

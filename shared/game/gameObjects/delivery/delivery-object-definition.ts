@@ -23,5 +23,13 @@ export default {
     width: 2.5,
     depth: 1.5,
   },
-  visualStates: { onFloor: { mesh: DeliveryMesh, acceptsDrop: "configured" } },
+  holdingSlots: [
+    {
+      id: "delivery",
+      label: "Delivery",
+      accepts: "configured",
+      maxContents: 1,
+    },
+  ],
+  visualStates: { onFloor: { mesh: DeliveryMesh } },
 } as ObjectTypeDefinition;

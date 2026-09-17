@@ -20,7 +20,6 @@ export default {
       mesh: BoxLaptopMesh,
       canHold: false,
       canPush: true,
-      acceptsDrop: "laptop",
     },
   },
   canBePushed: () => true,

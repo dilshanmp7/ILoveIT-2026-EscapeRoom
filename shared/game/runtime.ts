@@ -2,15 +2,18 @@ import * as THREE from "three";
 import { objectDefinitions } from "./object-definitions";
 import type {
   GameObjectInstance,
+  GameObjectRecord,
   GameObjectVisualStateDefinition,
+  ObjectActionContext,
   ObjectActionDefinition,
+  ObjectEventContext,
+  ObjectReaction,
+  ObjectTypeDefinition,
   ObjectVisualStateType,
   SoundEffect,
 } from "./types";
 
-const objectModelCache = new Map<string, THREE.Object3D>();
 const objectModelLoader = new THREE.ObjectLoader();
-const objectActionRegistry = new Map<string, ObjectActionDefinition>();
 
 export function createMaterial(color: number) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
@@ -24,7 +27,10 @@ export function getObjectDefinitions() {
   return objectDefinitions;
 }
 
-export async function loadObjectModel(type: string, state: ObjectVisualStateType) {
+export async function loadObjectModel(
+  type: string,
+  state: ObjectVisualStateType,
+) {
   const definition = getObjectDefinition(type, state);
   if (!definition?.mesh) return null;
   const model = objectModelLoader.parse(
@@ -47,8 +53,266 @@ export function getObjectDefinition(
   );
 }
 
-export function 
-  
+export class GameObject implements GameObjectInstance {
+  readonly id: string;
+  readonly type: string;
+  position: GameObjectRecord["position"];
+  w: number;
+  d: number;
+  color?: number;
+  label: string;
+  canPush?: boolean;
+  allowGrab?: boolean;
+  canHold?: boolean;
+  keyId?: string;
+  requiredKeyIds?: string[];
+  isOpen?: boolean;
+  useRequiredKey?: string;
+  actionIds?: string[];
+  holdingSlots: NonNullable<ObjectTypeDefinition["holdingSlots"]>;
+  reactions: Record<string, ObjectReaction>;
+  actions: Record<string, ObjectActionDefinition>;
+  state: ObjectVisualStateType;
+  mesh: THREE.Group | null = null;
+  heldItem: GameObjectInstance | null = null;
+  configured?: boolean;
+  dragAssetId?: string;
+  private readonly definition: ObjectTypeDefinition;
+
+  constructor(
+    record: GameObjectRecord,
+    definition = getObjectTypeDefinition(record.type),
+  ) {
+    if (!definition)
+      throw new Error(`Unknown game object type: ${record.type}`);
+    this.definition = definition;
+    this.id = record.id;
+    this.type = record.type;
+    this.position = { ...record.position };
+    this.w = record.w;
+    this.d = record.d;
+    this.color = record.color;
+    this.label = record.label;
+    this.canHold = record.canHold;
+    this.canPush = record.canPush;
+    this.allowGrab = record.allowGrab;
+    this.keyId = record.keyId;
+    this.requiredKeyIds = record.requiredKeyIds
+      ? [...record.requiredKeyIds]
+      : undefined;
+    this.isOpen = record.isOpen;
+    this.useRequiredKey = record.useRequiredKey;
+    this.actionIds = record.actionIds ? [...record.actionIds] : undefined;
+    this.holdingSlots = (
+      record.holdingSlots ||
+      definition.holdingSlots ||
+      []
+    ).map((slot) => ({ ...slot }));
+    this.reactions = { ...(definition.reactions || {}) };
+    this.actions = Object.fromEntries(
+      (definition.actions || []).map((action) => [action.id, action]),
+    );
+    this.state = record.isOpen ? "opened" : "onFloor";
+  }
+
+  canBePushed() {
+    return (
+      this.canPush ??
+      this.definition.canBePushed?.() ??
+      Boolean(this.definition.geometry?.canPush)
+    );
+  }
+
+  canBeDragged() {
+    return (
+      this.definition.canBeDragged?.() ??
+      Boolean(this.definition.geometry?.canDrag)
+    );
+  }
+
+  canBeGrabbed() {
+    return (
+      this.allowGrab ??
+      this.definition.canBeGrabbed?.() ??
+      Boolean(
+        this.definition.interaction?.canGrab ||
+        this.definition.interactions?.canGrab,
+      )
+    );
+  }
+
+  hasInteraction() {
+    return Boolean(
+      this.definition.interaction ||
+      this.definition.interactions ||
+      this.definition.source?.itemType ||
+      this.canHold ||
+      this.canBeGrabbed(),
+    );
+  }
+
+  isBarrier() {
+    return Boolean(this.definition.geometry?.isBarrier);
+  }
+
+  getSurfaceHeight() {
+    return this.definition.geometry?.surfaceHeight ?? 0.1;
+  }
+
+  getSourceType() {
+    return this.definition.source?.itemType;
+  }
+
+  getHeldOffset() {
+    return this.definition.heldOffset || [0, 0, 0];
+  }
+
+  getConfigureSound(): SoundEffect {
+    return this.definition.configureSound || "process";
+  }
+
+  getAvailableActions(context: ObjectActionContext) {
+    const configuredActions = this.actionIds
+      ? Object.values(this.actions).filter((action) =>
+          this.actionIds?.includes(action.id),
+        )
+      : Object.values(this.actions);
+    const actions = configuredActions.filter(
+      (action) => !action.isVisible || action.isVisible(context),
+    );
+    if (context.heldItem && this.canAccept(context.heldItem)) {
+      actions.push({
+        id: "drop",
+        label: "Place held item",
+        canExecute: (actionContext) => this.canAccept(actionContext.heldItem!),
+        execute: async (actionContext) => {
+          await actionContext.acceptHeldItem();
+        },
+        configureSound: "drop",
+      });
+    }
+    return actions;
+  }
+
+  react(context: ObjectEventContext) {
+    return this.reactions[context.event]?.(context);
+  }
+
+  canAccept(item: GameObjectInstance) {
+    if (this.definition.geometry?.isBarrier) return false;
+    return this.getHoldingSlot(item) !== undefined;
+  }
+
+  getHoldingSlot(item: GameObjectInstance) {
+    const contents = this.heldItem ? [this.heldItem] : [];
+    return this.holdingSlots.find((slot) => {
+      if (slot.maxContents !== undefined && contents.length >= slot.maxContents)
+        return false;
+      if (slot.accepts === "any") return true;
+      if (slot.accepts === "configured") return item.configured === true;
+      return slot.accepts === item.type;
+    });
+  }
+
+  async loadMesh(state: ObjectVisualStateType = this.state) {
+    const model = await loadObjectModel(this.type, state);
+    const group = new THREE.Group();
+    if (model) group.add(model);
+    const definition = getObjectDefinition(this.type, state);
+    if (definition?.scale) group.scale.fromArray(definition.scale);
+    if (definition?.rotation) group.rotation.fromArray(definition.rotation);
+    this.mesh = group;
+    return group;
+  }
+
+  get visualState() {
+    return (
+      this.definition.visualStates[this.state] ||
+      this.definition.visualStates.onFloor ||
+      {}
+    );
+  }
+
+  toRecord(): GameObjectRecord {
+    return {
+      id: this.id,
+      type: this.type,
+      position: { ...this.position },
+      w: this.w,
+      d: this.d,
+      color: this.color,
+      label: this.label,
+      canHold: this.canHold,
+      canPush: this.canPush,
+      allowGrab: this.allowGrab,
+      keyId: this.keyId,
+      requiredKeyIds: this.requiredKeyIds
+        ? [...this.requiredKeyIds]
+        : undefined,
+      isOpen: this.state === "opened" ? true : this.isOpen,
+      useRequiredKey: this.useRequiredKey,
+      actionIds: this.actionIds ? [...this.actionIds] : undefined,
+      holdingSlots: this.holdingSlots.map((slot) => ({ ...slot })),
+    };
+  }
+}
+
+export function hydrateGameObject(record: GameObjectRecord) {
+  return new GameObject(record);
+}
+
+export function serializeGameObject(
+  instance: GameObjectInstance,
+): GameObjectRecord {
+  return instance instanceof GameObject
+    ? instance.toRecord()
+    : {
+        id: instance.id,
+        type: instance.type,
+        position: { ...instance.position },
+        w: instance.w,
+        d: instance.d,
+        color: instance.color,
+        label: instance.label,
+        canHold: instance.canHold,
+        canPush: instance.canPush,
+        allowGrab: instance.allowGrab,
+        keyId: instance.keyId,
+        requiredKeyIds: instance.requiredKeyIds,
+        isOpen: instance.state === "opened" || instance.isOpen,
+        useRequiredKey: instance.useRequiredKey,
+        actionIds: instance.actionIds,
+        holdingSlots: instance.holdingSlots,
+      };
+}
+
+export function getObjectActions(type: string, actionIds?: string[]) {
+  const actions = getObjectTypeDefinition(type)?.actions || [];
+  return actionIds
+    ? actions.filter((action) => actionIds.includes(action.id))
+    : actions;
+}
+
+export function getObjectGeometry(type: string) {
+  return getObjectTypeDefinition(type)?.geometry;
+}
+
+export function getObjectInteraction(type: string) {
+  const definition = getObjectTypeDefinition(type);
+  return definition?.interaction || definition?.interactions;
+}
+
+export class SoundFX {
+  private context: AudioContext | null = null;
+
+  private init() {
+    if (typeof window === "undefined" || this.context) return;
+    this.context = new AudioContext();
+  }
+
+  private playTone(
+    frequency: number,
+    type: OscillatorType,
     duration: number,
     volume = 0.1,
   ) {
@@ -68,7 +332,7 @@ export function
       oscillator.start();
       oscillator.stop(this.context.currentTime + duration);
     } catch {
-      /* Audio is optional. */
+      // Audio is optional.
     }
   }
 
@@ -434,7 +698,6 @@ export async function loadMapObjectModel(
   );
   model.scale.set(asset.w, 1, asset.d);
   model.userData.canGrab = Boolean(asset.canBeGrabbed);
-  model.userData.dropRule = asset.dropRule || asset.acceptsDrop || "none";
   model.userData.assetType = asset.type;
   model.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;

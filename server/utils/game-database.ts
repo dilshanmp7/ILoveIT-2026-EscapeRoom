@@ -1,6 +1,6 @@
 import type {
   Floorplan,
-  GameObjectInstance,
+  GameObjectRecord,
   GameSession,
   QuizQuestion,
 } from "#shared/game/types";
@@ -32,6 +32,8 @@ function getDatabase() {
       access_token TEXT NOT NULL,
       status TEXT NOT NULL,
       score INTEGER NOT NULL DEFAULT 0,
+      floorplan_json TEXT NOT NULL DEFAULT '{}',
+      quizzes_json TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -41,6 +43,16 @@ function getDatabase() {
       updated_at TEXT NOT NULL
     );
   `);
+  for (const column of [
+    "ALTER TABLE game_sessions ADD COLUMN floorplan_json TEXT NOT NULL DEFAULT '{}'",
+    "ALTER TABLE game_sessions ADD COLUMN quizzes_json TEXT NOT NULL DEFAULT '[]'",
+  ]) {
+    try {
+      database.exec(column);
+    } catch {
+      /* Existing databases already have the column. */
+    }
+  }
 
   const existing = database
     .prepare("SELECT id FROM floorplans WHERE id = ?")
@@ -92,27 +104,31 @@ export function readFloorplan(): Floorplan {
     .prepare("SELECT layout_json FROM floorplans WHERE id = ?")
     .get("main") as { layout_json: string } | undefined;
   const value = row
-    ? (JSON.parse(row.layout_json) as Floorplan | GameObjectInstance[])
-    : (structuredClone(seedFloorplan) as GameObjectInstance[]);
+    ? (JSON.parse(row.layout_json) as Floorplan | GameObjectRecord[])
+    : (structuredClone(seedFloorplan) as GameObjectRecord[]);
   const layout = Array.isArray(value) ? value : value.layout;
   const normalizedLayout = layout.map((asset) => {
-    const legacyAsset = asset as GameObjectInstance & {
+    const legacyAsset = asset as GameObjectRecord & {
       x?: number;
       z?: number;
       rotation?: number;
+      canBePushed?: boolean;
+      canBeGrabbed?: boolean;
     };
+    const canPush = asset.canPush ?? legacyAsset.canBePushed;
+    const allowGrab = asset.allowGrab ?? legacyAsset.canBeGrabbed;
     return legacyAsset.position
       ? {
           ...asset,
           canHold: Boolean(asset.canHold),
-          canPush: Boolean(asset.canBePushed),
-          allowGrab: Boolean(asset.canBeGrabbed),
+          canPush: Boolean(canPush),
+          allowGrab: Boolean(allowGrab),
         }
       : {
           ...asset,
           canHold: Boolean(asset.canHold),
-          canPush: Boolean(asset.canBePushed),
-          allowGrab: Boolean(asset.canBeGrabbed),
+          canPush: Boolean(canPush),
+          allowGrab: Boolean(allowGrab),
           position: {
             x: legacyAsset.x || 0,
             z: legacyAsset.z || 0,
@@ -140,24 +156,65 @@ export function writeFloorplan(floorplan: Floorplan) {
 
 export function resetFloorplan() {
   return writeFloorplan({
-    layout: structuredClone(seedFloorplan) as GameObjectInstance[],
+    layout: structuredClone(seedFloorplan) as GameObjectRecord[],
     playerSpawn: { x: 0, z: 2 },
   });
 }
 
-export function insertGameSession(session: GameSession, accessToken: string) {
+export function insertGameSession(
+  session: GameSession,
+  accessToken: string,
+  floorplan: Floorplan,
+  quizzes: QuizQuestion[],
+) {
   getDatabase()
     .prepare(
-      `INSERT INTO game_sessions (id, access_token, status, score, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO game_sessions (id, access_token, status, score, floorplan_json, quizzes_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       session.id,
       accessToken,
       session.status,
       session.score,
+      JSON.stringify(floorplan),
+      JSON.stringify(quizzes),
       session.createdAt,
       session.updatedAt,
     );
+}
+
+export function readGameSession(id: string, accessToken: string) {
+  const row = getDatabase()
+    .prepare(
+      "SELECT id, status, score, floorplan_json, quizzes_json, created_at AS createdAt, updated_at AS updatedAt FROM game_sessions WHERE id = ? AND access_token = ?",
+    )
+    .get(id, accessToken) as
+    | {
+        id: string;
+        status: GameSession["status"];
+        score: number;
+        floorplan_json: string;
+        quizzes_json: string;
+        createdAt: string;
+        updatedAt: string;
+      }
+    | undefined;
+  if (!row) return null;
+  const storedFloorplan = JSON.parse(row.floorplan_json) as Partial<Floorplan>;
+  const storedQuizzes = JSON.parse(row.quizzes_json) as QuizQuestion[];
+  return {
+    session: {
+      id: row.id,
+      status: row.status,
+      score: row.score,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    },
+    floorplan: Array.isArray(storedFloorplan.layout)
+      ? (storedFloorplan as Floorplan)
+      : readFloorplan(),
+    quizzes: storedQuizzes.length ? storedQuizzes : readQuizzes(),
+  };
 }
 
 export function updateStoredSession(

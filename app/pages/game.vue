@@ -2,6 +2,7 @@
 import type { Floorplan } from '#shared/game/types';
 
 const engine = useGameEngine()
+const route = useRoute()
 definePageMeta({ middleware: ['game-gate'] })
 
 const session = ref<{ id: string; score: number } | null>(null)
@@ -18,10 +19,14 @@ async function submitScore(completed = true) {
 
 onMounted(async () => {
   try {
-    const floorplanResponse = await $fetch<Floorplan>('/api/game/floorplan')
-    floorplan.value = floorplanResponse
-    const response = await $fetch<{ session: { id: string; score: number } }>('/api/game/session', { method: 'POST' })
+    const requestedSessionId = typeof route.query.session === 'string' ? route.query.session.trim() : ''
+    const response = await $fetch<{ session: { id: string; score: number }; floorplan: Floorplan; quizzes: import('#shared/game/types').QuizQuestion[] }>('/api/game/session', {
+      method: 'POST',
+      body: requestedSessionId ? { sessionId: requestedSessionId } : undefined,
+    })
     session.value = response.session
+    floorplan.value = response.floorplan
+    engine.setQuizzes(response.quizzes)
   } catch {
     sessionError.value = 'Unable to start a dispatch session.'
   }

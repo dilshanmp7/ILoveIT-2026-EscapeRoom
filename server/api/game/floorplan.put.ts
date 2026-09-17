@@ -1,12 +1,12 @@
-import type { Floorplan, GameObjectInstance } from "#shared/game/types";
+import type { Floorplan, GameObjectRecord } from "#shared/game/types";
 import { createError, getCookie, readBody } from "h3";
 import { isEditorAuthorized } from "../../utils/editor-access";
 import { writeFloorplan } from "../../utils/game-database";
 import { ACCESS_COOKIE, isAccessTokenValid } from "../../utils/game-session";
 
-function isGameObjectInstance(value: unknown): value is GameObjectInstance {
+function isGameObjectInstance(value: unknown): value is GameObjectRecord {
   if (!value || typeof value !== "object") return false;
-  const asset = value as Partial<GameObjectInstance>;
+  const asset = value as Partial<GameObjectRecord>;
   return (
     typeof asset.id === "string" &&
     typeof asset.position?.x === "number" &&

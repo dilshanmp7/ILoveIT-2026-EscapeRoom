@@ -1,11 +1,19 @@
-import { createError, getCookie } from 'h3'
-import { ACCESS_COOKIE, createGameSession, isAccessTokenValid } from '../../utils/game-session'
+import { createError, getCookie, readBody } from "h3";
+import {
+  ACCESS_COOKIE,
+  createGameSession,
+  isAccessTokenValid,
+} from "../../utils/game-session";
 
-export default defineEventHandler((event) => {
-  const accessToken = getCookie(event, ACCESS_COOKIE)
+export default defineEventHandler(async (event) => {
+  const accessToken = getCookie(event, ACCESS_COOKIE);
   if (!isAccessTokenValid(accessToken)) {
-    throw createError({ statusCode: 401, statusMessage: 'Game access required' })
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Game access required",
+    });
   }
 
-  return { session: createGameSession(accessToken!) }
-})
+  const body = await readBody<{ sessionId?: string }>(event);
+  return createGameSession(accessToken!, body?.sessionId);
+});

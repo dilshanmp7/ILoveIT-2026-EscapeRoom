@@ -21,7 +21,7 @@ export default {
       label: "Configure server",
       canExecute: (context) =>
         context.heldItem !== null &&
-        context.heldItem.type === context.asset.acceptsDrop &&
+        context.heldItem.type === "server" &&
         !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();
@@ -36,7 +36,7 @@ export default {
     depth: 1.2,
   },
   visualStates: {
-    onFloor: { mesh: ServerRackMesh, acceptsDrop: "server" },
-    inserted: { mesh: ServerRackMesh, acceptsDrop: "server" },
+    onFloor: { mesh: ServerRackMesh },
+    inserted: { mesh: ServerRackMesh },
   },
 } as ObjectTypeDefinition;

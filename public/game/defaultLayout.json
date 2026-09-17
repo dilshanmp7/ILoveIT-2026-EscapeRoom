@@ -7,7 +7,6 @@
     "type": "box_laptop",
     "label": "Laptops Box",
     "allowGrab": true,
-    "acceptsDrop": "",
     "position": {
       "x": -4,
       "z": -5.5,
@@ -22,7 +21,6 @@
     "type": "box_laptop",
     "label": "Laptops Box",
     "allowGrab": true,
-    "acceptsDrop": "",
     "position": {
       "x": -2,
       "z": -5.5,
@@ -37,7 +35,6 @@
     "type": "box_server",
     "label": "Servers Box",
     "allowGrab": true,
-    "acceptsDrop": "",
     "position": {
       "x": 0,
       "z": -5.5,
@@ -52,15 +49,12 @@
     "type": "config_desk",
     "label": "Config Station 1",
     "allowGrab": false,
-    "acceptsDrop": "laptop",
     "position": {
       "x": -4,
       "z": -2.5,
       "rotation": 90
     },
-    "actionIds": [
-      "configure"
-    ]
+    "actionIds": ["configure"]
   },
   {
     "id": "admin_comp",
@@ -70,7 +64,6 @@
     "type": "config_desk",
     "label": "Admin Terminal",
     "allowGrab": false,
-    "acceptsDrop": "",
     "holdingSlots": [
       {
         "id": "badge-reader",
@@ -86,12 +79,8 @@
       "z": -1,
       "rotation": 180
     },
-    "actionIds": [
-      "admin-terminal-quiz"
-    ],
-    "requiredKeyIds": [
-      "ADMIN_KEY"
-    ]
+    "actionIds": ["admin-terminal-quiz"],
+    "requiredKeyIds": ["ADMIN_KEY"]
   },
   {
     "id": "c7",
@@ -101,15 +90,12 @@
     "type": "server_rack",
     "label": "Server Rack A",
     "allowGrab": false,
-    "acceptsDrop": "server",
     "position": {
       "x": 4,
       "z": -2.5,
       "rotation": 270
     },
-    "actionIds": [
-      "configure"
-    ]
+    "actionIds": ["configure"]
   },
   {
     "id": "c9",
@@ -119,15 +105,12 @@
     "type": "riddle",
     "label": "Security Terminal",
     "allowGrab": false,
-    "acceptsDrop": "",
     "position": {
       "x": 0,
       "z": -1,
       "rotation": 0
     },
-    "actionIds": [
-      "quiz"
-    ]
+    "actionIds": ["quiz"]
   },
   {
     "id": "c12",
@@ -137,15 +120,12 @@
     "type": "trash",
     "label": "Recycle Bin",
     "allowGrab": false,
-    "acceptsDrop": "any",
     "position": {
       "x": 6,
       "z": 4.5,
       "rotation": 0
     },
-    "actionIds": [
-      "discard"
-    ]
+    "actionIds": ["discard"]
   },
   {
     "id": "c11",
@@ -155,15 +135,12 @@
     "type": "delivery",
     "label": "IT Dispatch Hatch",
     "allowGrab": false,
-    "acceptsDrop": "configured",
     "position": {
       "x": -4,
       "z": 4.5,
       "rotation": 0
     },
-    "actionIds": [
-      "deliver"
-    ]
+    "actionIds": ["deliver"]
   },
   {
     "id": "key_admin",
@@ -209,12 +186,8 @@
       "z": -1,
       "rotation": 0
     },
-    "actionIds": [
-      "use-key"
-    ],
-    "requiredKeyIds": [
-      "SLIDING_DOR_KEY"
-    ]
+    "actionIds": ["use-key"],
+    "requiredKeyIds": ["SLIDING_DOR_KEY"]
   },
   {
     "id": "w1",

@@ -789,9 +789,10 @@
         }
 
         function triggerGrabDrop() {
+            debugger;
+
             const btnGrab = document.getElementById('btn-grab');
             if (btnGrab.disabled) return;
-
             if (heldItem) {
                 if (currentNearbyCounter && !currentNearbyCounter.heldItem) {
                     const accepts = currentNearbyCounter.acceptsDrop || '';

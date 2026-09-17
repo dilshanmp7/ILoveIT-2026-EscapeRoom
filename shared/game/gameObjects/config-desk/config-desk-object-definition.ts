@@ -44,7 +44,7 @@ export default {
         context.asset.actionIds?.includes("configure") === true,
       canExecute: (context) =>
         context.heldItem &&
-        context.heldItem.type === context.asset.acceptsDrop &&
+        context.heldItem.type === "laptop" &&
         !context.heldItem.configured,
       execute: async (context) => {
         await context.configureContained();
@@ -59,7 +59,7 @@ export default {
     depth: 1.2,
   },
   visualStates: {
-    onFloor: { mesh: ConfigDeskMesh, acceptsDrop: "laptop" },
-    inserted: { mesh: ConfigDeskMesh, acceptsDrop: "laptop" },
+    onFloor: { mesh: ConfigDeskMesh },
+    inserted: { mesh: ConfigDeskMesh },
   },
 } as ObjectTypeDefinition;

@@ -20,7 +20,6 @@ export default {
       mesh: BoxServerMesh,
       canHold: false,
       canPush: true,
-      acceptsDrop: "server",
     },
   },
 } as ObjectTypeDefinition;

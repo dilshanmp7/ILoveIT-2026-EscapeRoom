@@ -13,7 +13,7 @@ export type EventType = string;
 export type ActionType = string;
 
 export interface ObjectEventState {
-  objects: readonly GameObjectInstance[];
+  objects: readonly GameObjectRecord[];
   score: number;
 }
 
@@ -38,7 +38,9 @@ export interface ObjectQuizSuccess {
 export interface ObjectActionContext {
   asset: GameObjectInstance;
   state: ObjectVisualStateType;
-  heldItem: { type: string; keyId?: string; configured?: boolean } | null;
+  heldItem: GameObjectInstance | null;
+  game: ObjectEventState;
+  acceptHeldItem: () => Promise<boolean>;
   emitEvent: (event: EventType) => void;
   setState: (state: ObjectVisualStateType) => Promise<void>;
   configureContained: () => Promise<boolean>;
@@ -64,6 +66,7 @@ export interface GameObjectVisualStateDefinition {
   scale?: [number, number, number];
   rotation?: [number, number, number];
   mesh?: object;
+  canHold?: boolean;
 }
 
 export type ObjectDefinitions = Record<string, ObjectTypeDefinition>;
@@ -72,19 +75,30 @@ export interface ObjectTypeDefinition {
   visualStates: Partial<
     Record<ObjectVisualStateType, GameObjectVisualStateDefinition>
   >;
-  holdingSlots: HoldingSlot[];
-  reactions: Record<EventType, ObjectReaction>;
-  actions: Record<ActionType, ObjectActionDefinition>;
+  holdingSlots?: HoldingSlot[];
+  reactions?: Record<EventType, ObjectReaction>;
+  actions?: ObjectActionDefinition[];
+  source?: { itemType: string };
+  interaction?: {
+    action?: string;
+    canGrab?: boolean;
+    canUse?: boolean;
+    requiredKey?: string;
+  };
+  interactions?: ObjectTypeDefinition["interaction"];
+  configureSound?: SoundEffect;
+  dropObjectType?: string;
   geometry?: {
     isBarrier?: boolean;
     canPush?: boolean;
+    canDrag?: boolean;
     isSurface?: boolean;
     surfaceHeight?: number;
   };
 
-  canBePushed: () => boolean;
-  canBeDragged: () => boolean;
-  canBeGrabbed: () => boolean;
+  canBePushed?: () => boolean;
+  canBeDragged?: () => boolean;
+  canBeGrabbed?: () => boolean;
 
   heldOffset?: [number, number, number];
   editor?: {
@@ -102,9 +116,11 @@ export interface HoldingSlot {
   label: string;
   maxContents?: number;
   consumeOnDrop?: boolean;
+  accepts?: string;
+  insertedState?: ObjectVisualStateType;
 }
 
-export interface GameObjectInstance {
+export interface GameObjectRecord {
   id: string;
   type: AssetType;
   position: {
@@ -114,20 +130,44 @@ export interface GameObjectInstance {
   };
   w: number;
   d: number;
-  visualState: GameObjectVisualStateDefinition;
   label: string;
-  canHold: boolean;
+  color?: number;
+  canHold?: boolean;
+  canPush?: boolean;
+  allowGrab?: boolean;
   keyId?: string;
   requiredKeyIds?: string[];
   isOpen?: boolean;
   useRequiredKey?: string;
   actionIds?: string[];
-  holdingSlots: HoldingSlot[];
+  holdingSlots?: HoldingSlot[];
+}
+
+export interface GameObjectInstance extends GameObjectRecord {
+  visualState: GameObjectVisualStateDefinition;
+  state: ObjectVisualStateType;
+  mesh: import("three").Group | null;
+  heldItem: GameObjectInstance | null;
+  configured?: boolean;
+  dragAssetId?: string;
+  canHold?: boolean;
   reactions: Record<EventType, ObjectReaction>;
   actions: Record<ActionType, ObjectActionDefinition>;
   canBePushed: () => boolean;
   canBeDragged: () => boolean;
   canBeGrabbed: () => boolean;
+  hasInteraction: () => boolean;
+  isBarrier: () => boolean;
+  getSurfaceHeight: () => number;
+  getSourceType: () => string | undefined;
+  getHeldOffset: () => [number, number, number];
+  getConfigureSound: () => SoundEffect;
+  getAvailableActions: (
+    context: ObjectActionContext,
+  ) => ObjectActionDefinition[];
+  react: (context: ObjectEventContext) => ObjectVisualStateType | undefined;
+  canAccept: (item: GameObjectInstance) => boolean;
+  getHoldingSlot: (item: GameObjectInstance) => HoldingSlot | undefined;
 }
 
 export type SoundEffect =
@@ -146,7 +186,7 @@ export interface PlayerSpawn {
 }
 
 export interface Floorplan {
-  layout: GameObjectInstance[];
+  layout: GameObjectRecord[];
   playerSpawn: PlayerSpawn;
 }
 

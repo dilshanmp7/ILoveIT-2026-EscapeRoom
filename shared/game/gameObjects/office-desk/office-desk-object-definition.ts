@@ -21,5 +21,5 @@ export default {
     width: 1.5,
     depth: 1.2,
   },
-  visualStates: { onFloor: { mesh: OfficeDeskMesh, acceptsDrop: "any" } },
+  visualStates: { onFloor: { mesh: OfficeDeskMesh } },
 } as ObjectTypeDefinition;
