@@ -10,6 +10,7 @@ import type {
   ObjectReaction,
   ObjectTypeDefinition,
   ObjectVisualStateType,
+  Player,
   SoundEffect,
 } from "./types";
 
@@ -472,6 +473,57 @@ export class PhysicsWorld {
   }
 }
 
+export class GamePhysics {
+  readonly bodies: PhysicalBody[] = [];
+
+  constructor(public readonly world = new PhysicsWorld()) {}
+
+  addObjectBody(params: ConstructorParameters<typeof PhysicalBody>[0]) {
+    const body = this.world.addBody(new PhysicalBody(params));
+    this.bodies.push(body);
+    return body;
+  }
+
+  removeObjectBody(assetId: string) {
+    const index = this.bodies.findIndex((body) => body.assetId === assetId);
+    if (index === -1) return;
+    const body = this.bodies[index]!;
+    const worldIndex = this.world.bodies.indexOf(body);
+    if (worldIndex !== -1) this.world.bodies.splice(worldIndex, 1);
+    this.bodies.splice(index, 1);
+  }
+
+  movePlayer(player: Player, x: number, z: number, speed: number) {
+    const length = Math.hypot(x, z);
+    if (!length) return false;
+    return this.world.moveBodyWithSlide(
+      player.body,
+      (x / length) * speed,
+      (z / length) * speed,
+    );
+  }
+
+  findNearby(
+    player: Player,
+    objects: Iterable<GameObjectInstance>,
+    distance = 1.85,
+  ) {
+    let closest: GameObjectInstance | null = null;
+    for (const object of objects) {
+      if (!object.mesh || !object.hasInteraction()) continue;
+      const nextDistance = Math.hypot(
+        player.mesh.position.x - object.position.x,
+        player.mesh.position.z - object.position.z,
+      );
+      if (nextDistance < distance) {
+        distance = nextDistance;
+        closest = object;
+      }
+    }
+    return closest;
+  }
+}
+
 export class GameItem {
   isConfigured = false;
   mesh: THREE.Group = new THREE.Group();
@@ -592,16 +644,16 @@ export function createCourierAvatarMesh(shirtColorHex: number) {
 }
 
 export function updatePlayerAnimation(
-  player: THREE.Group | null,
+  player: Player | null,
   isMoving: boolean,
   isHolding: boolean,
   walkCycle: { value: number },
 ) {
   if (!player) return;
-  const leftLeg = player.getObjectByName("leftLeg");
-  const rightLeg = player.getObjectByName("rightLeg");
-  const leftArm = player.getObjectByName("leftArm");
-  const rightArm = player.getObjectByName("rightArm");
+  const leftLeg = player.mesh.getObjectByName("leftLeg");
+  const rightLeg = player.mesh.getObjectByName("rightLeg");
+  const leftArm = player.mesh.getObjectByName("leftArm");
+  const rightArm = player.mesh.getObjectByName("rightArm");
   if (isMoving) {
     walkCycle.value += 0.25;
     const swing = Math.sin(walkCycle.value) * 0.55;
@@ -665,11 +717,11 @@ export function getRotatedAABBSize(
   };
 }
 
-export function initPlayers(
+export function initPlayer(
   scene: THREE.Scene,
   physics: PhysicsWorld,
   spawn = { x: 0, z: 2 },
-) {
+): Player {
   const player = createCourierAvatarMesh(0xffcc00);
   player.position.set(spawn.x, 0, spawn.z);
   scene.add(player);
@@ -683,7 +735,7 @@ export function initPlayers(
       mesh: player,
     }),
   );
-  return { player, playerBody: body };
+  return { mesh: player, body };
 }
 
 export async function loadMapObjectModel(

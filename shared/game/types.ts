@@ -1,3 +1,6 @@
+import * as THREE from "three";
+import type { PhysicalBody } from "./runtime";
+
 export type AssetType = string;
 
 export type ObjectVisualStateType =
@@ -218,3 +221,5 @@ export interface FinalScorePayload {
   score: number;
   completed?: boolean;
 }
+
+export type Player = { mesh: THREE.Group; body: PhysicalBody };

@@ -1,13 +1,13 @@
 import {
   createMaterial,
+  GamePhysics,
   getObjectTypeDefinition,
   getRotatedAABBSize,
   hydrateGameObject,
-  initPlayers,
+  initPlayer,
   loadMapObjectModel,
   loadObjectDefinitions,
   PhysicalBody,
-  PhysicsWorld,
   serializeGameObject,
   SoundFX,
   updatePlayerAnimation,
@@ -21,6 +21,7 @@ import type {
   ObjectEventContext,
   ObjectQuizSuccess,
   ObjectVisualStateType,
+  Player,
   QuizQuestion,
 } from "#shared/game/types";
 import * as THREE from "three";
@@ -55,9 +56,8 @@ export function useGameEngine() {
   let scene: THREE.Scene | null = null;
   let camera: THREE.PerspectiveCamera | null = null;
   let renderer: THREE.WebGLRenderer | null = null;
-  let player: THREE.Group | null = null;
-  let playerPhysicsBody: PhysicalBody | null = null;
-  let physicsWorld = new PhysicsWorld();
+  let player: Player | null = null;
+  let physics = new GamePhysics();
   const sound = new SoundFX();
   const walkCycle = { value: 0 };
   let animationFrame = 0;
@@ -75,7 +75,7 @@ export function useGameEngine() {
 
   const keys = new Set<string>();
   const objectInstances = new Map<string, GameObjectInstance>();
-  const bodies: PhysicalBody[] = [];
+  const bodies: PhysicalBody[] = physics.bodies;
   const occludableMeshes: THREE.Group[] = [];
   const occlusionRaycaster = new THREE.Raycaster();
 
@@ -85,7 +85,7 @@ export function useGameEngine() {
     objectInstances.clear();
     bodies.splice(0);
     occludableMeshes.splice(0);
-    physicsWorld = new PhysicsWorld();
+    physics = new GamePhysics();
     for (const child of [...scene.children]) {
       if (child.userData.courierAsset) scene.remove(child);
     }
@@ -114,7 +114,7 @@ export function useGameEngine() {
           asset.position.rotation,
         );
         bodies.push(
-          physicsWorld.addBody(
+          physics.world.addBody(
             new PhysicalBody({
               assetId: asset.id,
               x: asset.position.x,
@@ -144,23 +144,7 @@ export function useGameEngine() {
 
   function getNearby() {
     if (!player) return null;
-    let closest: GameObjectInstance | null = null;
-    let distance = 1.85;
-    for (const gameObject of objectInstances.values()) {
-      if (!gameObject.mesh) continue;
-      const hasInteraction =
-        gameObject.hasInteraction() ||
-        Boolean(gameObject.canHold || gameObject.canBeGrabbed);
-      if (!hasInteraction) continue;
-      const dx = player.position.x - gameObject.position.x;
-      const dz = player.position.z - gameObject.position.z;
-      const nextDistance = Math.hypot(dx, dz);
-      if (nextDistance < distance) {
-        distance = nextDistance;
-        closest = gameObject as GameObjectInstance;
-      }
-    }
-    return closest;
+    return physics.findNearby(player, objectInstances.values());
   }
 
   function removeBodyForAsset(assetId: string) {
@@ -168,9 +152,9 @@ export function useGameEngine() {
     if (bodyIndex === -1) return;
     const body = bodies[bodyIndex];
     if (!body) return;
-    const physicsBodyIndex = physicsWorld.bodies.indexOf(body);
+    const physicsBodyIndex = physics.world.bodies.indexOf(body);
     if (physicsBodyIndex !== -1)
-      physicsWorld.bodies.splice(physicsBodyIndex, 1);
+      physics.world.bodies.splice(physicsBodyIndex, 1);
     bodies.splice(bodyIndex, 1);
   }
 
@@ -233,13 +217,14 @@ export function useGameEngine() {
     if (!x && !z) return false;
     const length = Math.hypot(x, z);
     const speed = 0.12;
-    const nextX = player.position.x + (x / length) * speed;
-    const nextZ = player.position.z + (z / length) * speed;
-    isPushing = playerPhysicsBody
-      ? physicsWorld.moveBodyWithSlide(
-          playerPhysicsBody,
-          nextX - player.position.x,
-          nextZ - player.position.z,
+    const nextX = player.mesh.position.x + (x / length) * speed;
+    const nextZ = player.mesh.position.z + (z / length) * speed;
+    isPushing = player.body
+      ? physics.movePlayer(
+          player,
+          nextX - player.mesh.position.x,
+          nextZ - player.mesh.position.z,
+          speed,
         )
       : false;
     if (heldItem?.dragAssetId) {
@@ -247,12 +232,12 @@ export function useGameEngine() {
         (body) => body.assetId === heldItem?.dragAssetId,
       );
       if (draggedBody) {
-        draggedBody.x = player.position.x;
-        draggedBody.z = player.position.z;
+        draggedBody.x = player.mesh.position.x;
+        draggedBody.z = player.mesh.position.z;
       }
     }
     persistPhysicsPositions();
-    player.rotation.y = Math.atan2(x, z);
+    player.mesh.rotation.y = Math.atan2(x, z);
     return true;
   }
 
@@ -298,12 +283,13 @@ export function useGameEngine() {
   }
 
   async function acceptHeldItem() {
-    if (!nearby || !heldItem || !nearby.canAccept(heldItem)) return false;
+    if (!player || !nearby || !heldItem || !nearby.canAccept(heldItem))
+      return false;
     const targetSlot = nearby.getHoldingSlot(heldItem);
     const droppedItem = heldItem;
     droppedItem.dragAssetId = undefined;
-    player
-      ?.getObjectByName("holdingSlot")
+    player.mesh
+      .getObjectByName("holdingSlot")
       ?.remove(droppedItem.mesh || new THREE.Group());
     if (!targetSlot || !targetSlot.consumeOnDrop) {
       nearby.heldItem = droppedItem;
@@ -320,7 +306,6 @@ export function useGameEngine() {
   }
 
   async function triggerGrabDrop() {
-    debugger;
     if (state.objectSelectionOpen) return;
     if (heldItem) {
       if (nearby && (await acceptHeldItem())) return;
@@ -346,7 +331,7 @@ export function useGameEngine() {
       if (heldItem && nearby.canBePushed()) heldItem.dragAssetId = nearby.id;
       if (heldItem?.mesh) {
         nearby.mesh?.remove(heldItem.mesh);
-        player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
+        player?.mesh.getObjectByName("holdingSlot")?.add(heldItem.mesh);
         heldItem.mesh.position.set(0, 0, 0);
       }
     } else if (nearby.getSourceType()) {
@@ -370,7 +355,7 @@ export function useGameEngine() {
     state.holding = heldItem?.type || "";
     state.holdingConfigured = Boolean(heldItem?.configured);
     if (heldItem?.mesh)
-      player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
+      player?.mesh.getObjectByName("holdingSlot")?.add(heldItem.mesh);
     sound.play("pickup");
   }
 
@@ -386,7 +371,7 @@ export function useGameEngine() {
     if (heldItem && nearby.canBePushed()) heldItem.dragAssetId = nearby.id;
     if (heldItem?.mesh) {
       nearby.mesh?.remove(heldItem.mesh);
-      player?.getObjectByName("holdingSlot")?.add(heldItem.mesh);
+      player?.mesh.getObjectByName("holdingSlot")?.add(heldItem.mesh);
       heldItem.mesh.position.set(0, 0, 0);
     }
     state.objectSelectionOpen = false;
@@ -412,13 +397,16 @@ export function useGameEngine() {
     const distance = 1.2;
     const x =
       Math.round(
-        (player.position.x + Math.sin(player.rotation.y) * distance) * 2,
+        (player.mesh.position.x + Math.sin(player.mesh.rotation.y) * distance) *
+          2,
       ) / 2;
     const z =
       Math.round(
-        (player.position.z + Math.cos(player.rotation.y) * distance) * 2,
+        (player.mesh.position.z + Math.cos(player.mesh.rotation.y) * distance) *
+          2,
       ) / 2;
-    if (item.mesh) player.getObjectByName("holdingSlot")?.remove(item.mesh);
+    if (item.mesh)
+      player.mesh.getObjectByName("holdingSlot")?.remove(item.mesh);
     item.dragAssetId = undefined;
     const itemDefinition = getObjectTypeDefinition(item.type);
     const dropType = itemDefinition?.dropObjectType || item.type;
@@ -450,7 +438,7 @@ export function useGameEngine() {
   function discardHeldItem() {
     if (!heldItem) return;
     if (heldItem.mesh)
-      player?.getObjectByName("holdingSlot")?.remove(heldItem.mesh);
+      player?.mesh.getObjectByName("holdingSlot")?.remove(heldItem.mesh);
     heldItem = null;
     state.holding = "";
     state.holdingConfigured = false;
@@ -560,7 +548,7 @@ export function useGameEngine() {
     if (!player || !camera || !scene) return;
 
     const targetPosition = new THREE.Vector3();
-    player.getWorldPosition(targetPosition);
+    player.mesh.getWorldPosition(targetPosition);
     targetPosition.y += 0.9;
 
     const rayDirection = targetPosition.clone().sub(camera.position);
@@ -612,11 +600,11 @@ export function useGameEngine() {
     if (!player) return;
     const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(
       new THREE.Vector3(0, 1, 0),
-      player.rotation.y,
+      player.mesh.rotation.y,
     );
-    if (playerPhysicsBody)
-      physicsWorld.moveBodyWithSlide(
-        playerPhysicsBody,
+    if (player.body)
+      physics.world.moveBodyWithSlide(
+        player.body,
         direction.x * 1.2,
         direction.z * 1.2,
       );
@@ -627,23 +615,29 @@ export function useGameEngine() {
     const delta = Math.min((time - lastFrame) / 1000 || 0, 0.05);
     lastFrame = time;
     const isMoving = updateMovement(delta);
-    updatePlayerAnimation(
-      player,
-      isMoving,
-      Boolean(heldItem) || isPushing,
-      walkCycle,
-    );
-    updateNearby();
-    if (player && camera) {
-      camera.position.lerp(
-        new THREE.Vector3(player.position.x, 8.5, player.position.z + 8.8),
-        0.08,
+    if (player) {
+      updatePlayerAnimation(
+        player,
+        isMoving,
+        Boolean(heldItem) || isPushing,
+        walkCycle,
       );
-      camera.lookAt(player.position.x, 0.5, player.position.z);
+      updateNearby();
+      if (player && camera) {
+        camera.position.lerp(
+          new THREE.Vector3(
+            player.mesh.position.x,
+            8.5,
+            player.mesh.position.z + 8.8,
+          ),
+          0.08,
+        );
+        camera.lookAt(player.mesh.position.x, 0.5, player.mesh.position.z);
+      }
+      scene?.traverse((object) => {
+        if (object.userData.canRotate) object.rotation.y += 0.02;
+      });
     }
-    scene?.traverse((object) => {
-      if (object.userData.canRotate) object.rotation.y += 0.02;
-    });
     updateCameraOcclusion();
     renderer?.render(scene!, camera!);
     animationFrame = requestAnimationFrame(frame);
@@ -707,10 +701,9 @@ export function useGameEngine() {
     const grid = new THREE.GridHelper(20, 20, 0xd40511, 0xffcc00);
     grid.position.y = 0.01;
     scene.add(grid);
-    physicsWorld = new PhysicsWorld();
-    const players = initPlayers(scene, physicsWorld, floorplan.playerSpawn);
-    player = players.player;
-    playerPhysicsBody = players.playerBody;
+    physics = new GamePhysics();
+    player = initPlayer(scene, physics.world, floorplan.playerSpawn);
+
     await buildFloorplan();
 
     const resize = () => {
@@ -779,8 +772,7 @@ export function useGameEngine() {
     camera = null;
     renderer = null;
     player = null;
-    playerPhysicsBody = null;
-    physicsWorld = new PhysicsWorld();
+    physics = new GamePhysics();
   }
 
   return {
