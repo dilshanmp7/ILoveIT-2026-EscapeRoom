@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
           <span class="dhl-badge">DHL</span>
           <div>
             <h1>CPH HUB / I LOVE IT DAY 2026</h1>
-            <p class="subtitle">LIVE ESCAPE ROOM OPERATIONS LEADERBOARD • 200 AGENT CHALLENGE</p>
+            <p class="subtitle">LIVE ESCAPE ROOM LEADERBOARD</p>
           </div>
         </div>
 

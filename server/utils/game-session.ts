@@ -61,7 +61,7 @@ export function createOrResumeGameSession(
 ) {
   const firstName = registration?.firstName?.trim() || "";
   const lastName = registration?.lastName?.trim() || "";
-  const department = registration?.department?.trim() || "Operations - Sort / Hub Operations";
+  const department = registration?.department?.trim() || "Operation";
   const shift = registration?.shift?.trim() || "Day Shift";
 
   let userCode = registration?.userCode?.trim();

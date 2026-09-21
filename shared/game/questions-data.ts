@@ -21,15 +21,25 @@ export function generateUserCode(
   if (normDept.includes("it") || normDept.includes("tech")) deptPart = "IT";
   else if (normDept.includes("sort")) deptPart = "SRT";
   else if (normDept.includes("ramp")) deptPart = "RMP";
+  else if (normDept.includes("ccpu")) deptPart = "CCP";
+  else if (normDept.includes("ncg")) deptPart = "NCG";
+  else if (normDept.includes("acs")) deptPart = "ACS";
+  else if (normDept.includes("eat")) deptPart = "EAT";
   else if (normDept.includes("warehouse") || normDept.includes("uld")) deptPart = "ULD";
   else if (normDept.includes("customs") || normDept.includes("cafe")) deptPart = "CST";
   else if (normDept.includes("quality") || normDept.includes("qcs") || normDept.includes("occ")) deptPart = "QCS";
   else if (normDept.includes("security")) deptPart = "SEC";
+  else if (normDept.includes("facility")) deptPart = "FAC";
   else if (normDept.includes("hse") || normDept.includes("safety")) deptPart = "HSE";
   else if (normDept.includes("maintenance") || normDept.includes("engineer")) deptPart = "ENG";
   else if (normDept.includes("hr") || normDept.includes("human")) deptPart = "HR";
   else if (normDept.includes("finance")) deptPart = "FIN";
   else if (normDept.includes("customer")) deptPart = "CS";
+  else if (normDept.includes("reception")) deptPart = "RCP";
+  else if (normDept.includes("training")) deptPart = "TRN";
+  else if (normDept.includes("process")) deptPart = "PRC";
+  else if (normDept.includes("pmo")) deptPart = "PMO";
+  else if (normDept.includes("regulat")) deptPart = "REG";
 
   // Deterministic 4-char hex hash from full input
   const combined = `${normFirst}:${normLast}:${normDept}:${normShift}`;
@@ -765,20 +775,40 @@ export function getRandomQuestionsForLevel(level: 1 | 2 | 3, count = 10): Escape
   return pool.slice(0, count);
 }
 
-// 12 Standard CPH Hub Departments
+// 32 Standard CPH Hub Departments
 export const CPH_DEPARTMENTS = [
-  "Operations - Sort / Hub Operations",
-  "Operations - Ramp & Apron",
-  "Operations - Warehouse & ULD",
-  "IT / Technology & Automation",
-  "Customs & Clearance (CAFE/GCA)",
-  "Quality Control & Network Control (QCS/OCC)",
-  "Security & Loss Prevention",
-  "Health, Safety & Environment (HSE)",
-  "Maintenance & Facilities (BHS/Engineering)",
-  "Human Resources & Training",
-  "Finance & Administration",
-  "Customer Support & Dispatch",
+  "IT",
+  "CCPU",
+  "HR",
+  "Operation",
+  "Security",
+  "NCG",
+  "ACS",
+  "Engineering",
+  "Facility & Support",
+  "Finance",
+  "Network Support Group",
+  "RAMP",
+  "EAT",
+  "Regional Station",
+  "Sort (TDI)",
+  "Ramp Neutral",
+  "Sort Neutral (TDI)",
+  "CPH Nordic Training",
+  "Processes",
+  "Reception",
+  "Sort Control",
+  "Sort (DDI)",
+  "Operation Support",
+  "Sort Neutral (DDI)",
+  "Sort Maintenance",
+  "CPH- REGULARTORY AND PUBLIC AFFAIRS",
+  "CPH - PMO_MAA",
+  "CPH - Project Manager_MAA",
+  "REGULARTORY AND PUBLIC AFFAIRS",
+  "ProcessEngineering",
+  "Program Management",
+  "Other",
 ] as const;
 
 export const CPH_SHIFTS = ["AM Shift", "Day Shift", "PM Shift"] as const;
