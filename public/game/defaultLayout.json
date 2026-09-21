@@ -7,7 +7,7 @@
     "type": "riddle",
     "label": "AURA Node: Gen-AI Fundamentals Console",
     "allowGrab": false,
-    "position": { "x": -14.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": -13.5, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l1_2",
@@ -17,7 +17,7 @@
     "type": "config_desk",
     "label": "AURA Node: Logistics Optimization Terminal",
     "allowGrab": false,
-    "position": { "x": -11.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": -7.5, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l1_3",
@@ -27,7 +27,7 @@
     "type": "riddle",
     "label": "AURA Node: Data Leak Protection Hub",
     "allowGrab": false,
-    "position": { "x": -8.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": -7.5, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l1_4",
@@ -37,7 +37,7 @@
     "type": "config_desk",
     "label": "AURA Node: Predictive Sorting Station",
     "allowGrab": false,
-    "position": { "x": -14.0, "z": -1.5, "rotation": 90 }
+    "position": { "x": -13.0, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l1_5",
@@ -47,7 +47,7 @@
     "type": "riddle",
     "label": "AURA Node: Hallucination Detection Unit",
     "allowGrab": false,
-    "position": { "x": -8.0, "z": -1.5, "rotation": 270 }
+    "position": { "x": -10.5, "z": -0.5, "rotation": 270 }
   },
   {
     "id": "rack_l1_1",
@@ -130,7 +130,7 @@
     "type": "config_desk",
     "label": "CPH Apps: GUS Butterfly Blue Terminal",
     "allowGrab": false,
-    "position": { "x": -3.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": -3.5, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l2_2",
@@ -140,7 +140,7 @@
     "type": "riddle",
     "label": "CPH Apps: Sherloc Logistics Hub",
     "allowGrab": false,
-    "position": { "x": -1.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": 3.2, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l2_3",
@@ -150,7 +150,7 @@
     "type": "config_desk",
     "label": "CPH Apps: App Incident Response Desk",
     "allowGrab": false,
-    "position": { "x": 1.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": 3.2, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l2_4",
@@ -160,7 +160,7 @@
     "type": "riddle",
     "label": "CPH Apps: ServiceNow Incident Console",
     "allowGrab": false,
-    "position": { "x": 3.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": -3.5, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l2_5",
@@ -170,7 +170,7 @@
     "type": "config_desk",
     "label": "CPH Apps: Power Automate & UAT Hub",
     "allowGrab": false,
-    "position": { "x": 3.0, "z": -1.5, "rotation": 270 }
+    "position": { "x": 0.0, "z": -0.5, "rotation": 0 }
   },
   {
     "id": "rack_l2_1",
@@ -253,7 +253,7 @@
     "type": "riddle",
     "label": "Cyber Vault: Phishing Detection Sentinel",
     "allowGrab": false,
-    "position": { "x": 7.5, "z": -3.8, "rotation": 0 }
+    "position": { "x": 6.8, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l3_2",
@@ -263,7 +263,7 @@
     "type": "config_desk",
     "label": "Cyber Vault: Email Domain Authenticator",
     "allowGrab": false,
-    "position": { "x": 10.0, "z": -3.8, "rotation": 0 }
+    "position": { "x": 12.8, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l3_3",
@@ -273,7 +273,7 @@
     "type": "riddle",
     "label": "Cyber Vault: Password Cryptography Console",
     "allowGrab": false,
-    "position": { "x": 12.5, "z": -3.8, "rotation": 0 }
+    "position": { "x": 12.8, "z": -3.8, "rotation": 0 }
   },
   {
     "id": "term_l3_4",
@@ -283,7 +283,7 @@
     "type": "config_desk",
     "label": "Cyber Vault: Data Classification Sentinel",
     "allowGrab": false,
-    "position": { "x": 10.5, "z": -1.5, "rotation": 180 }
+    "position": { "x": 6.8, "z": 3.5, "rotation": 180 }
   },
   {
     "id": "term_l3_5",
@@ -293,7 +293,7 @@
     "type": "riddle",
     "label": "Cyber Vault: Zscaler & Remote Access Pod",
     "allowGrab": false,
-    "position": { "x": 7.5, "z": -1.5, "rotation": 90 }
+    "position": { "x": 9.8, "z": -0.5, "rotation": 90 }
   },
   {
     "id": "rack_l3_1",

@@ -107,7 +107,7 @@ function getDatabase() {
     try {
       const parsed = JSON.parse(existingFloorplan.layout_json);
       const items = Array.isArray(parsed) ? parsed : parsed.layout;
-      if (!items || items.length < 20 || items.some((x: any) => x.id === "term_l1_6") || !items.some((x: any) => x.id === "key_sector_2")) {
+      if (!items || items.length < 20 || items.some((x: any) => x.id === "term_l1_6") || !items.some((x: any) => x.id === "key_sector_2") || items.some((x: any) => x.id === "term_l1_2" && x.position?.z === -3.8)) {
         database
           .prepare(
             "UPDATE floorplans SET layout_json = ?, updated_at = ? WHERE id = ?",
