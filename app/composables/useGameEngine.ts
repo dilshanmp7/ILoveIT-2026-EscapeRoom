@@ -1295,12 +1295,14 @@ export function useGameEngine() {
 
     if (!isCorrect) {
       sound.play("type");
+      state.score = Math.max(0, state.score - 30);
+      triggerSave();
       state.quizFeedback = {
         isCorrect: false,
         explanation: question.correctAnswers && question.correctAnswers.length > 0
-          ? "Security protocol validation failed! One or more required countermeasures were missed or incorrect. Re-evaluate the threat and try again or request a tactical hint."
-          : "Incorrect protocol! System access denied. Try again or request a tactical hint.",
-        scoreAwarded: 0,
+          ? "Security protocol validation failed! One or more required countermeasures were missed or incorrect. (-30 pts penalty applied) Re-evaluate the threat and try again or request a tactical hint."
+          : "Incorrect protocol! System access denied. (-30 pts penalty applied) Try again or request a tactical hint.",
+        scoreAwarded: -30,
       };
       return;
     }
@@ -1308,9 +1310,7 @@ export function useGameEngine() {
     // Correct answer chosen!
     sound.play("riddle_success");
     const hintUsed = levelProgress.hintUsedQuestionIds.includes(question.id);
-    const maxPoints = hintUsed ? 50 : 100;
-    const penalty = Math.min((attempts - 1) * 20, maxPoints - 20);
-    const scoreAwarded = Math.max(20, maxPoints - penalty);
+    const scoreAwarded = hintUsed ? 50 : 100;
 
     state.score += scoreAwarded;
     if (!levelProgress.solvedQuestionIds.includes(question.id)) {

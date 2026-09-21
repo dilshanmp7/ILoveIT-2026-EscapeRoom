@@ -129,8 +129,8 @@ function handleKeydown(event: KeyboardEvent) {
                 {{ quiz.level === 1 ? 'AI MISALIGNMENT DETECTED' : 'PROTOCOL DENIED' }}
               </template>
             </h3>
-            <p v-if="feedback.isCorrect" class="score-gain">+{{ feedback.scoreAwarded }} POINTS AWARDED</p>
-            <p v-else class="score-penalty">System access refused. Audit your instructions.</p>
+            <p v-if="feedback.isCorrect" class="score-gain">✔ +{{ feedback.scoreAwarded }} POINTS AWARDED</p>
+            <p v-else class="score-penalty">⚠️ -30 POINTS PENALTY DEDUCTED FROM TOTAL SCORE</p>
           </div>
         </div>
 
@@ -275,11 +275,20 @@ h2 {
   animation: pulse 1s infinite alternate;
 }
 
+.score-gain {
+  margin: .25rem 0 0;
+  font-size: .82rem;
+  font-weight: 900;
+  color: #4ade80;
+  letter-spacing: .03em;
+}
+
 .score-penalty {
-  margin: .2rem 0 0;
-  font-size: .75rem;
-  font-weight: 800;
-  color: #f87171;
+  margin: .25rem 0 0;
+  font-size: .82rem;
+  font-weight: 900;
+  color: #ef4444;
+  letter-spacing: .03em;
 }
 
 .question-text {
