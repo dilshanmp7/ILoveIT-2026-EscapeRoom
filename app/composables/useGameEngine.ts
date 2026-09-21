@@ -1284,7 +1284,8 @@ export function useGameEngine() {
 
     let isCorrect = false;
     if (question.correctAnswers && question.correctAnswers.length > 0) {
-      const selected = (Array.isArray(answer) ? answer : [answer]).map(Number);
+      const rawList = Array.isArray(answer) ? answer : [answer];
+      const selected = Array.from(new Set(rawList.map(Number)));
       const expected = [...question.correctAnswers].map(Number).sort((a, b) => a - b);
       const actual = [...selected].sort((a, b) => a - b);
       isCorrect = expected.length === actual.length && expected.every((val, idx) => val === actual[idx]);
@@ -1398,6 +1399,10 @@ export function useGameEngine() {
     state.quizFeedback = null;
     state.quizOpen = false;
     state.quiz = null;
+  }
+
+  function retryQuiz() {
+    state.quizFeedback = null;
   }
 
   function closeMessage() {
@@ -1836,6 +1841,7 @@ export function useGameEngine() {
     answerQuiz,
     requestHint,
     closeFeedbackAndAdvance,
+    retryQuiz,
     closeLevelClearedModal,
     openQuiz,
     openMissionBriefing,

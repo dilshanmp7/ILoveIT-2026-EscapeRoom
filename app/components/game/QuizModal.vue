@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { EscapeRoomQuestion } from '#shared/game/types'
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps<{
   quiz: EscapeRoomQuestion | null
@@ -10,29 +10,74 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  answer: [optionId: number]
+  answer: [optionId: number | number[]]
   requestHint: []
   close: []
   advance: []
+  retry: []
 }>()
 
 const selectedIndex = ref(0)
+const selectedOptionIds = ref<number[]>([])
 const confirmHintPrompt = ref(false)
 const modal = ref<HTMLElement | null>(null)
+
+const isMultiSelect = computed(() => {
+  if (!props.quiz) return false
+  return Boolean(
+    (props.quiz.correctAnswers && props.quiz.correctAnswers.length > 1) ||
+    props.quiz.q.toLowerCase().includes('select all')
+  )
+})
 
 watch(() => props.open, async (open) => {
   if (!open) {
     confirmHintPrompt.value = false
+    selectedOptionIds.value = []
     return
   }
   selectedIndex.value = 0
+  selectedOptionIds.value = []
   confirmHintPrompt.value = false
   await nextTick()
   modal.value?.focus()
 })
 
-function submitAnswer(optionId: number) {
+watch(() => props.quiz?.id, () => {
+  selectedIndex.value = 0
+  selectedOptionIds.value = []
+  confirmHintPrompt.value = false
+})
+
+function isOptionSelected(optionId: number): boolean {
+  return selectedOptionIds.value.includes(optionId)
+}
+
+function toggleOption(optionId: number) {
+  const index = selectedOptionIds.value.indexOf(optionId)
+  if (index >= 0) {
+    selectedOptionIds.value.splice(index, 1)
+  } else {
+    selectedOptionIds.value.push(optionId)
+  }
+}
+
+function handleOptionClick(option: { id: number; text: string }, index: number) {
+  selectedIndex.value = index
+  if (isMultiSelect.value) {
+    toggleOption(option.id)
+  } else {
+    submitSingleAnswer(option.id)
+  }
+}
+
+function submitSingleAnswer(optionId: number) {
   emit('answer', optionId)
+}
+
+function submitMultiAnswer() {
+  if (selectedOptionIds.value.length === 0) return
+  emit('answer', [...selectedOptionIds.value])
 }
 
 function handleHintRequest() {
@@ -48,34 +93,61 @@ function handleHintRequest() {
 function handleKeydown(event: KeyboardEvent) {
   if (!props.quiz || !props.open) return
 
-  if (props.feedback?.isCorrect) {
+  if (props.feedback) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      emit('advance')
+      if (props.feedback.isCorrect) {
+        emit('advance')
+      } else {
+        emit('retry')
+      }
     }
     return
   }
 
-  if (event.key >= '1' && event.key <= '4') {
-    const idx = parseInt(event.key, 10) - 1
-    const option = props.quiz.options[idx]
+  const optionCount = props.quiz.options.length
+
+  // Number key shortcuts: 1..9
+  const numKey = parseInt(event.key, 10)
+  if (!isNaN(numKey) && numKey >= 1 && numKey <= optionCount) {
+    event.preventDefault()
+    const option = props.quiz.options[numKey - 1]
     if (option) {
-      selectedIndex.value = idx
-      submitAnswer(option.id)
+      selectedIndex.value = numKey - 1
+      if (isMultiSelect.value) {
+        toggleOption(option.id)
+      } else {
+        submitSingleAnswer(option.id)
+      }
     }
     return
   }
 
   if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
     event.preventDefault()
-    selectedIndex.value = (selectedIndex.value + 1) % props.quiz.options.length
+    selectedIndex.value = (selectedIndex.value + 1) % optionCount
   } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
     event.preventDefault()
-    selectedIndex.value = (selectedIndex.value - 1 + props.quiz.options.length) % props.quiz.options.length
+    selectedIndex.value = (selectedIndex.value - 1 + optionCount) % optionCount
+  } else if (event.key === ' ') {
+    if (isMultiSelect.value) {
+      event.preventDefault()
+      const option = props.quiz.options[selectedIndex.value]
+      if (option) toggleOption(option.id)
+    }
   } else if (event.key === 'Enter') {
     event.preventDefault()
-    const option = props.quiz.options[selectedIndex.value]
-    if (option) submitAnswer(option.id)
+    if (isMultiSelect.value) {
+      if (selectedOptionIds.value.length > 0) {
+        submitMultiAnswer()
+      } else {
+        const option = props.quiz.options[selectedIndex.value]
+        if (option) toggleOption(option.id)
+      }
+    } else {
+      const option = props.quiz.options[selectedIndex.value]
+      if (option) submitSingleAnswer(option.id)
+    }
   }
 }
 </script>
@@ -143,7 +215,7 @@ function handleKeydown(event: KeyboardEvent) {
           <button v-if="feedback.isCorrect" type="button" class="continue-button" @click="emit('advance')">
             Continue Escape Shift ➔
           </button>
-          <button v-else type="button" class="retry-button" @click="emit('advance')">
+          <button v-else type="button" class="retry-button" @click="emit('retry')">
             Try Again ↺
           </button>
         </div>
@@ -151,6 +223,15 @@ function handleKeydown(event: KeyboardEvent) {
 
       <!-- Question & Choices Form -->
       <div v-else class="question-body">
+        <!-- Multi-select Notice Banner -->
+        <div v-if="isMultiSelect" class="multi-select-banner">
+          <span class="multi-icon">☑</span>
+          <div class="multi-text">
+            <strong>MULTIPLE SELECTION REQUIRED</strong>
+            <p>Select all countermeasures that apply, then click <em>SUBMIT COUNTERMEASURES</em>.</p>
+          </div>
+        </div>
+
         <p class="question-text">{{ quiz.q }}</p>
 
         <!-- Hint Section -->
@@ -178,12 +259,47 @@ function handleKeydown(event: KeyboardEvent) {
 
         <!-- Options -->
         <div class="options-grid">
-          <button v-for="(option, index) in quiz.options" :key="option.id" type="button"
-            class="option-card" :class="{ selected: selectedIndex === index }"
-            @click="selectedIndex = index; submitAnswer(option.id)">
+          <button
+            v-for="(option, index) in quiz.options"
+            :key="option.id"
+            type="button"
+            class="option-card"
+            :class="{
+              selected: !isMultiSelect && selectedIndex === index,
+              'multi-selected': isMultiSelect && isOptionSelected(option.id),
+              focused: selectedIndex === index
+            }"
+            @click="handleOptionClick(option, index)"
+          >
             <span class="key-indicator">{{ index + 1 }}</span>
+            <span v-if="isMultiSelect" class="checkbox-indicator" :class="{ checked: isOptionSelected(option.id) }">
+              <span v-if="isOptionSelected(option.id)">✓</span>
+            </span>
             <span class="option-text">{{ option.text }}</span>
-            <span class="arrow-indicator">➔</span>
+            <span v-if="!isMultiSelect" class="arrow-indicator">➔</span>
+          </button>
+        </div>
+
+        <!-- Multi-select Bottom Action Bar -->
+        <div v-if="isMultiSelect" class="multi-submit-bar">
+          <div class="multi-count-info">
+            <span>Selected: <strong>{{ selectedOptionIds.length }}</strong> of {{ quiz.options.length }}</span>
+            <button
+              v-if="selectedOptionIds.length > 0"
+              type="button"
+              class="btn-reset-selection"
+              @click="selectedOptionIds = []"
+            >
+              Reset
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn-submit-multi"
+            :disabled="selectedOptionIds.length === 0"
+            @click="submitMultiAnswer"
+          >
+            {{ selectedOptionIds.length > 0 ? `SUBMIT COUNTERMEASURES (${selectedOptionIds.length}) ➔` : 'SELECT AT LEAST 1 ANSWER' }}
           </button>
         </div>
       </div>
@@ -289,6 +405,44 @@ h2 {
   font-weight: 900;
   color: #ef4444;
   letter-spacing: .03em;
+}
+
+.multi-select-banner {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .95rem;
+  margin-bottom: 1rem;
+  border-radius: .6rem;
+  background: rgba(239, 68, 68, .15);
+  border: 1px solid rgba(239, 68, 68, .45);
+}
+
+.multi-icon {
+  font-size: 1.25rem;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.multi-text strong {
+  display: block;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  color: #f87171;
+  margin-bottom: .15rem;
+}
+
+.multi-text p {
+  margin: 0;
+  font-size: .74rem;
+  color: #cbd5e1;
+}
+
+.multi-text em {
+  font-style: normal;
+  color: #ffcc00;
+  font-weight: 800;
 }
 
 .question-text {
@@ -411,6 +565,107 @@ h2 {
   border-color: #ffcc00;
   background: rgba(255, 204, 0, .12);
   transform: translateX(4px);
+}
+
+.option-card.multi-selected {
+  border-color: #ffcc00;
+  background: rgba(255, 204, 0, .16);
+  box-shadow: 0 0 15px rgba(255, 204, 0, .15);
+}
+
+.option-card.focused:not(.multi-selected) {
+  border-color: #94a3b8;
+  background: rgba(148, 163, 184, .1);
+}
+
+.checkbox-indicator {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid #64748b;
+  border-radius: .35rem;
+  background: rgba(15, 23, 42, .6);
+  color: #0f172a;
+  font-weight: 900;
+  font-size: .9rem;
+  flex-shrink: 0;
+  transition: all .15s ease;
+}
+
+.checkbox-indicator.checked {
+  border-color: #ffcc00;
+  background: #ffcc00;
+  color: #0f172a;
+}
+
+.multi-submit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #334155;
+}
+
+.multi-count-info {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  font-size: .8rem;
+  color: #94a3b8;
+}
+
+.multi-count-info strong {
+  color: #ffcc00;
+  font-size: .95rem;
+}
+
+.btn-reset-selection {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: .25rem .65rem;
+  border-radius: .35rem;
+  font-size: .72rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s ease;
+}
+
+.btn-reset-selection:hover {
+  color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-submit-multi {
+  padding: .75rem 1.4rem;
+  background: #ffcc00;
+  color: #0f172a;
+  border: none;
+  border-radius: .5rem;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: .85rem;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.btn-submit-multi:hover:not(:disabled) {
+  background: #facc15;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 204, 0, .4);
+}
+
+.btn-submit-multi:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  background: #475569;
+  color: #94a3b8;
+  transform: none;
+  box-shadow: none;
 }
 
 .key-indicator {

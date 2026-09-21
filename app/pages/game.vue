@@ -225,6 +225,7 @@ useSeoMeta({
         @answer="engine.answerQuiz"
         @request-hint="engine.requestHint"
         @advance="engine.closeFeedbackAndAdvance"
+        @retry="engine.retryQuiz"
         @close="engine.answerQuiz(-1)" />
 
       <!-- Object Selection & Action Modals -->
