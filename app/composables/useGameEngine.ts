@@ -62,52 +62,31 @@ export interface PathNodeState {
   isKey?: boolean;
 }
 
-export const TERMINAL_QUESTION_MAP: Record<string, string> = {
-  // Sector 1 (Gen-AI Emergency Containment)
-  term_l1_1: "ai-1",
-  term_l1_2: "ai-2",
-  term_l1_3: "ai-4",
-  term_l1_4: "ai-5",
-  term_l1_5: "ai-7",
-  // Sector 2 (CPH Applications Command)
-  term_l2_1: "app-1",
-  term_l2_2: "app-2",
-  term_l2_3: "app-3",
-  term_l2_4: "app-4",
-  term_l2_5: "app-5",
-  // Sector 3 (Cyber Security Vault)
-  term_l3_1: "sec-1",
-  term_l3_2: "sec-2",
-  term_l3_3: "sec-3",
-  term_l3_4: "sec-4",
-  term_l3_5: "sec-5",
-};
-
 export const SECTOR_OBJECTIVES: Record<1 | 2 | 3, SectorObjective[]> = {
   1: [
-    { id: "term_l1_1", label: "AURA Gen-AI Fundamentals Console", shortLabel: "Gen-AI", questionId: "ai-1", position: { x: -13.5, z: -3.8 } },
-    { id: "term_l1_2", label: "AURA Logistics Optimization Terminal", shortLabel: "Logistics", questionId: "ai-2", position: { x: -7.5, z: 3.5 } },
-    { id: "term_l1_3", label: "AURA Data Leak Protection Hub", shortLabel: "Data Leak", questionId: "ai-4", position: { x: -7.5, z: -3.8 } },
-    { id: "term_l1_4", label: "AURA Predictive Sorting Station", shortLabel: "Sorting", questionId: "ai-5", position: { x: -13.0, z: 3.5 } },
-    { id: "term_l1_5", label: "AURA Hallucination Detection Unit", shortLabel: "Hallucinate", questionId: "ai-7", position: { x: -10.5, z: -0.5 } },
+    { id: "term_l1_1", label: "AURA Gen-AI Diagnostic Station 1", shortLabel: "Station 1", position: { x: -13.5, z: -3.8 } },
+    { id: "term_l1_2", label: "AURA Gen-AI Diagnostic Station 2", shortLabel: "Station 2", position: { x: -7.5, z: 3.5 } },
+    { id: "term_l1_3", label: "AURA Gen-AI Diagnostic Station 3", shortLabel: "Station 3", position: { x: -7.5, z: -3.8 } },
+    { id: "term_l1_4", label: "AURA Gen-AI Diagnostic Station 4", shortLabel: "Station 4", position: { x: -13.0, z: 3.5 } },
+    { id: "term_l1_5", label: "AURA Gen-AI Diagnostic Station 5", shortLabel: "Station 5", position: { x: -10.5, z: -0.5 } },
     { id: "key_admin", label: "AURA Clearance Keycard", shortLabel: "Security Key", position: { x: -6.5, z: 2.0 } },
     { id: "slide_door_1", label: "Sector 1 Security Gate", shortLabel: "Gate 1", position: { x: -5, z: 0 } },
   ],
   2: [
-    { id: "term_l2_1", label: "CPH Apps: GUS Butterfly Blue Terminal", shortLabel: "GUS Blue", questionId: "app-1", position: { x: -3.5, z: -3.8 } },
-    { id: "term_l2_2", label: "CPH Apps: Sherloc Logistics Hub", shortLabel: "Sherloc", questionId: "app-2", position: { x: 3.2, z: 3.5 } },
-    { id: "term_l2_3", label: "CPH Apps: App Incident Response Desk", shortLabel: "App Team", questionId: "app-3", position: { x: 3.2, z: -3.8 } },
-    { id: "term_l2_4", label: "CPH Apps: ServiceNow Incident Console", shortLabel: "ServiceNow", questionId: "app-4", position: { x: -3.5, z: 3.5 } },
-    { id: "term_l2_5", label: "CPH Apps: Power Automate & UAT Hub", shortLabel: "Power Auto", questionId: "app-5", position: { x: 0.0, z: -0.5 } },
+    { id: "term_l2_1", label: "CPH Apps: GUS Butterfly Blue Terminal", shortLabel: "GUS Blue", position: { x: -3.5, z: -3.8 } },
+    { id: "term_l2_2", label: "CPH Apps: Sherloc Logistics Hub", shortLabel: "Sherloc", position: { x: 3.2, z: 3.5 } },
+    { id: "term_l2_3", label: "CPH Apps: App Incident Response Desk", shortLabel: "App Team", position: { x: 3.2, z: -3.8 } },
+    { id: "term_l2_4", label: "CPH Apps: ServiceNow Incident Console", shortLabel: "ServiceNow", position: { x: -3.5, z: 3.5 } },
+    { id: "term_l2_5", label: "CPH Apps: Power Automate & UAT Hub", shortLabel: "Power Auto", position: { x: 0.0, z: -0.5 } },
     { id: "key_sector_2", label: "Firewall Security Token", shortLabel: "Firewall Key", position: { x: 3.5, z: 2.0 } },
     { id: "slide_door_2", label: "Sector 2 Firewall Gate", shortLabel: "Gate 2", position: { x: 5, z: 0 } },
   ],
   3: [
-    { id: "term_l3_1", label: "Cyber Vault: Phishing Detection Sentinel", shortLabel: "Phishing", questionId: "sec-1", position: { x: 6.8, z: -3.8 } },
-    { id: "term_l3_2", label: "Cyber Vault: Email Domain Authenticator", shortLabel: "Domains", questionId: "sec-2", position: { x: 12.8, z: 3.5 } },
-    { id: "term_l3_3", label: "Cyber Vault: Password Cryptography Console", shortLabel: "Passwords", questionId: "sec-3", position: { x: 12.8, z: -3.8 } },
-    { id: "term_l3_4", label: "Cyber Vault: Data Classification Sentinel", shortLabel: "Data Class", questionId: "sec-4", position: { x: 6.8, z: 3.5 } },
-    { id: "term_l3_5", label: "Cyber Vault: Zscaler & Remote Access Pod", shortLabel: "Zscaler", questionId: "sec-5", position: { x: 9.8, z: -0.5 } },
+    { id: "term_l3_1", label: "Cyber Vault: Phishing Detection Sentinel", shortLabel: "Phishing", position: { x: 6.8, z: -3.8 } },
+    { id: "term_l3_2", label: "Cyber Vault: Email Domain Authenticator", shortLabel: "Domains", position: { x: 12.8, z: 3.5 } },
+    { id: "term_l3_3", label: "Cyber Vault: Password Cryptography Console", shortLabel: "Passwords", position: { x: 12.8, z: -3.8 } },
+    { id: "term_l3_4", label: "Cyber Vault: Data Classification Sentinel", shortLabel: "Data Class", position: { x: 6.8, z: 3.5 } },
+    { id: "term_l3_5", label: "Cyber Vault: Zscaler & Remote Access Pod", shortLabel: "Zscaler", position: { x: 9.8, z: -0.5 } },
     { id: "key_sector_3", label: "Master Override Cryptokey", shortLabel: "Master Key", position: { x: 11.5, z: 2.0 } },
     { id: "final_escape_hatch", label: "Master Dispatch Hatch", shortLabel: "Hatch", position: { x: 13.5, z: 0 } },
   ],
@@ -285,11 +264,53 @@ export function useGameEngine() {
     currentLevel: 1,
     solvedQuestionIds: [],
     hintUsedQuestionIds: [],
-    level1Questions: getRandomQuestionsForLevel(1, 10),
-    level2Questions: getRandomQuestionsForLevel(2, 10),
-    level3Questions: getRandomQuestionsForLevel(3, 10),
+    level1Questions: getRandomQuestionsForLevel(1, 5),
+    level2Questions: getRandomQuestionsForLevel(2, 5),
+    level3Questions: getRandomQuestionsForLevel(3, 5),
     attemptsByQuestionId: {},
   };
+
+  function getSectorObjectives(level: 1 | 2 | 3): SectorObjective[] {
+    const baseObjectives = SECTOR_OBJECTIVES[level] || [];
+    let questionsForLevel: EscapeRoomQuestion[] = [];
+    if (level === 1) {
+      if (!levelProgress.level1Questions?.length) {
+        levelProgress.level1Questions = getRandomQuestionsForLevel(1, 5);
+      }
+      questionsForLevel = levelProgress.level1Questions;
+    } else if (level === 2) {
+      if (!levelProgress.level2Questions?.length) {
+        levelProgress.level2Questions = getRandomQuestionsForLevel(2, 5);
+      }
+      questionsForLevel = levelProgress.level2Questions;
+    } else {
+      if (!levelProgress.level3Questions?.length) {
+        levelProgress.level3Questions = getRandomQuestionsForLevel(3, 5);
+      }
+      questionsForLevel = levelProgress.level3Questions;
+    }
+
+    return baseObjectives.map((obj) => {
+      const match = obj.id.match(/term_l\d_(\d)/);
+      if (match) {
+        const stepIdx = parseInt(match[1]!, 10) - 1;
+        const q = questionsForLevel[stepIdx];
+        if (q) {
+          return {
+            ...obj,
+            questionId: q.id,
+          };
+        }
+      }
+      return obj;
+    });
+  }
+
+  function getQuestionIdForTerminal(terminalId: string): string | undefined {
+    const sectorObjs = getSectorObjectives(levelProgress.currentLevel);
+    const station = sectorObjs.find((o) => o.id === terminalId);
+    return station?.questionId;
+  }
 
   const keys = new Set<string>();
   const objectInstances = new Map<string, GameObjectInstance>();
@@ -310,7 +331,7 @@ export function useGameEngine() {
   let stationDecorGroup: THREE.Group | null = null;
 
   function updatePathNodes() {
-    const objectives = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
+    const objectives = getSectorObjectives(levelProgress.currentLevel);
     const currentObj = getCurrentSectorObjective();
 
     state.currentObjectiveId = currentObj?.id || "";
@@ -368,25 +389,21 @@ export function useGameEngine() {
   }
 
   function getCurrentLevelQuestions(): EscapeRoomQuestion[] {
-    const objectives = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
-    const questionIds = objectives
-      .map((obj) => obj.questionId)
-      .filter((id): id is string => Boolean(id));
-
-    const allQuestions = [
-      ...ESCAPE_ROOM_QUESTIONS[1],
-      ...ESCAPE_ROOM_QUESTIONS[2],
-      ...ESCAPE_ROOM_QUESTIONS[3],
-    ];
-
-    const curated = questionIds
-      .map((id) => allQuestions.find((q) => q.id === id))
-      .filter((q): q is EscapeRoomQuestion => Boolean(q));
-
-    if (curated.length > 0) return curated;
-
-    if (levelProgress.currentLevel === 1) return levelProgress.level1Questions;
-    if (levelProgress.currentLevel === 2) return levelProgress.level2Questions;
+    if (levelProgress.currentLevel === 1) {
+      if (!levelProgress.level1Questions?.length) {
+        levelProgress.level1Questions = getRandomQuestionsForLevel(1, 5);
+      }
+      return levelProgress.level1Questions;
+    }
+    if (levelProgress.currentLevel === 2) {
+      if (!levelProgress.level2Questions?.length) {
+        levelProgress.level2Questions = getRandomQuestionsForLevel(2, 5);
+      }
+      return levelProgress.level2Questions;
+    }
+    if (!levelProgress.level3Questions?.length) {
+      levelProgress.level3Questions = getRandomQuestionsForLevel(3, 5);
+    }
     return levelProgress.level3Questions;
   }
 
@@ -399,7 +416,7 @@ export function useGameEngine() {
   }
 
   function getCurrentSectorObjective(): SectorObjective | null {
-    const objectives = SECTOR_OBJECTIVES[levelProgress.currentLevel];
+    const objectives = getSectorObjectives(levelProgress.currentLevel);
     if (!objectives) return null;
 
     // 1. Any unsolved question terminals in the sector first
@@ -409,7 +426,7 @@ export function useGameEngine() {
       }
     }
 
-    // 2. All 10 terminals are solved!
+    // 2. All 5 terminals are solved!
     const keyObj = objectives.find((o) => o.id.startsWith("key_"));
     const gateObj = objectives.find((o) => o.id.startsWith("slide_door_") || o.id === "final_escape_hatch");
 
@@ -460,7 +477,7 @@ export function useGameEngine() {
     stationHolograms.length = 0;
     stationFloorRings.length = 0;
 
-    const objectives = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
+    const objectives = getSectorObjectives(levelProgress.currentLevel);
 
     // Create Floor Rings and 3D Floating Holograms for each node
     for (let i = 0; i < objectives.length; i++) {
@@ -512,7 +529,7 @@ export function useGameEngine() {
   }
 
   function updateStationVisualStates(time: number) {
-    const objectives = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
+    const objectives = getSectorObjectives(levelProgress.currentLevel);
     const currentObj = getCurrentSectorObjective();
 
     for (const item of stationHolograms) {
@@ -670,7 +687,7 @@ export function useGameEngine() {
         const parts = asset.id.split("_");
         const sectorNum = Number.parseInt(parts[1]?.replace("l", "") || "1", 10) as 1 | 2 | 3;
         const stepNum = Number.parseInt(parts[2] || "1", 10);
-        const objDef = (SECTOR_OBJECTIVES[sectorNum] || []).find((o) => o.id === asset.id);
+        const objDef = (getSectorObjectives(sectorNum) || []).find((o) => o.id === asset.id);
         const label = objDef?.label || asset.label || `Sector ${sectorNum} Station ${stepNum}`;
         const shortLabel = objDef?.shortLabel || `Station ${stepNum}`;
 
@@ -840,9 +857,9 @@ export function useGameEngine() {
     if (state.nearbyId !== (nearby?.id ?? "")) {
       state.nearbyId = nearby?.id || "";
       let label = nearby?.label || "";
-      const qId = nearby?.id ? TERMINAL_QUESTION_MAP[nearby.id] : undefined;
+      const qId = nearby?.id ? getQuestionIdForTerminal(nearby.id) : undefined;
       const currentObj = getCurrentSectorObjective();
-      const sectorObjs = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
+      const sectorObjs = getSectorObjectives(levelProgress.currentLevel);
       const isSectorStation = sectorObjs.some((o) => o.id === nearby?.id && o.questionId);
 
       if (qId && levelProgress.solvedQuestionIds.includes(qId)) {
@@ -1161,7 +1178,7 @@ export function useGameEngine() {
     }
 
     // Direct terminal challenge handling: open quiz directly without action selection modal
-    const qId = TERMINAL_QUESTION_MAP[nearby.id];
+    const qId = getQuestionIdForTerminal(nearby.id);
     const isTerminal = Boolean(qId) || nearby.id.startsWith("term_l") || nearby.type === "riddle";
     if (isTerminal) {
       openQuiz();
@@ -1211,7 +1228,7 @@ export function useGameEngine() {
     pendingQuizAssetId = nearby?.id || "";
 
     const targetAssetId = nearby?.id || "";
-    const questionId = TERMINAL_QUESTION_MAP[targetAssetId];
+    const questionId = getQuestionIdForTerminal(targetAssetId);
 
     // If this terminal is already solved, inform player and prevent repeat quiz
     if (questionId && levelProgress.solvedQuestionIds.includes(questionId)) {
@@ -1222,7 +1239,7 @@ export function useGameEngine() {
 
     // Enforce sequential escape room progression: only ONE active objective can be accessed at a time
     const currentObj = getCurrentSectorObjective();
-    const sectorObjs = SECTOR_OBJECTIVES[levelProgress.currentLevel] || [];
+    const sectorObjs = getSectorObjectives(levelProgress.currentLevel);
     const isSectorStation = sectorObjs.some((o) => o.id === targetAssetId && o.questionId);
 
     if (isSectorStation && currentObj && currentObj.id !== targetAssetId) {
@@ -1233,12 +1250,16 @@ export function useGameEngine() {
 
     let question: EscapeRoomQuestion | null = null;
     if (questionId) {
-      const allQuestions = [
-        ...ESCAPE_ROOM_QUESTIONS[1],
-        ...ESCAPE_ROOM_QUESTIONS[2],
-        ...ESCAPE_ROOM_QUESTIONS[3],
-      ];
-      question = allQuestions.find((q) => q.id === questionId) || null;
+      const currentQuestions = getCurrentLevelQuestions();
+      question = currentQuestions.find((q) => q.id === questionId) || null;
+      if (!question) {
+        const allLevelQuestions = [
+          ...(levelProgress.level1Questions || []),
+          ...(levelProgress.level2Questions || []),
+          ...(levelProgress.level3Questions || []),
+        ];
+        question = allLevelQuestions.find((q) => q.id === questionId) || null;
+      }
     }
 
     if (!question) {
@@ -1501,7 +1522,7 @@ export function useGameEngine() {
     const beaconBob = Math.sin(time / 250) * 0.12;
     for (const beacon of terminalBeacons) {
       const termId = beacon.userData.terminalId as string;
-      const qId = TERMINAL_QUESTION_MAP[termId];
+      const qId = getQuestionIdForTerminal(termId);
       const isSolved = qId && levelProgress.solvedQuestionIds.includes(qId);
       const isCurrentTarget = currentObj && currentObj.id === termId;
       const mat = beacon.material as THREE.MeshBasicMaterial;
@@ -1574,9 +1595,9 @@ export function useGameEngine() {
       currentLevel: progress.currentLevel || 1,
       solvedQuestionIds: progress.solvedQuestionIds || [],
       hintUsedQuestionIds: progress.hintUsedQuestionIds || [],
-      level1Questions: progress.level1Questions || getRandomQuestionsForLevel(1, 5),
-      level2Questions: progress.level2Questions || getRandomQuestionsForLevel(2, 5),
-      level3Questions: progress.level3Questions || getRandomQuestionsForLevel(3, 5),
+      level1Questions: progress.level1Questions?.length ? progress.level1Questions : getRandomQuestionsForLevel(1, 5),
+      level2Questions: progress.level2Questions?.length ? progress.level2Questions : getRandomQuestionsForLevel(2, 5),
+      level3Questions: progress.level3Questions?.length ? progress.level3Questions : getRandomQuestionsForLevel(3, 5),
       attemptsByQuestionId: progress.attemptsByQuestionId || {},
       playerPosition: progress.playerPosition,
     };

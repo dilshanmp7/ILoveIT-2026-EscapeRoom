@@ -762,17 +762,31 @@ export const ESCAPE_ROOM_QUESTIONS: Record<1 | 2 | 3, EscapeRoomQuestion[]> = {
   ],
 };
 
-// Helper: randomly pick N distinct questions for a specific level
-export function getRandomQuestionsForLevel(level: 1 | 2 | 3, count = 10): EscapeRoomQuestion[] {
+// Helper: randomly pick N distinct questions for a specific level with shuffled options for anti-cheat
+export function getRandomQuestionsForLevel(level: 1 | 2 | 3, count = 5): EscapeRoomQuestion[] {
   const pool = structuredClone(ESCAPE_ROOM_QUESTIONS[level]);
-  // Fisher-Yates shuffle
+  // Fisher-Yates shuffle for questions
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const temp = pool[i]!;
     pool[i] = pool[j]!;
     pool[j] = temp;
   }
-  return pool.slice(0, count);
+  const selected = pool.slice(0, count);
+
+  // Fisher-Yates shuffle options within each selected question
+  for (const question of selected) {
+    if (Array.isArray(question.options) && question.options.length > 1) {
+      for (let k = question.options.length - 1; k > 0; k--) {
+        const m = Math.floor(Math.random() * (k + 1));
+        const tempOpt = question.options[k]!;
+        question.options[k] = question.options[m]!;
+        question.options[m] = tempOpt;
+      }
+    }
+  }
+
+  return selected;
 }
 
 // 32 Standard CPH Hub Departments
