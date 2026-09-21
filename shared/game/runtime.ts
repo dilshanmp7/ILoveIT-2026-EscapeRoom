@@ -579,6 +579,68 @@ export class GameItem {
   }
 }
 
+let cachedDhlLogoTexture: THREE.CanvasTexture | null = null;
+
+export function getDhlLogoTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  if (cachedDhlLogoTexture) return cachedDhlLogoTexture;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  // Official DHL Brand Yellow background
+  ctx.fillStyle = "#ffcc00";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const red = "#d40511";
+
+  // Red border frame with rounded corners
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = red;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(10, 10, canvas.width - 20, canvas.height - 20, 24);
+  } else {
+    ctx.rect(10, 10, canvas.width - 20, canvas.height - 20);
+  }
+  ctx.stroke();
+
+  // Draw slanted DHL elements (forward lean)
+  ctx.save();
+  ctx.translate(256, 128);
+  ctx.transform(1, 0, -0.26, 1, 0, 0);
+
+  // Red horizontal speed lines flanking DHL
+  ctx.fillStyle = red;
+  const stripeH = 15;
+  const stripeYs = [-38, 0, 38];
+  for (const sy of stripeYs) {
+    // Left speed bars
+    ctx.fillRect(-205, sy - stripeH / 2, 60, stripeH);
+    // Right speed bars
+    ctx.fillRect(145, sy - stripeH / 2, 60, stripeH);
+  }
+
+  // Bold DHL Lettering
+  ctx.font = "900 125px 'Arial Black', Impact, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = red;
+  ctx.fillText("DHL", 0, 2);
+
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  cachedDhlLogoTexture = texture;
+  return texture;
+}
+
 export function createCourierAvatarMesh(shirtColorHex: number) {
   const group = new THREE.Group();
   const skin = new THREE.MeshStandardMaterial({ color: 0xfde047 });
@@ -615,6 +677,31 @@ export function createCourierAvatarMesh(shirtColorHex: number) {
   );
   body.position.y = 0.65;
   group.add(body);
+
+  // Official DHL Chest Logo Badge
+  const logoTexture = getDhlLogoTexture();
+  if (logoTexture) {
+    const logoMaterial = new THREE.MeshStandardMaterial({
+      map: logoTexture,
+      roughness: 0.35,
+      metalness: 0.05,
+    });
+    // Curved cylinder patch hugging the front upper torso
+    const chestGeo = new THREE.CylinderGeometry(
+      0.328,
+      0.342,
+      0.13,
+      16,
+      1,
+      true,
+      -0.42,
+      0.84,
+    );
+    const chestLogo = new THREE.Mesh(chestGeo, logoMaterial);
+    chestLogo.name = "dhlChestLogo";
+    chestLogo.position.set(0, 0.72, 0);
+    group.add(chestLogo);
+  }
   for (const [name, x] of [
     ["leftArm", -0.42],
     ["rightArm", 0.42],
