@@ -36,6 +36,7 @@ export default {
     {
       id: "inspect-door",
       label: "Inspect Security Gate",
+      isVisible: (context) => context.state === "opened" || context.heldItem?.type !== "key",
       execute: (context) => {
         if (context.state === "opened") {
           context.showMessage("Security Gate is OPEN. You may proceed to the next sector.");

@@ -24,17 +24,6 @@ export default {
       label: "Access Workstation",
       execute: (context) => context.openQuiz(),
     },
-    {
-      id: "admin-terminal-quiz",
-      label: "Access Admin Terminal",
-      execute: (context) =>
-        context.openQuiz({
-          event: "quizz_admin_terminal_done",
-          state: "completed",
-          message: "Admin security cleared",
-          score: 100,
-        }),
-    },
   ],
   editor: {
     label: "Config station",

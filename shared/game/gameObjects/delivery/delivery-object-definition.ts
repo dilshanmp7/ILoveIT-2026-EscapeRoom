@@ -30,6 +30,7 @@ export default {
     {
       id: "escape",
       label: "Activate Emergency Escape Hatch",
+      isVisible: (context) => context.state === "opened",
       execute: (context) => {
         context.emitEvent("escape_hatch_triggered");
       },

@@ -1160,6 +1160,14 @@ export function useGameEngine() {
       return;
     }
 
+    // Direct terminal challenge handling: open quiz directly without action selection modal
+    const qId = TERMINAL_QUESTION_MAP[nearby.id];
+    const isTerminal = Boolean(qId) || nearby.id.startsWith("term_l") || nearby.type === "riddle";
+    if (isTerminal) {
+      openQuiz();
+      return;
+    }
+
     const actions = getAvailableActions();
     if (!actions.length) {
       if (nearby.canBeGrabbed?.() || nearby.canHold) {
