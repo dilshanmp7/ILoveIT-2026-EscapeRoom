@@ -191,14 +191,54 @@ export interface QuizOption {
 }
 
 export interface QuizQuestion {
+  id?: string;
+  level?: 1 | 2 | 3;
   q: string;
   options: QuizOption[];
   correct: number;
+  correctAnswers?: number[];
+  hint?: string;
+  explanation?: string;
+}
+
+export interface EscapeRoomQuestion extends QuizQuestion {
+  id: string;
+  level: 1 | 2 | 3;
+  hint: string;
+  explanation: string;
+}
+
+export interface PlayerRegistration {
+  firstName: string;
+  lastName: string;
+  department: string;
+  shift: string;
+  userCode?: string;
+}
+
+export interface LevelProgress {
+  currentLevel: 1 | 2 | 3;
+  solvedQuestionIds: string[];
+  hintUsedQuestionIds: string[];
+  level1Questions: EscapeRoomQuestion[];
+  level2Questions: EscapeRoomQuestion[];
+  level3Questions: EscapeRoomQuestion[];
+  attemptsByQuestionId: Record<string, number>;
+  playerPosition?: { x: number; z: number };
 }
 
 export interface GameSession {
   id: string;
   sessionKey: string;
+  userCode: string;
+  firstName?: string;
+  lastName?: string;
+  department?: string;
+  shift?: string;
+  currentLevel: 1 | 2 | 3;
+  hintsUsed: number;
+  timeSpentSeconds: number;
+  levelProgress?: LevelProgress;
   status: "active" | "completed";
   score: number;
   createdAt: string;
@@ -212,6 +252,48 @@ export interface AccessResponse {
 export interface FinalScorePayload {
   score: number;
   completed?: boolean;
+  timeSpentSeconds?: number;
+  currentLevel?: 1 | 2 | 3;
+  hintsUsed?: number;
+  levelProgress?: LevelProgress;
+  playerPosition?: { x: number; z: number };
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  id: string;
+  userCode: string;
+  firstName: string;
+  lastName: string;
+  department: string;
+  shift: string;
+  score: number;
+  timeSpentSeconds: number;
+  currentLevel: number;
+  completed: boolean;
+  hintsUsed: number;
+  updatedAt: string;
+}
+
+export interface EventStats {
+  totalRegistered: number;
+  totalCompleted: number;
+  fastestTimeSeconds: number | null;
+  topDepartment: string | null;
+  averageScore: number;
 }
 
 export type Player = { mesh: THREE.Group; body: PhysicalBody };
+
+export interface PathNodeState {
+  id: string;
+  step: number;
+  label: string;
+  shortLabel: string;
+  x: number;
+  z: number;
+  solved: boolean;
+  isCurrent: boolean;
+  isGate: boolean;
+  isKey?: boolean;
+}

@@ -1,26 +1,28 @@
-import { createError, getCookie, readBody } from "h3";
+import type { PlayerRegistration } from "#shared/game/types";
+import { getCookie, readBody, setCookie } from "h3";
 import {
   ACCESS_COOKIE,
-  createGameSession,
+  createAccessToken,
+  createOrResumeGameSession,
   isAccessTokenValid,
 } from "../../utils/game-session";
 
 export default defineEventHandler(async (event) => {
-  const accessToken = getCookie(event, ACCESS_COOKIE);
+  let accessToken = getCookie(event, ACCESS_COOKIE);
   if (!isAccessTokenValid(accessToken)) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: "Game access required",
+    accessToken = createAccessToken();
+    setCookie(event, ACCESS_COOKIE, accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 12,
+      path: "/",
     });
   }
 
-  const body = await readBody<{ sessionKey?: string }>(event);
-  const sessionKey = body?.sessionKey?.trim();
-  if (!sessionKey) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "A session key is required",
-    });
-  }
-  return createGameSession(accessToken!, sessionKey);
+  const body = await readBody<
+    Partial<PlayerRegistration> & { sessionKey?: string }
+  >(event);
+
+  return createOrResumeGameSession(accessToken, body || {});
 });

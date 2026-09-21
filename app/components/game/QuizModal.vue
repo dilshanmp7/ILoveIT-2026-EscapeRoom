@@ -1,35 +1,71 @@
 <script setup lang="ts">
-import type { QuizQuestion } from '#shared/game/types';
-import { nextTick, ref, watch } from 'vue';
+import type { EscapeRoomQuestion } from '#shared/game/types'
+import { nextTick, ref, watch } from 'vue'
 
-const props = defineProps<{ quiz: QuizQuestion | null; open: boolean }>()
-const emit = defineEmits<{ answer: [optionId: number]; close: [] }>()
+const props = defineProps<{
+  quiz: EscapeRoomQuestion | null
+  open: boolean
+  hintRevealed: boolean
+  feedback: { isCorrect: boolean; explanation: string; scoreAwarded: number } | null
+}>()
+
+const emit = defineEmits<{
+  answer: [optionId: number]
+  requestHint: []
+  close: []
+  advance: []
+}>()
+
 const selectedIndex = ref(0)
-const shaking = ref(false)
+const confirmHintPrompt = ref(false)
 const modal = ref<HTMLElement | null>(null)
 
 watch(() => props.open, async (open) => {
-  if (!open) return
+  if (!open) {
+    confirmHintPrompt.value = false
+    return
+  }
   selectedIndex.value = 0
+  confirmHintPrompt.value = false
   await nextTick()
   modal.value?.focus()
 })
 
 function submitAnswer(optionId: number) {
-  if (shaking.value) return
-  if (props.quiz?.correct !== optionId) {
-    shaking.value = true
-    window.setTimeout(() => {
-      shaking.value = false
-      emit('answer', optionId)
-    }, 320)
-    return
-  }
   emit('answer', optionId)
 }
 
+function handleHintRequest() {
+  if (props.hintRevealed) return
+  if (!confirmHintPrompt.value) {
+    confirmHintPrompt.value = true
+    return
+  }
+  confirmHintPrompt.value = false
+  emit('requestHint')
+}
+
 function handleKeydown(event: KeyboardEvent) {
-  if (!props.quiz || !props.open || shaking.value) return
+  if (!props.quiz || !props.open) return
+
+  if (props.feedback?.isCorrect) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      emit('advance')
+    }
+    return
+  }
+
+  if (event.key >= '1' && event.key <= '4') {
+    const idx = parseInt(event.key, 10) - 1
+    const option = props.quiz.options[idx]
+    if (option) {
+      selectedIndex.value = idx
+      submitAnswer(option.id)
+    }
+    return
+  }
+
   if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
     event.preventDefault()
     selectedIndex.value = (selectedIndex.value + 1) % props.quiz.options.length
@@ -46,19 +82,110 @@ function handleKeydown(event: KeyboardEvent) {
 
 <template>
   <div v-if="open && quiz" class="modal-backdrop" @click.self="emit('close')">
-    <section ref="modal" class="quiz-modal" :class="{ shake: shaking }" role="dialog" aria-modal="true"
-      aria-labelledby="quiz-title" tabindex="-1" @keydown.stop="handleKeydown">
-      <div class="modal-heading">
-        <div><span class="eyebrow">Security clearance</span>
-          <h2 id="quiz-title">IT security check</h2>
-        </div><button type="button" class="close-button" aria-label="Close quiz" @click="emit('close')">×</button>
-      </div>
-      <p class="question">{{ quiz.q }}</p>
-      <div class="options">
+    <section ref="modal" class="quiz-modal" role="dialog" aria-modal="true"
+      aria-labelledby="terminal-title" tabindex="-1" @keydown.stop="handleKeydown">
 
-        <button v-for="(option, index) in quiz.options" :key="option.id" type="button"
-          :class="{ selected: selectedIndex === index }" @click="selectedIndex = index; submitAnswer(option.id)">
-          <span v-if="quiz.correct === option.id">*</span>{{ option.text }} <span>→</span></button>
+      <!-- Modal Header -->
+      <div class="terminal-header">
+        <div class="header-left">
+          <span class="sector-badge" :class="'level-' + quiz.level">
+            <template v-if="quiz.level === 1">SECTOR 1: AURA GEN-AI CORE (AMBER ALERT)</template>
+            <template v-else-if="quiz.level === 2">SECTOR 2: CPH APPLICATIONS COMMAND</template>
+            <template v-else>SECTOR 3: CYBER SECURITY VAULT</template>
+          </span>
+          <h2 id="terminal-title">
+            <template v-if="quiz.level === 1">AURA Neural Diagnostic Console</template>
+            <template v-else-if="quiz.level === 2">CPH Application Routing Terminal</template>
+            <template v-else>Cyber Defense Vault Terminal</template>
+          </h2>
+        </div>
+        <button type="button" class="close-button" aria-label="Close terminal" @click="emit('close')">×</button>
+      </div>
+
+      <!-- In-Universe System Ticker -->
+      <div class="terminal-ticker">
+        <span class="ticker-dot">●</span>
+        <span v-if="quiz.level === 1">
+          AURA AI PROTOCOL RECALIBRATION: Human-in-the-Loop validation required to override Gate 1
+        </span>
+        <span v-else-if="quiz.level === 2">
+          APPLICATION STACK SYNC: Validating GUS, ServiceNow, Power Automate, CAFE & NetScan
+        </span>
+        <span v-else>
+          SECURITY VAULT DIRECTIVE: Neutralize cyber threats to engage Master Dispatch Hatch
+        </span>
+      </div>
+
+      <!-- Feedback Screen (After Submitting Answer) -->
+      <div v-if="feedback" class="feedback-panel" :class="feedback.isCorrect ? 'success' : 'error'">
+        <div class="feedback-status">
+          <span class="status-icon">{{ feedback.isCorrect ? '✔' : '✖' }}</span>
+          <div>
+            <h3>
+              <template v-if="feedback.isCorrect">
+                {{ quiz.level === 1 ? 'PROTOCOL RECALIBRATED' : 'ACCESS GRANTED' }}
+              </template>
+              <template v-else>
+                {{ quiz.level === 1 ? 'AI MISALIGNMENT DETECTED' : 'PROTOCOL DENIED' }}
+              </template>
+            </h3>
+            <p v-if="feedback.isCorrect" class="score-gain">+{{ feedback.scoreAwarded }} POINTS AWARDED</p>
+            <p v-else class="score-penalty">System access refused. Audit your instructions.</p>
+          </div>
+        </div>
+
+        <div class="explanation-box">
+          <strong>Operational Intel & Analysis:</strong>
+          <p>{{ feedback.explanation }}</p>
+        </div>
+
+        <div class="feedback-actions">
+          <button v-if="feedback.isCorrect" type="button" class="continue-button" @click="emit('advance')">
+            Continue Escape Shift ➔
+          </button>
+          <button v-else type="button" class="retry-button" @click="emit('advance')">
+            Try Again ↺
+          </button>
+        </div>
+      </div>
+
+      <!-- Question & Choices Form -->
+      <div v-else class="question-body">
+        <p class="question-text">{{ quiz.q }}</p>
+
+        <!-- Hint Section -->
+        <div class="hint-container">
+          <div v-if="hintRevealed" class="hint-revealed">
+            <span class="hint-icon">💡</span>
+            <div>
+              <strong>Tactical IT Hint (50% Score Penalty Applied):</strong>
+              <p>{{ quiz.hint }}</p>
+            </div>
+          </div>
+          <div v-else-if="confirmHintPrompt" class="hint-confirm">
+            <p>⚠ Requesting a hint will reduce this question's reward to 50 pts. Proceed?</p>
+            <div class="confirm-buttons">
+              <button type="button" class="confirm-yes" @click="handleHintRequest">Reveal Hint (-50% Pts)</button>
+              <button type="button" class="confirm-no" @click="confirmHintPrompt = false">Cancel</button>
+            </div>
+          </div>
+          <div v-else class="hint-bar">
+            <button type="button" class="hint-button" @click="handleHintRequest">
+              💡 Request Tactical Hint (-50% Points)
+            </button>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="options-grid">
+          <button v-for="(option, index) in quiz.options" :key="option.id" type="button"
+            class="option-card" :class="{ selected: selectedIndex === index }"
+            @click="selectedIndex = index; submitAnswer(option.id)">
+            <span class="key-indicator">{{ index + 1 }}</span>
+            <span class="option-text">{{ option.text }}</span>
+            <span class="arrow-indicator">➔</span>
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -72,42 +199,50 @@ function handleKeydown(event: KeyboardEvent) {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(2, 6, 23, .82);
-  backdrop-filter: blur(8px);
+  background: rgba(2, 6, 23, .88);
+  backdrop-filter: blur(10px);
+  font-family: 'Courier New', monospace;
 }
 
 .quiz-modal {
-  width: min(100%, 32rem);
-  padding: 1.5rem;
-  border: 1px solid rgba(96, 165, 250, .6);
+  width: min(100%, 38rem);
+  padding: 1.8rem;
+  border: 2px solid #ffcc00;
+  border-radius: 1rem;
   background: #0f172a;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, .4);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
+  color: #f8fafc;
+  outline: none;
 }
 
-.quiz-modal.shake {
-  animation: quiz-shake .32s ease-in-out;
-}
-
-.modal-heading {
+.terminal-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
+  border-bottom: 1px solid #334155;
+  padding-bottom: .9rem;
+  margin-bottom: 1.2rem;
 }
 
-.eyebrow {
-  color: #60a5fa;
-  font-family: 'Courier New', monospace;
+.sector-badge {
+  display: inline-block;
   font-size: .65rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: .1em;
+  padding: .2rem .5rem;
+  border-radius: .3rem;
+  margin-bottom: .3rem;
 }
+
+.level-1 { background: rgba(245, 158, 11, .2); color: #fbbf24; border: 1px solid #f59e0b; }
+.level-2 { background: rgba(6, 182, 212, .2); color: #38bdf8; border: 1px solid #06b6d4; }
+.level-3 { background: rgba(239, 68, 68, .2); color: #f87171; border: 1px solid #ef4444; }
 
 h2 {
-  margin: .4rem 0 0;
-  color: #dbeafe;
-  font-family: Georgia, serif;
-  font-size: 1.7rem;
-  font-weight: 400;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffcc00;
 }
 
 .close-button {
@@ -115,58 +250,286 @@ h2 {
   background: transparent;
   color: #94a3b8;
   cursor: pointer;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  line-height: 1;
 }
 
-.question {
-  margin: 2rem 0 1rem;
-  color: #e2e8f0;
-  line-height: 1.6;
-}
+.close-button:hover { color: #f8fafc; }
 
-.options {
-  display: grid;
-  gap: .5rem;
-}
-
-.options button {
+.terminal-ticker {
   display: flex;
-  justify-content: space-between;
-  border: 1px solid #334155;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem 1.4rem;
+  background: rgba(15, 23, 42, .85);
+  border-bottom: 1px solid #334155;
+  font-size: .72rem;
+  font-weight: 800;
+  color: #ffcc00;
+  letter-spacing: .04em;
+}
+
+.ticker-dot {
+  color: #d40511;
+  font-size: .85rem;
+  animation: pulse 1s infinite alternate;
+}
+
+.score-penalty {
+  margin: .2rem 0 0;
+  font-size: .75rem;
+  font-weight: 800;
+  color: #f87171;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #f1f5f9;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+}
+
+.hint-container {
+  margin-bottom: 1.2rem;
+}
+
+.hint-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hint-button {
+  border: 1px dashed rgba(250, 204, 21, .6);
+  border-radius: .5rem;
+  background: rgba(234, 179, 8, .1);
+  color: #facc15;
+  padding: .45rem .8rem;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.hint-button:hover {
+  background: rgba(234, 179, 8, .2);
+  border-color: #ffcc00;
+}
+
+.hint-confirm {
   padding: .8rem;
+  border-radius: .6rem;
+  background: rgba(239, 68, 68, .15);
+  border: 1px solid #ef4444;
+  font-size: .75rem;
+}
+
+.hint-confirm p {
+  margin: 0 0 .5rem;
+  color: #fca5a5;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: .6rem;
+}
+
+.confirm-yes {
+  padding: .4rem .8rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: .4rem;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: .7rem;
+}
+
+.confirm-no {
+  padding: .4rem .8rem;
+  background: #334155;
+  color: #cbd5e1;
+  border: none;
+  border-radius: .4rem;
+  cursor: pointer;
+  font-size: .7rem;
+}
+
+.hint-revealed {
+  display: flex;
+  gap: .65rem;
+  padding: .8rem;
+  border-radius: .6rem;
+  background: rgba(245, 158, 11, .15);
+  border: 1px solid #f59e0b;
+  font-size: .78rem;
+}
+
+.hint-revealed strong {
+  color: #fbbf24;
+  display: block;
+  margin-bottom: .2rem;
+}
+
+.hint-revealed p {
+  margin: 0;
+  color: #fef08a;
+}
+
+.options-grid {
+  display: grid;
+  gap: .65rem;
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .9rem 1rem;
+  border: 2px solid #334155;
+  border-radius: .75rem;
   background: #1e293b;
-  color: #e2e8f0;
+  color: #f8fafc;
   cursor: pointer;
   text-align: left;
+  font-family: inherit;
+  font-size: .88rem;
+  transition: all .15s ease;
 }
 
-.options button:hover {
-  border-color: #60a5fa;
-  background: #1e40af;
+.option-card:hover,
+.option-card.selected {
+  border-color: #ffcc00;
+  background: rgba(255, 204, 0, .12);
+  transform: translateX(4px);
 }
 
-.options button.selected {
-  border-color: #60a5fa;
-  background: #1e40af;
+.key-indicator {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: .35rem;
+  background: rgba(255, 255, 255, .1);
+  color: #ffcc00;
+  font-weight: 900;
+  font-size: .75rem;
+  flex-shrink: 0;
 }
 
-.options span {
+.option-text {
+  flex: 1;
+}
+
+.arrow-indicator {
+  color: #ffcc00;
+  opacity: .5;
+  font-size: .9rem;
+}
+
+.option-card:hover .arrow-indicator {
+  opacity: 1;
+}
+
+/* Feedback Panel */
+.feedback-panel {
+  padding: 1.4rem;
+  border-radius: .85rem;
+  border: 2px solid;
+}
+
+.feedback-panel.success {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, .1);
+}
+
+.feedback-panel.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, .1);
+}
+
+.feedback-status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.status-icon {
+  font-size: 2.2rem;
+}
+
+.feedback-panel.success .status-icon { color: #10b981; }
+.feedback-panel.error .status-icon { color: #ef4444; }
+
+.feedback-status h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.score-gain {
+  margin: .2rem 0 0;
+  font-size: .85rem;
+  font-weight: 800;
+  color: #34d399;
+}
+
+.explanation-box {
+  background: rgba(15, 23, 42, .8);
+  border-radius: .65rem;
+  padding: 1rem;
+  margin-bottom: 1.4rem;
+  font-size: .85rem;
+  line-height: 1.5;
+}
+
+.explanation-box strong {
+  display: block;
+  margin-bottom: .3rem;
   color: #ffcc00;
 }
 
-@keyframes quiz-shake {
+.explanation-box p {
+  margin: 0;
+  color: #cbd5e1;
+}
 
-  0%,
-  100% {
-    transform: translateX(0);
-  }
+.feedback-actions {
+  display: flex;
+  justify-content: flex-end;
+}
 
-  25% {
-    transform: translateX(-.5rem);
-  }
+.continue-button {
+  padding: .85rem 1.6rem;
+  background: #10b981;
+  color: #0f172a;
+  border: none;
+  border-radius: .5rem;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: .88rem;
+  cursor: pointer;
+  letter-spacing: .05em;
+}
 
-  75% {
-    transform: translateX(.5rem);
-  }
+.continue-button:hover {
+  background: #34d399;
+}
+
+.retry-button {
+  padding: .85rem 1.6rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: .5rem;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: .88rem;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  background: #dc2626;
 }
 </style>

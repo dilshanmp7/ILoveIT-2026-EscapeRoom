@@ -1,4 +1,8 @@
-export default defineNuxtRouteMiddleware(async () => {
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (to.query.session || to.query.first) {
+    return
+  }
+
   const requestFetch = useRequestFetch()
 
   try {

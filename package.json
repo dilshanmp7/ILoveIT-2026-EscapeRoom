@@ -7,8 +7,12 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
     "typecheck": "vue-tsc --noEmit"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
     "nuxt": "^4.5.2",

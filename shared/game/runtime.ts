@@ -195,7 +195,6 @@ export class GameObject implements GameObjectInstance {
   }
 
   canAccept(item: GameObjectInstance) {
-    if (this.definition.geometry?.isBarrier) return false;
     return this.getHoldingSlot(item) !== undefined;
   }
 
@@ -540,7 +539,7 @@ export class GamePhysics {
   findNearby(
     player: Player,
     objects: Iterable<GameObjectInstance>,
-    distance = 1.85,
+    distance = 2.2,
   ) {
     let closest: GameObjectInstance | null = null;
     for (const object of objects) {

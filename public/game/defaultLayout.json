@@ -1,146 +1,83 @@
 [
   {
-    "id": "c1",
-    "w": 1.5,
-    "d": 1.2,
-    "color": 3355443,
-    "type": "box_laptop",
-    "label": "Laptops Box",
-    "allowGrab": true,
-    "position": {
-      "x": -4,
-      "z": -5.5,
-      "rotation": 0
-    }
-  },
-  {
-    "id": "c2",
-    "w": 1.5,
-    "d": 1.2,
-    "color": 3355443,
-    "type": "box_laptop",
-    "label": "Laptops Box",
-    "allowGrab": true,
-    "position": {
-      "x": -2,
-      "z": -5.5,
-      "rotation": 0
-    }
-  },
-  {
-    "id": "c3",
-    "w": 1.5,
-    "d": 1.2,
-    "color": 3355443,
-    "type": "box_server",
-    "label": "Servers Box",
-    "allowGrab": true,
-    "position": {
-      "x": 0,
-      "z": -5.5,
-      "rotation": 0
-    }
-  },
-  {
-    "id": "c5",
-    "w": 1.5,
-    "d": 1.2,
-    "color": 1981534,
-    "type": "config_desk",
-    "label": "Config Station 1",
+    "id": "term_l1_1",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "AURA Node: Gen-AI Fundamentals Console",
     "allowGrab": false,
-    "position": {
-      "x": -4,
-      "z": -2.5,
-      "rotation": 90
-    },
-    "actionIds": ["configure"]
+    "position": { "x": -14.0, "z": -3.8, "rotation": 0 }
   },
   {
-    "id": "admin_comp",
+    "id": "term_l1_2",
     "w": 1.5,
     "d": 1.2,
     "color": 2442499,
     "type": "config_desk",
-    "label": "Admin Terminal",
+    "label": "AURA Node: Logistics Optimization Terminal",
     "allowGrab": false,
-    "holdingSlots": [
-      {
-        "id": "badge-reader",
-        "label": "Admin badge reader",
-        "accepts": "key",
-        "maxContents": 1,
-        "consumeOnDrop": true,
-        "insertedState": "inserted"
-      }
-    ],
-    "position": {
-      "x": -1.5,
-      "z": -1,
-      "rotation": 180
-    },
-    "actionIds": ["admin-terminal-quiz"],
-    "requiredKeyIds": ["ADMIN_KEY"]
+    "position": { "x": -11.0, "z": -3.8, "rotation": 0 }
   },
   {
-    "id": "c7",
+    "id": "term_l1_3",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "AURA Node: Data Leak Protection Hub",
+    "allowGrab": false,
+    "position": { "x": -8.0, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l1_4",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "AURA Node: Predictive Sorting Station",
+    "allowGrab": false,
+    "position": { "x": -14.0, "z": -1.5, "rotation": 90 }
+  },
+  {
+    "id": "term_l1_5",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "AURA Node: Hallucination Detection Unit",
+    "allowGrab": false,
+    "position": { "x": -8.0, "z": -1.5, "rotation": 270 }
+  },
+  {
+    "id": "rack_l1_1",
     "w": 1.5,
     "d": 1.2,
     "color": 1981534,
     "type": "server_rack",
-    "label": "Server Rack A",
+    "label": "AURA Neural Core Server Cluster A",
     "allowGrab": false,
-    "position": {
-      "x": 4,
-      "z": -2.5,
-      "rotation": 270
-    },
-    "actionIds": ["configure"]
+    "position": { "x": -15.2, "z": -1.5, "rotation": 90 }
   },
   {
-    "id": "c9",
-    "w": 1.4,
-    "d": 1.4,
-    "color": 1920200,
-    "type": "riddle",
-    "label": "Security Terminal",
-    "allowGrab": false,
-    "position": {
-      "x": 0,
-      "z": -1,
-      "rotation": 0
-    },
-    "actionIds": ["quiz"]
-  },
-  {
-    "id": "c12",
-    "w": 1.2,
+    "id": "rack_l1_2",
+    "w": 1.5,
     "d": 1.2,
-    "color": 4947963,
-    "type": "trash",
-    "label": "Recycle Bin",
+    "color": 1981534,
+    "type": "server_rack",
+    "label": "AURA Neural Core Server Cluster B",
     "allowGrab": false,
-    "position": {
-      "x": 6,
-      "z": 4.5,
-      "rotation": 0
-    },
-    "actionIds": ["discard"]
+    "position": { "x": -15.2, "z": 1.5, "rotation": 90 }
   },
   {
-    "id": "c11",
-    "w": 2.5,
-    "d": 1.5,
-    "color": 13829137,
-    "type": "delivery",
-    "label": "IT Dispatch Hatch",
+    "id": "desk_l1_1",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "office_desk",
+    "label": "AURA Model Analysis Desk",
     "allowGrab": false,
-    "position": {
-      "x": -4,
-      "z": 4.5,
-      "rotation": 0
-    },
-    "actionIds": ["deliver"]
+    "position": { "x": -15.2, "z": 3.5, "rotation": 90 }
   },
   {
     "id": "key_admin",
@@ -148,87 +85,296 @@
     "d": 0.8,
     "color": 953571,
     "type": "key",
-    "label": "Admin Badge",
+    "label": "AURA Clearance Keycard",
     "allowGrab": true,
     "keyId": "ADMIN_KEY",
-    "position": {
-      "x": -6.5,
-      "z": 2,
-      "rotation": 0
-    }
+    "position": { "x": -6.5, "z": 2.0, "rotation": 0 }
   },
   {
-    "id": "key_slide",
-    "w": 0.8,
-    "d": 0.8,
-    "color": 16566293,
-    "type": "key",
-    "label": "Sliding Key",
-    "allowGrab": true,
-    "keyId": "SLIDING_DOR_KEY",
-    "position": {
-      "x": 6.5,
-      "z": 2,
-      "rotation": 0
-    }
-  },
-  {
-    "id": "slide_door",
+    "id": "slide_door_1",
     "w": 2.5,
     "d": 0.4,
     "color": 3894278,
     "type": "door",
-    "label": "Secure Sliding Door",
+    "label": "Sector 1 Security Gate",
     "allowGrab": false,
     "isOpen": false,
-    "position": {
-      "x": 2,
-      "z": -1,
-      "rotation": 0
-    },
-    "actionIds": ["use-key"],
-    "requiredKeyIds": ["SLIDING_DOR_KEY"]
+    "position": { "x": -5, "z": 0, "rotation": 90 }
   },
   {
-    "id": "w1",
+    "id": "wall_p1_top",
     "w": 0.5,
-    "d": 13,
+    "d": 5.0,
     "color": 9741240,
     "type": "wall",
-    "label": "Left Wall",
+    "label": "Security Barrier 1 North",
     "allowGrab": false,
-    "position": {
-      "x": -8.5,
-      "z": 0,
-      "rotation": 0
-    }
+    "position": { "x": -5, "z": -3.75, "rotation": 0 }
   },
   {
-    "id": "w2",
+    "id": "wall_p1_bot",
     "w": 0.5,
-    "d": 13,
+    "d": 5.0,
     "color": 9741240,
     "type": "wall",
-    "label": "Right Wall",
+    "label": "Security Barrier 1 South",
     "allowGrab": false,
-    "position": {
-      "x": 8.5,
-      "z": 0,
-      "rotation": 0
-    }
+    "position": { "x": -5, "z": 3.75, "rotation": 0 }
+  },
+
+  {
+    "id": "term_l2_1",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "CPH Apps: GUS Butterfly Blue Terminal",
+    "allowGrab": false,
+    "position": { "x": -3.0, "z": -3.8, "rotation": 0 }
   },
   {
-    "id": "w3",
-    "w": 20,
+    "id": "term_l2_2",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "CPH Apps: Sherloc Logistics Hub",
+    "allowGrab": false,
+    "position": { "x": -1.0, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l2_3",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "CPH Apps: App Incident Response Desk",
+    "allowGrab": false,
+    "position": { "x": 1.0, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l2_4",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "CPH Apps: ServiceNow Incident Console",
+    "allowGrab": false,
+    "position": { "x": 3.0, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l2_5",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "CPH Apps: Power Automate & UAT Hub",
+    "allowGrab": false,
+    "position": { "x": 3.0, "z": -1.5, "rotation": 270 }
+  },
+  {
+    "id": "rack_l2_1",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "server_rack",
+    "label": "CPH Applications Core Server Matrix",
+    "allowGrab": false,
+    "position": { "x": -0.5, "z": 4.5, "rotation": 0 }
+  },
+  {
+    "id": "rack_l2_2",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "server_rack",
+    "label": "ServiceNow & Automated Workflow Server",
+    "allowGrab": false,
+    "position": { "x": 0.5, "z": 4.5, "rotation": 0 }
+  },
+  {
+    "id": "desk_l2_1",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "office_desk",
+    "label": "Application Team Incident Command Desk",
+    "allowGrab": false,
+    "position": { "x": 0, "z": -4.5, "rotation": 180 }
+  },
+  {
+    "id": "key_sector_2",
+    "w": 0.8,
+    "d": 0.8,
+    "color": 953571,
+    "type": "key",
+    "label": "Firewall Security Token",
+    "allowGrab": true,
+    "keyId": "KEY_SECTOR_2",
+    "position": { "x": 3.5, "z": 2.0, "rotation": 0 }
+  },
+  {
+    "id": "slide_door_2",
+    "w": 2.5,
+    "d": 0.4,
+    "color": 3894278,
+    "type": "door",
+    "label": "Sector 2 Firewall Gate",
+    "allowGrab": false,
+    "isOpen": false,
+    "position": { "x": 5, "z": 0, "rotation": 90 }
+  },
+  {
+    "id": "wall_p2_top",
+    "w": 0.5,
+    "d": 5.0,
+    "color": 9741240,
+    "type": "wall",
+    "label": "Firewall Barrier 2 North",
+    "allowGrab": false,
+    "position": { "x": 5, "z": -3.75, "rotation": 0 }
+  },
+  {
+    "id": "wall_p2_bot",
+    "w": 0.5,
+    "d": 5.0,
+    "color": 9741240,
+    "type": "wall",
+    "label": "Firewall Barrier 2 South",
+    "allowGrab": false,
+    "position": { "x": 5, "z": 3.75, "rotation": 0 }
+  },
+
+  {
+    "id": "term_l3_1",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "Cyber Vault: Phishing Detection Sentinel",
+    "allowGrab": false,
+    "position": { "x": 7.5, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l3_2",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "Cyber Vault: Email Domain Authenticator",
+    "allowGrab": false,
+    "position": { "x": 10.0, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l3_3",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "Cyber Vault: Password Cryptography Console",
+    "allowGrab": false,
+    "position": { "x": 12.5, "z": -3.8, "rotation": 0 }
+  },
+  {
+    "id": "term_l3_4",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 2442499,
+    "type": "config_desk",
+    "label": "Cyber Vault: Data Classification Sentinel",
+    "allowGrab": false,
+    "position": { "x": 10.5, "z": -1.5, "rotation": 180 }
+  },
+  {
+    "id": "term_l3_5",
+    "w": 1.4,
+    "d": 1.4,
+    "color": 8266446,
+    "type": "riddle",
+    "label": "Cyber Vault: Zscaler & Remote Access Pod",
+    "allowGrab": false,
+    "position": { "x": 7.5, "z": -1.5, "rotation": 90 }
+  },
+  {
+    "id": "rack_l3_1",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "server_rack",
+    "label": "High-Security Vault Rack A",
+    "allowGrab": false,
+    "position": { "x": 15.0, "z": -2.0, "rotation": 90 }
+  },
+  {
+    "id": "rack_l3_2",
+    "w": 1.5,
+    "d": 1.2,
+    "color": 1981534,
+    "type": "server_rack",
+    "label": "High-Security Vault Rack B",
+    "allowGrab": false,
+    "position": { "x": 15.0, "z": 2.0, "rotation": 90 }
+  },
+  {
+    "id": "key_sector_3",
+    "w": 0.8,
+    "d": 0.8,
+    "color": 953571,
+    "type": "key",
+    "label": "Master Override Cryptokey",
+    "allowGrab": true,
+    "keyId": "KEY_SECTOR_3",
+    "position": { "x": 12.0, "z": 2.0, "rotation": 0 }
+  },
+  {
+    "id": "final_escape_hatch",
+    "w": 2.5,
+    "d": 1.5,
+    "color": 13829137,
+    "type": "delivery",
+    "label": "Master Dispatch Hatch",
+    "allowGrab": false,
+    "position": { "x": 13.5, "z": 0, "rotation": 270 }
+  },
+
+  {
+    "id": "wall_north",
+    "w": 32.0,
     "d": 0.5,
     "color": 9741240,
     "type": "wall",
-    "label": "Back Wall",
+    "label": "North Perimeter Wall",
     "allowGrab": false,
-    "position": {
-      "x": 0,
-      "z": -7,
-      "rotation": 0
-    }
+    "position": { "x": 0, "z": -6.25, "rotation": 0 }
+  },
+  {
+    "id": "wall_south",
+    "w": 32.0,
+    "d": 0.5,
+    "color": 9741240,
+    "type": "wall",
+    "label": "South Perimeter Wall",
+    "allowGrab": false,
+    "position": { "x": 0, "z": 6.25, "rotation": 0 }
+  },
+  {
+    "id": "wall_west",
+    "w": 0.5,
+    "d": 13.0,
+    "color": 9741240,
+    "type": "wall",
+    "label": "West Perimeter Wall",
+    "allowGrab": false,
+    "position": { "x": -16, "z": 0, "rotation": 0 }
+  },
+  {
+    "id": "wall_east",
+    "w": 0.5,
+    "d": 13.0,
+    "color": 9741240,
+    "type": "wall",
+    "label": "East Perimeter Wall",
+    "allowGrab": false,
+    "position": { "x": 16, "z": 0, "rotation": 0 }
   }
 ]

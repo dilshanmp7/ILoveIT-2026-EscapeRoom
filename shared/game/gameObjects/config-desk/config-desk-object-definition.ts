@@ -1,12 +1,10 @@
 import type { ObjectTypeDefinition } from "../../types";
-import { requiresKey } from "../definition-helpers";
 import ConfigDeskMesh from "./mesh/config-desk.json";
 
 export default {
   interaction: {
-    action: "config",
+    action: "access-station",
     canUse: true,
-    requiredKey: "ADMIN_KEY",
   },
   geometry: {
     isSurface: true,
@@ -22,25 +20,25 @@ export default {
   ],
   actions: [
     {
+      id: "access-station",
+      label: "Access Workstation",
+      execute: (context) => context.openQuiz(),
+    },
+    {
       id: "admin-terminal-quiz",
-      label: "Use admin terminal",
-      blockedMessage: "Admin badge required",
-      isVisible: (context) =>
-        context.asset.actionIds?.includes("admin-terminal-quiz") === true &&
-        context.state !== "completed",
-      canExecute: requiresKey("ADMIN_KEY"),
+      label: "Access Admin Terminal",
       execute: (context) =>
         context.openQuiz({
           event: "quizz_admin_terminal_done",
           state: "completed",
-          message: "Door opened",
+          message: "Admin security cleared",
           score: 100,
         }),
     },
   ],
   editor: {
     label: "Config station",
-    detail: "Configure device",
+    detail: "Access terminal",
     color: "#2563eb",
     width: 1.5,
     depth: 1.2,

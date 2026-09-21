@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cph-it-escape-room
+    env: node
+    plan: free
+    region: frankfurt # Low latency for Europe/Denmark
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+

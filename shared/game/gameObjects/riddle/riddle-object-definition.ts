@@ -10,14 +10,13 @@ export default {
   actions: [
     {
       id: "quiz",
-      label: "Open security quiz",
-      isVisible: (context) => context.state !== "completed",
+      label: "Access IT Terminal",
       execute: (context) => context.openQuiz(),
     },
   ],
   editor: {
-    label: "Security terminal",
-    detail: "Open quiz",
+    label: "IT Terminal Console",
+    detail: "Open challenge quiz",
     color: "#7e22ce",
     width: 1.4,
     depth: 1.4,
