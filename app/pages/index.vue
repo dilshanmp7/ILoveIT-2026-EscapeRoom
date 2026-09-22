@@ -143,33 +143,6 @@ async function handleResumeWithCode() {
   }
 }
 
-const hasSavedSession = computed(() => {
-  return Boolean(resumeCode.value || firstName.value || lastName.value)
-})
-
-function handleClearLocalSession() {
-  if (import.meta.client) {
-    localStorage.removeItem('cph_agent_code')
-    localStorage.removeItem('cph_first_name')
-    localStorage.removeItem('cph_last_name')
-    localStorage.removeItem('cph_dept')
-    localStorage.removeItem('cph_shift')
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('cph_snapshot_')) {
-        localStorage.removeItem(key)
-      }
-    })
-  }
-  resumeCode.value = ''
-  firstName.value = ''
-  lastName.value = ''
-  selectedDepartment.value = ''
-  selectedShift.value = 'Day Shift'
-  errorMessage.value = ''
-  isBlockedFromReplay.value = false
-  activeTab.value = 'register'
-}
-
 onMounted(async () => {
   // Check if session or code query is provided in URL
   const querySession = typeof route.query.session === 'string'
@@ -365,18 +338,6 @@ onMounted(async () => {
       <div class="bottom-links">
         <NuxtLink class="leaderboard-link" to="/leaderboard">
           📺 Live Big-Screen Leaderboard ➔
-        </NuxtLink>
-        <button
-          v-if="hasSavedSession"
-          type="button"
-          class="btn-clear-local"
-          title="Clear remembered agent details on this device"
-          @click="handleClearLocalSession"
-        >
-          🔄 Clear My Saved Session
-        </button>
-        <NuxtLink class="editor-link" to="/editor">
-          Floorplan Editor ➔
         </NuxtLink>
       </div>
     </section>
@@ -761,31 +722,6 @@ button:disabled {
 }
 
 .leaderboard-link:hover { text-decoration: underline; }
-
-.btn-clear-local {
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-family: inherit;
-  font-size: .78rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  transition: color 0.15s ease;
-}
-
-.btn-clear-local:hover {
-  color: #f87171;
-}
-
-.editor-link {
-  color: #64748b;
-  text-decoration: none;
-  font-size: .78rem;
-}
-
-.editor-link:hover { color: #94a3b8; }
 
 /* Aside Mission Graphic */
 .access-aside {

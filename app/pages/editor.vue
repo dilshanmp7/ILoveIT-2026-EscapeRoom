@@ -26,6 +26,25 @@ const {
   resetAllGameSessions,
 } = useGameEditor()
 
+function clearLocalBrowserSession() {
+  if (import.meta.client) {
+    localStorage.removeItem('cph_agent_code')
+    localStorage.removeItem('cph_first_name')
+    localStorage.removeItem('cph_last_name')
+    localStorage.removeItem('cph_dept')
+    localStorage.removeItem('cph_shift')
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('cph_snapshot_')) {
+        localStorage.removeItem(key)
+      }
+    })
+    resetSuccessMessage.value = '✅ Your local browser test session was cleared! You can test fresh registration.'
+    setTimeout(() => {
+      resetSuccessMessage.value = ''
+    }, 5000)
+  }
+}
+
 onMounted(checkAccess)
 </script>
 
@@ -61,6 +80,14 @@ onMounted(checkAccess)
         </button>
         <button type="button" :class="{ active: activeEditor === 'quiz' }" @click="activeEditor = 'quiz'">
           Security Check Editor
+        </button>
+        <button
+          type="button"
+          class="btn-clear-browser-session"
+          title="Clear locally cached player code and save state on this browser"
+          @click="clearLocalBrowserSession"
+        >
+          🔄 Clear My Browser Session
         </button>
         <button
           type="button"
@@ -178,8 +205,25 @@ onMounted(checkAccess)
   font-weight: 700;
 }
 
-.btn-reset-sessions {
+.btn-clear-browser-session {
   margin-left: auto;
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-browser-session:hover {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.btn-reset-sessions {
+  margin-left: 0.5rem;
   background: #7f1d1d !important;
   color: #fecaca !important;
   border: 1px solid #ef4444 !important;
