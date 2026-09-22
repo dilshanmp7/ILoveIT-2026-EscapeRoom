@@ -113,6 +113,9 @@ export function useGameEditor() {
     }
   }
 
+  const clearingSessions = ref(false);
+  const resetSuccessMessage = ref("");
+
   async function resetFloorplan() {
     saving.value = true;
     errorMessage.value = "";
@@ -131,6 +134,28 @@ export function useGameEditor() {
     }
   }
 
+  async function resetAllGameSessions() {
+    if (!confirm("⚠️ DANGER: Are you sure you want to RESET ALL game sessions and clear the leaderboard?\n\nThis will permanently delete all player scores, registrations, and completion records for the event. This action cannot be undone.")) {
+      return false;
+    }
+    clearingSessions.value = true;
+    errorMessage.value = "";
+    resetSuccessMessage.value = "";
+    try {
+      const result = await $fetch<{ success: boolean; deletedSessions: number; deletedTokens: number }>("/api/editor/reset-sessions", {
+        method: "POST",
+      });
+      resetSuccessMessage.value = `✅ Successfully wiped ${result.deletedSessions} game session(s) & reset the Leaderboard!`;
+      return true;
+    } catch (error) {
+      const fetchError = error as FetchError;
+      errorMessage.value = fetchError.data?.statusMessage || "Failed to reset game sessions.";
+      return false;
+    } finally {
+      clearingSessions.value = false;
+    }
+  }
+
   return {
     floorplan,
     playerSpawn,
@@ -143,10 +168,13 @@ export function useGameEditor() {
     saving,
     activeEditor,
     floorplanEditorKey,
+    clearingSessions,
+    resetSuccessMessage,
     checkAccess,
     enterEditor,
     saveFloorplan,
     saveQuizzes,
     resetFloorplan,
+    resetAllGameSessions,
   };
 }

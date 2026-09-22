@@ -4,7 +4,27 @@ import QuizEditor from '~/components/game/QuizEditor.vue'
 
 useSeoMeta({ title: 'DHL IT Courier | Floorplan Editor', robots: 'noindex' })
 
-const { floorplan, playerSpawn, quizzes, loading, authenticated, password, authenticating, errorMessage, saving, activeEditor, floorplanEditorKey, checkAccess, enterEditor, saveFloorplan, saveQuizzes, resetFloorplan } = useGameEditor()
+const {
+  floorplan,
+  playerSpawn,
+  quizzes,
+  loading,
+  authenticated,
+  password,
+  authenticating,
+  errorMessage,
+  saving,
+  activeEditor,
+  floorplanEditorKey,
+  clearingSessions,
+  resetSuccessMessage,
+  checkAccess,
+  enterEditor,
+  saveFloorplan,
+  saveQuizzes,
+  resetFloorplan,
+  resetAllGameSessions,
+} = useGameEditor()
 
 onMounted(checkAccess)
 </script>
@@ -27,15 +47,30 @@ onMounted(checkAccess)
     <div v-else-if="loading" class="editor-status">LOADING FLOORPLAN FROM SQLITE...</div>
     <div v-else-if="errorMessage" class="editor-status error" role="alert">{{ errorMessage }}</div>
     <div v-else class="editor-workspace">
+      <div v-if="resetSuccessMessage" class="reset-success-banner" role="status">
+        {{ resetSuccessMessage }}
+      </div>
       <FloorplanEditor v-if="activeEditor === 'map'" :key="floorplanEditorKey" :open="true" :initial-assets="floorplan"
         :initial-player-spawn="playerSpawn" @close="navigateTo('/game')" @deploy="saveFloorplan" @reset="resetFloorplan"
         @tab="activeEditor = $event" />
       <QuizEditor v-else :open="true" :initial-quizzes="quizzes" @close="navigateTo('/game')" @deploy="saveQuizzes"
         @tab="activeEditor = $event" />
-      <nav class="editor-tabs" aria-label="Editor mode"><button type="button"
-          :class="{ active: activeEditor === 'map' }" @click="activeEditor = 'map'">2D Floorplan Editor</button><button
-          type="button" :class="{ active: activeEditor === 'quiz' }" @click="activeEditor = 'quiz'">Security Check
-          Editor</button></nav>
+      <nav class="editor-tabs" aria-label="Editor mode">
+        <button type="button" :class="{ active: activeEditor === 'map' }" @click="activeEditor = 'map'">
+          2D Floorplan Editor
+        </button>
+        <button type="button" :class="{ active: activeEditor === 'quiz' }" @click="activeEditor = 'quiz'">
+          Security Check Editor
+        </button>
+        <button
+          type="button"
+          class="btn-reset-sessions"
+          :disabled="clearingSessions"
+          @click="resetAllGameSessions"
+        >
+          {{ clearingSessions ? 'Clearing Sessions...' : '🗑️ Reset All Game Sessions & Leaderboard' }}
+        </button>
+      </nav>
     </div>
     <div v-if="saving" class="saving-status">DEPLOYING...</div>
   </main>
@@ -141,5 +176,44 @@ onMounted(checkAccess)
   color: #0f172a;
   font-size: .7rem;
   font-weight: 700;
+}
+
+.btn-reset-sessions {
+  margin-left: auto;
+  background: #7f1d1d !important;
+  color: #fecaca !important;
+  border: 1px solid #ef4444 !important;
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-sessions:hover:not(:disabled) {
+  background: #991b1b !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.btn-reset-sessions:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.reset-success-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  background: #065f46;
+  color: #ecfdf5;
+  border: 1px solid #10b981;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
 }
 </style>

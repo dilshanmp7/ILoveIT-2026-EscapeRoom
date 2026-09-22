@@ -290,6 +290,16 @@ export function removeAccessTokenRecord(token: string) {
   }
 }
 
+export function clearAllGameSessions() {
+  const db = getDatabase();
+  const sessionResult = db.prepare("DELETE FROM game_sessions").run();
+  const tokenResult = db.prepare("DELETE FROM access_tokens").run();
+  return {
+    deletedSessions: Number(sessionResult.changes) || 0,
+    deletedTokens: Number(tokenResult.changes) || 0,
+  };
+}
+
 export function updateSessionAccessToken(id: string, token: string) {
   const updatedAt = new Date().toISOString();
   try {
