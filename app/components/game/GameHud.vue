@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PathNodeState } from '#shared/game/types'
+import { type PathNodeState, GAME_TIME_LIMIT_SECONDS } from '#shared/game/types'
 
 interface HudState {
   score: number
@@ -140,11 +140,11 @@ function formatTime(seconds: number) {
     <!-- Top Right: SLA Clock, Score & Hints -->
     <div class="metrics-stack">
       <div class="metrics-panel">
-        <div class="metric timer-metric" :class="{ 'time-critical': (state.timeRemaining ?? Math.max(0, 300 - state.runningTime)) <= 60 }">
+        <div class="metric timer-metric" :class="{ 'time-critical': (state.timeRemaining ?? Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime)) <= 60 }">
           <span class="metric-icon">⏱</span>
           <div class="metric-text">
             <small>REMAINING</small>
-            <strong class="timer-countdown">{{ formatTime(state.timeRemaining ?? Math.max(0, 300 - state.runningTime)) }}</strong>
+            <strong class="timer-countdown">{{ formatTime(state.timeRemaining ?? Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime)) }}</strong>
           </div>
         </div>
 

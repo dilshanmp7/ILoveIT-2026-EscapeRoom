@@ -66,7 +66,7 @@ const emit = defineEmits<{
           <div class="intel-block highlight-block">
             <h3>🎯 ESCAPE ROOM DIRECTIVE</h3>
             <p>
-              Outbound night cargo flights to Leipzig and Brussels are on a strict <strong>5-minute SLA emergency countdown</strong>.
+              Outbound night cargo flights to Leipzig and Brussels are on a strict <strong>15-minute SLA emergency countdown</strong>.
               AURA's safety firewall will only disengage the gate if you prove <strong>Human-in-the-Loop mastery</strong> across 5 diagnostic nodes:
             </p>
             <ul class="intel-list">

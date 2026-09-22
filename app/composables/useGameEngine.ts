@@ -12,20 +12,21 @@ import {
   SoundFX,
   updatePlayerAnimation,
 } from "#shared/game/runtime";
-import type {
-  EscapeRoomQuestion,
-  EventType,
-  Floorplan,
-  GameObjectInstance,
-  GameSession,
-  LevelProgress,
-  ObjectActionContext,
-  ObjectActionDefinition,
-  ObjectEventContext,
-  ObjectQuizSuccess,
-  ObjectVisualStateType,
-  Player,
-  QuizQuestion,
+import {
+  type EscapeRoomQuestion,
+  type EventType,
+  type Floorplan,
+  type GameObjectInstance,
+  type GameSession,
+  type LevelProgress,
+  type ObjectActionContext,
+  type ObjectActionDefinition,
+  type ObjectEventContext,
+  type ObjectQuizSuccess,
+  type ObjectVisualStateType,
+  type Player,
+  type QuizQuestion,
+  GAME_TIME_LIMIT_SECONDS,
 } from "#shared/game/types";
 import { ESCAPE_ROOM_QUESTIONS, getRandomQuestionsForLevel } from "#shared/game/questions-data";
 import {
@@ -182,7 +183,7 @@ function createStationLabelTexture(
 const initialState = () => ({
   score: 0,
   runningTime: 0,
-  timeRemaining: 300,
+  timeRemaining: GAME_TIME_LIMIT_SECONDS,
   isTimedOut: false,
   currentLevel: 1 as 1 | 2 | 3,
   levelTitle: "Sector 1: AURA Gen-AI Core (Amber Alert)",
@@ -1580,15 +1581,15 @@ export function useGameEngine() {
   function initSessionProgress(session: GameSession, progress: LevelProgress) {
     state.score = session.score || 0;
     state.runningTime = session.timeSpentSeconds || 0;
-    state.timeRemaining = Math.max(0, 300 - state.runningTime);
+    state.timeRemaining = Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime);
     state.userCode = session.userCode || "";
     state.playerName = `${session.firstName || ""} ${session.lastName || ""}`.trim() || "Agent";
     state.playerDepartment = session.department || "Operations";
     state.playerShift = session.shift || "Day Shift";
 
-    if (session.status === "completed" || session.status === "timed_out" || state.runningTime >= 300) {
+    if (session.status === "completed" || session.status === "timed_out" || state.runningTime >= GAME_TIME_LIMIT_SECONDS) {
       state.finished = true;
-      state.isTimedOut = session.status === "timed_out" || state.runningTime >= 300;
+      state.isTimedOut = session.status === "timed_out" || state.runningTime >= GAME_TIME_LIMIT_SECONDS;
     }
 
     levelProgress = {
@@ -1774,13 +1775,13 @@ export function useGameEngine() {
     timerId = setInterval(() => {
       if (!state.finished) {
         state.runningTime += 1;
-        state.timeRemaining = Math.max(0, 300 - state.runningTime);
-        if (state.runningTime >= 300) {
+        state.timeRemaining = Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime);
+        if (state.runningTime >= GAME_TIME_LIMIT_SECONDS) {
           state.finished = true;
           state.isTimedOut = true;
           state.quizOpen = false;
           sound.play("deliver");
-          state.message = "⏰ TIME OUT! 5-Minute emergency window expired. Submitting your final operational score...";
+          state.message = "⏰ TIME OUT! 15-Minute emergency window expired. Submitting your final operational score...";
           triggerSave();
         }
       }

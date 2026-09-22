@@ -1,8 +1,9 @@
-import type {
-  FinalScorePayload,
-  GameSession,
-  LevelProgress,
-  PlayerRegistration,
+import {
+  type FinalScorePayload,
+  type GameSession,
+  type LevelProgress,
+  type PlayerRegistration,
+  GAME_TIME_LIMIT_SECONDS,
 } from "#shared/game/types";
 import { randomUUID } from "node:crypto";
 import { createError } from "h3";
@@ -78,7 +79,7 @@ export function createOrResumeGameSession(
       const isFinished =
         existing.session.status === "completed" ||
         existing.session.status === "timed_out" ||
-        (existing.session.timeSpentSeconds !== undefined && existing.session.timeSpentSeconds >= 300);
+        (existing.session.timeSpentSeconds !== undefined && existing.session.timeSpentSeconds >= GAME_TIME_LIMIT_SECONDS);
 
       if (isFinished) {
         throw createError({
@@ -158,7 +159,7 @@ export function updateGameSession(
   accessToken: string,
   payload: FinalScorePayload,
 ) {
-  const isTimedOut = payload.timeSpentSeconds !== undefined && payload.timeSpentSeconds >= 300;
+  const isTimedOut = payload.timeSpentSeconds !== undefined && payload.timeSpentSeconds >= GAME_TIME_LIMIT_SECONDS;
   const status = isTimedOut ? "timed_out" : (payload.completed === false ? "active" : "completed");
   return updateStoredSession(
     id,

@@ -297,3 +297,5 @@ export interface PathNodeState {
   isGate: boolean;
   isKey?: boolean;
 }
+
+export const GAME_TIME_LIMIT_SECONDS = 900; // 15 minutes operational SLA

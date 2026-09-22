@@ -25,7 +25,7 @@ function formatTime(seconds: number) {
 
 function getRatingBadge(score: number, seconds: number, isTimedOut?: boolean) {
   if (isTimedOut) return '⏱️ EMERGENCY OPERATION LOGGED (TIMEOUT)'
-  if (score >= 2000 && seconds <= 240) return '🏆 CPH HUB CYBER ELITE (GRANDMASTER)'
+  if (score >= 2000 && seconds <= 600) return '🏆 CPH HUB CYBER ELITE (GRANDMASTER)'
   if (score >= 1500) return '⭐ MASTER DISPATCH ESCAPER'
   if (score >= 1000) return '⚡ RAPID-RESPONSE IT OPERATOR'
   return '🛡️ CPH HUB CERTIFIED ESCAPER'
@@ -42,14 +42,14 @@ function getRatingBadge(score: number, seconds: number, isTimedOut?: boolean) {
 
       <div class="victory-header">
         <span class="dhl-tag" :class="{ 'tag-timeout': isTimedOut }">
-          {{ isTimedOut ? 'MISSION TIMED OUT (5:00 EXPIRED)' : 'CPH HUB DISPATCH RESTORED' }}
+          {{ isTimedOut ? 'MISSION TIMED OUT (15:00 EXPIRED)' : 'CPH HUB DISPATCH RESTORED' }}
         </span>
         <h1 id="victory-title" :class="{ 'title-timeout': isTimedOut }">
           {{ isTimedOut ? 'EMERGENCY LOCKDOWN' : 'FACILITY ESCAPED!' }}
         </h1>
         <p class="mission-sub">
           {{ isTimedOut
-            ? 'The 5-minute operational limit has expired. Containment sealed, final points registered.'
+            ? 'The 15-minute operational limit has expired. Containment sealed, final points registered.'
             : 'Night-Flight Operations Unlocked. All 3 Sectors Successfully Cleared.'
           }}
         </p>
@@ -69,7 +69,7 @@ function getRatingBadge(score: number, seconds: number, isTimedOut?: boolean) {
         <div class="score-card">
           <small>TOTAL TIME</small>
           <strong>{{ formatTime(runningTime) }}</strong>
-          <span>{{ isTimedOut ? '5-MIN WINDOW EXPIRED' : 'MINUTES : SECONDS' }}</span>
+          <span>{{ isTimedOut ? '15-MIN WINDOW EXPIRED' : 'MINUTES : SECONDS' }}</span>
         </div>
 
         <div class="score-card">
