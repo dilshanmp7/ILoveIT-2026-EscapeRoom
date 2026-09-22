@@ -48,6 +48,29 @@ const emit = defineEmits<{
           </div>
         </div>
 
+        <!-- Tactical Operating Instructions (Top of Section for Immediate Visibility) -->
+        <div class="intel-block guidance-block">
+          <h3>🕹️ TACTICAL OPERATING INSTRUCTIONS</h3>
+          <div class="controls-grid">
+            <div class="control-item">
+              <span class="key">WASD / ARROWS</span>
+              <small>Navigate using keyboard or mobile joystick</small>
+            </div>
+            <div class="control-item">
+              <span class="key">SPACE / E</span>
+              <small>Access glowing AI terminals</small>
+            </div>
+            <div class="control-item">
+              <span class="key">SHIFT</span>
+              <small>Dash for rapid repositioning</small>
+            </div>
+            <div class="control-item">
+              <span class="key">💡 HINTS</span>
+              <small>Available with a 50% score penalty</small>
+            </div>
+          </div>
+        </div>
+
         <!-- Narrative Section: Sector 1 Specific -->
         <div v-if="level === 1" class="plot-section">
           <div class="intel-block">
@@ -83,28 +106,6 @@ const emit = defineEmits<{
                 <strong>Restore Human Accountability:</strong> Validate AI recommendations before final dispatch actions.
               </li>
             </ul>
-          </div>
-
-          <div class="intel-block guidance-block">
-            <h3>🕹️ TACTICAL OPERATING INSTRUCTIONS</h3>
-            <div class="controls-grid">
-              <div class="control-item">
-                <span class="key">WASD / ARROWS</span>
-                <small>Navigate using keyboard or mobile joystick</small>
-              </div>
-              <div class="control-item">
-                <span class="key">SPACE / E</span>
-                <small>Access glowing AI terminals</small>
-              </div>
-              <div class="control-item">
-                <span class="key">SHIFT</span>
-                <small>Dash for rapid repositioning</small>
-              </div>
-              <div class="control-item">
-                <span class="key">💡 HINTS</span>
-                <small>Available with a 50% score penalty</small>
-              </div>
-            </div>
           </div>
         </div>
 
