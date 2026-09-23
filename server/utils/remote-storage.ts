@@ -1,42 +1,64 @@
 import type { EventStats, GameSession, LeaderboardEntry } from "#shared/game/types";
+import { Redis } from "@upstash/redis";
 
-function getKvConfig() {
+let redisClient: Redis | null = null;
+let redisInitialized = false;
+
+function getRedis(): Redis | null {
+  if (redisInitialized) return redisClient;
+  redisInitialized = true;
+
+  // 1. Try Redis.fromEnv() (standard Upstash and Vercel KV)
+  try {
+    redisClient = Redis.fromEnv();
+    return redisClient;
+  } catch {
+    // fromEnv throws if standard vars are missing, fallback below
+  }
+
+  // 2. Fallback to custom environment variable names
   const url =
-    process.env.KV_REST_API_URL ||
     process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
     process.env.UPSTASH_REDIS_REST_API_URL ||
     process.env.REDIS_REST_API_URL ||
     process.env.UPSTASH_REST_API_URL;
 
   const token =
-    process.env.KV_REST_API_TOKEN ||
     process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
     process.env.UPSTASH_REDIS_REST_API_TOKEN ||
     process.env.REDIS_REST_API_TOKEN ||
     process.env.UPSTASH_REST_API_TOKEN;
 
-  if (!url || !token) return null;
-  return { url: url.replace(/\/$/, ""), token };
+  if (url && token) {
+    try {
+      redisClient = new Redis({
+        url: url.replace(/\/$/, ""),
+        token,
+      });
+      return redisClient;
+    } catch (err) {
+      console.error("Failed to initialize Upstash Redis with custom env:", err);
+    }
+  }
+
+  return null;
 }
 
 export function isRemoteStorageConfigured(): boolean {
-  return Boolean(getKvConfig());
+  return Boolean(getRedis());
 }
 
 export async function saveRemoteSession(session: GameSession): Promise<boolean> {
-  const config = getKvConfig();
-  if (!config) return false;
+  const redis = getRedis();
+  if (!redis) return false;
 
   try {
-    const res = await fetch(config.url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(["HSET", "cph_sessions", session.id, JSON.stringify(session)]),
+    await redis.hset("cph_sessions", {
+      [session.id]: JSON.stringify(session),
     });
-    return res.ok;
+    return true;
   } catch (err) {
     console.error("Failed to save session to Upstash Redis:", err);
     return false;
@@ -44,44 +66,22 @@ export async function saveRemoteSession(session: GameSession): Promise<boolean> 
 }
 
 export async function getRemoteSessions(): Promise<GameSession[]> {
-  const config = getKvConfig();
-  if (!config) return [];
+  const redis = getRedis();
+  if (!redis) return [];
 
   try {
-    const res = await fetch(config.url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(["HGETALL", "cph_sessions"]),
-    });
-    if (!res.ok) return [];
-
-    const data = (await res.json()) as { result?: Record<string, string | object> | string[] };
-    if (!data.result) return [];
+    const rawMap = await redis.hgetall<Record<string, unknown>>("cph_sessions");
+    if (!rawMap) return [];
 
     const sessions: GameSession[] = [];
-
-    // Upstash returns array [field1, value1, field2, value2, ...]
-    if (Array.isArray(data.result)) {
-      for (let i = 1; i < data.result.length; i += 2) {
-        try {
-          const raw = data.result[i];
-          const item = typeof raw === "string" ? JSON.parse(raw) : raw;
-          if (item && item.id) sessions.push(item as GameSession);
-        } catch {
-          // Ignore parse errors
+    for (const val of Object.values(rawMap)) {
+      try {
+        const item = typeof val === "string" ? JSON.parse(val) : val;
+        if (item && item.id) {
+          sessions.push(item as GameSession);
         }
-      }
-    } else if (typeof data.result === "object" && data.result !== null) {
-      for (const val of Object.values(data.result)) {
-        try {
-          const item = typeof val === "string" ? JSON.parse(val as string) : val;
-          if (item && item.id) sessions.push(item as GameSession);
-        } catch {
-          // Ignore parse errors
-        }
+      } catch {
+        // Ignore parse error
       }
     }
 
@@ -93,19 +93,12 @@ export async function getRemoteSessions(): Promise<GameSession[]> {
 }
 
 export async function deleteRemoteSessions(): Promise<boolean> {
-  const config = getKvConfig();
-  if (!config) return false;
+  const redis = getRedis();
+  if (!redis) return false;
 
   try {
-    const res = await fetch(config.url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(["DEL", "cph_sessions"]),
-    });
-    return res.ok;
+    await redis.del("cph_sessions");
+    return true;
   } catch (err) {
     console.error("Failed to clear Upstash Redis sessions:", err);
     return false;
