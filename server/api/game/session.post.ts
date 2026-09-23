@@ -25,9 +25,18 @@ export default defineEventHandler(async (event) => {
     Partial<PlayerRegistration> & { sessionKey?: string }
   >(event);
 
-  const result = await createOrResumeGameSession(accessToken, body || {});
-  if (isRemoteStorageConfigured() && result?.session) {
-    await saveRemoteSession(result.session);
+  try {
+    const result = await createOrResumeGameSession(accessToken, body || {});
+    if (isRemoteStorageConfigured() && result?.session) {
+      await saveRemoteSession(result.session);
+    }
+    return result;
+  } catch (err: any) {
+    if (err?.statusCode) throw err;
+    console.error("Error in /api/game/session:", err);
+    throw createError({
+      statusCode: 500,
+      statusMessage: err?.message || "Failed to initialize game session",
+    });
   }
-  return result;
 });

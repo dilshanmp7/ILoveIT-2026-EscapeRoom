@@ -130,12 +130,25 @@ export async function createOrResumeGameSession(
       } else {
         // Active/completed session found in Upstash Redis, keep local SQLite synced
         const floorplan = existing?.floorplan || readFloorplan();
-        insertGameSession(remote, remote.userCode, accessToken, floorplan, remote.levelProgress);
+        const levelProg: LevelProgress = remote.levelProgress || {
+          currentLevel: (remote.currentLevel as 1 | 2 | 3) || 1,
+          solvedQuestionIds: [],
+          hintUsedQuestionIds: [],
+          level1Questions: getRandomQuestionsForLevel(1, 5),
+          level2Questions: getRandomQuestionsForLevel(2, 5),
+          level3Questions: getRandomQuestionsForLevel(3, 5),
+          attemptsByQuestionId: {},
+        };
+        try {
+          insertGameSession(remote, remote.userCode, accessToken, floorplan, levelProg);
+        } catch {
+          // Ignore sync failure
+        }
         existing = {
           session: remote,
           floorplan,
-          quizzes: remote.levelProgress?.level1Questions || [],
-          levelProgress: remote.levelProgress,
+          quizzes: levelProg.level1Questions || [],
+          levelProgress: levelProg,
         };
       }
     }

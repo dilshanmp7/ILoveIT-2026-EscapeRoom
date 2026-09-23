@@ -219,36 +219,40 @@ export function insertGameSession(
   sessionKey: string,
   accessToken: string,
   floorplan: Floorplan,
-  levelProgress: LevelProgress,
+  levelProgress?: LevelProgress,
 ) {
-  getDatabase()
-    .prepare(
-      `INSERT INTO game_sessions (
-        id, session_key, user_code, first_name, last_name, department, shift,
-        current_level, hints_used, time_spent_seconds, access_token, status,
-        score, floorplan_json, quizzes_json, level_progress_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .run(
-      session.id,
-      sessionKey,
-      session.userCode,
-      session.firstName || "",
-      session.lastName || "",
-      session.department || "",
-      session.shift || "",
-      session.currentLevel || 1,
-      session.hintsUsed || 0,
-      session.timeSpentSeconds || 0,
-      accessToken,
-      session.status,
-      session.score,
-      JSON.stringify(floorplan),
-      JSON.stringify(levelProgress.level1Questions),
-      JSON.stringify(levelProgress),
-      session.createdAt,
-      session.updatedAt,
-    );
+  try {
+    getDatabase()
+      .prepare(
+        `INSERT OR REPLACE INTO game_sessions (
+          id, session_key, user_code, first_name, last_name, department, shift,
+          current_level, hints_used, time_spent_seconds, access_token, status,
+          score, floorplan_json, quizzes_json, level_progress_json, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        session.id,
+        sessionKey || session.sessionKey || session.userCode,
+        session.userCode,
+        session.firstName || "",
+        session.lastName || "",
+        session.department || "",
+        session.shift || "",
+        session.currentLevel || 1,
+        session.hintsUsed || 0,
+        session.timeSpentSeconds || 0,
+        accessToken || "",
+        session.status || "active",
+        session.score || 0,
+        JSON.stringify(floorplan || {}),
+        JSON.stringify(levelProgress?.level1Questions || []),
+        JSON.stringify(levelProgress || {}),
+        session.createdAt || new Date().toISOString(),
+        session.updatedAt || new Date().toISOString(),
+      );
+  } catch (err) {
+    console.error("Failed to insert/replace game session in SQLite:", err);
+  }
 }
 
 export function saveAccessToken(token: string, createdAt: number) {
