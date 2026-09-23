@@ -257,7 +257,13 @@ export interface FinalScorePayload {
   hintsUsed?: number;
   levelProgress?: LevelProgress;
   playerPosition?: { x: number; z: number };
+  userCode?: string;
+  firstName?: string;
+  lastName?: string;
+  department?: string;
+  shift?: string;
 }
+
 
 export interface LeaderboardEntry {
   rank: number;

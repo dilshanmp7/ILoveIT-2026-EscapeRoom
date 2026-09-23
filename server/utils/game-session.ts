@@ -5,7 +5,7 @@ import {
   type PlayerRegistration,
   GAME_TIME_LIMIT_SECONDS,
 } from "#shared/game/types";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createError } from "h3";
 import { generateUserCode, getRandomQuestionsForLevel } from "../../shared/game/questions-data";
 import {
@@ -17,10 +17,16 @@ import {
   removeAccessTokenRecord,
   saveAccessToken,
   updateSessionAccessToken,
+  updateSessionFloorplan,
   updateStoredSession,
 } from "./game-database";
 
 export const ACCESS_COOKIE = "courier_access";
+
+const TOKEN_SECRET =
+  process.env.NUXT_AUTH_SECRET ||
+  process.env.AUTH_SECRET ||
+  "cph-escape-room-2026-auth-secret";
 
 interface AccessRecord {
   token: string;
@@ -29,16 +35,49 @@ interface AccessRecord {
 
 const accessRecords = new Map<string, AccessRecord>();
 
-export function createAccessToken() {
-  const token = randomUUID();
+export function createAccessToken(): string {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = randomBytes(16).toString("hex");
+  const payload = `${timestamp}.${nonce}`;
+  const hmac = createHmac("sha256", TOKEN_SECRET).update(payload).digest("hex");
+  const token = `${payload}.${hmac}`;
+
   const createdAt = Date.now();
   accessRecords.set(token, { token, createdAt });
   saveAccessToken(token, createdAt);
   return token;
 }
 
-export function isAccessTokenValid(token: string | undefined) {
-  if (!token) return false;
+export function isAccessTokenValid(token: string | undefined): boolean {
+  if (!token || typeof token !== "string") return false;
+
+  // 1. Stateless HMAC validation (seamless across serverless lambda containers)
+  const parts = token.split(".");
+  if (parts.length === 3) {
+    const [timestampStr, nonce, receivedHmac] = parts;
+    const timestampSec = parseInt(timestampStr, 10);
+    if (!isNaN(timestampSec)) {
+      const nowSec = Math.floor(Date.now() / 1000);
+      const ageSec = nowSec - timestampSec;
+      // Valid for 24 hours (86400 seconds) with 60s future clock skew allowance
+      if (ageSec >= -60 && ageSec <= 86400) {
+        const expectedHmac = createHmac("sha256", TOKEN_SECRET)
+          .update(`${timestampStr}.${nonce}`)
+          .digest("hex");
+        if (receivedHmac.length === expectedHmac.length) {
+          try {
+            if (timingSafeEqual(Buffer.from(receivedHmac), Buffer.from(expectedHmac))) {
+              return true;
+            }
+          } catch {
+            // Buffer length or timing mismatch
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Fallback to in-memory / SQLite check (for legacy UUID tokens)
   let record = accessRecords.get(token);
   if (!record) {
     const dbRecord = getAccessTokenRecord(token);
@@ -48,7 +87,7 @@ export function isAccessTokenValid(token: string | undefined) {
     }
   }
   if (!record) return false;
-  if (Date.now() - record.createdAt > 1000 * 60 * 60 * 12) {
+  if (Date.now() - record.createdAt > 1000 * 60 * 60 * 24) {
     accessRecords.delete(token);
     removeAccessTokenRecord(token);
     return false;
@@ -90,7 +129,7 @@ export function createOrResumeGameSession(
 
       if (!existing.floorplan?.layout || existing.floorplan.layout.length < 15 || existing.floorplan.layout.some((x: any) => x.id === "term_l1_6")) {
         existing.floorplan = readFloorplan();
-        updateStoredSession(existing.session.id, { floorplan: existing.floorplan });
+        updateSessionFloorplan(existing.session.id, existing.floorplan);
       }
       updateSessionAccessToken(existing.session.id, accessToken);
       return {
@@ -98,6 +137,7 @@ export function createOrResumeGameSession(
         session: existing.session,
         floorplan: existing.floorplan,
         levelProgress: existing.levelProgress,
+        accessToken,
       };
     }
   }
@@ -151,6 +191,7 @@ export function createOrResumeGameSession(
     session,
     floorplan,
     levelProgress,
+    accessToken,
   };
 }
 
@@ -172,6 +213,11 @@ export function updateGameSession(
       hintsUsed: payload.hintsUsed,
       timeSpentSeconds: payload.timeSpentSeconds,
       levelProgress: payload.levelProgress,
+      userCode: payload.userCode,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      department: payload.department,
+      shift: payload.shift,
     },
   );
 }

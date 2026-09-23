@@ -11,22 +11,42 @@ const floorplan = ref<Floorplan | null>(null)
 const sessionError = ref('')
 const isBlockedFromReplay = ref(false)
 const resumedToast = ref('')
+const accessToken = ref('')
 
 async function submitScore(completed = false) {
   if (!session.value) return
   const snapshot = engine.getSessionSnapshot(completed)
+  const payload = {
+    ...snapshot,
+    userCode: session.value.userCode,
+    firstName: session.value.firstName,
+    lastName: session.value.lastName,
+    department: session.value.department,
+    shift: session.value.shift,
+  }
   if (import.meta.client) {
     try {
-      localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(snapshot))
+      localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(payload))
     } catch {
       // Ignore storage errors
     }
   }
   try {
-    await $fetch(`/api/game/session/${session.value.id}`, {
+    const res = await $fetch<{ session: GameSession; accessToken?: string }>(`/api/game/session/${session.value.id}`, {
       method: 'POST',
-      body: snapshot,
+      body: payload,
+      headers: accessToken.value ? { 'x-access-token': accessToken.value } : undefined,
     })
+    if (res?.accessToken) {
+      accessToken.value = res.accessToken
+      if (import.meta.client) {
+        try {
+          localStorage.setItem('cph_access_token', res.accessToken)
+        } catch {
+          // Ignore storage errors
+        }
+      }
+    }
   } catch (err) {
     console.error('Failed to sync session score:', err)
   }
@@ -35,10 +55,18 @@ async function submitScore(completed = false) {
 function handleBeforeUnload() {
   if (!session.value || engine.state.finished) return
   const snapshot = engine.getSessionSnapshot(false)
+  const payload = {
+    ...snapshot,
+    userCode: session.value.userCode,
+    firstName: session.value.firstName,
+    lastName: session.value.lastName,
+    department: session.value.department,
+    shift: session.value.shift,
+  }
   if (import.meta.client) {
     try {
-      localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(snapshot))
-      const blob = new Blob([JSON.stringify(snapshot)], { type: 'application/json' })
+      localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(payload))
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
       navigator.sendBeacon(`/api/game/session/${session.value.id}`, blob)
     } catch {
       // Ignore beacon failures
@@ -49,6 +77,7 @@ function handleBeforeUnload() {
 onMounted(async () => {
   if (import.meta.client) {
     window.addEventListener('beforeunload', handleBeforeUnload)
+    accessToken.value = localStorage.getItem('cph_access_token') || ''
   }
 
   try {
@@ -72,8 +101,10 @@ onMounted(async () => {
       floorplan: Floorplan
       levelProgress: LevelProgress
       isResumed: boolean
+      accessToken?: string
     }>('/api/game/session', {
       method: 'POST',
+      headers: accessToken.value ? { 'x-access-token': accessToken.value } : undefined,
       body: {
         sessionKey,
         firstName,
@@ -83,6 +114,17 @@ onMounted(async () => {
         userCode: sessionKey,
       },
     })
+
+    if (response.accessToken) {
+      accessToken.value = response.accessToken
+      if (import.meta.client) {
+        try {
+          localStorage.setItem('cph_access_token', response.accessToken)
+        } catch {
+          // Ignore storage errors
+        }
+      }
+    }
 
     // If local cache has a fresher snapshot, merge it to prevent refresh race conditions
     if (import.meta.client) {
@@ -120,18 +162,37 @@ onMounted(async () => {
     // Connect auto-save
     engine.onSaveState(async (snapshot) => {
       if (!session.value) return
+      const payload = {
+        ...snapshot,
+        userCode: session.value.userCode,
+        firstName: session.value.firstName,
+        lastName: session.value.lastName,
+        department: session.value.department,
+        shift: session.value.shift,
+      }
       if (import.meta.client) {
         try {
-          localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(snapshot))
+          localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(payload))
         } catch {
           // Ignore storage errors
         }
       }
       try {
-        await $fetch(`/api/game/session/${session.value.id}`, {
+        const res = await $fetch<{ session: GameSession; accessToken?: string }>(`/api/game/session/${session.value.id}`, {
           method: 'POST',
-          body: snapshot,
+          body: payload,
+          headers: accessToken.value ? { 'x-access-token': accessToken.value } : undefined,
         })
+        if (res?.accessToken) {
+          accessToken.value = res.accessToken
+          if (import.meta.client) {
+            try {
+              localStorage.setItem('cph_access_token', res.accessToken)
+            } catch {
+              // Ignore storage errors
+            }
+          }
+        }
       } catch (err) {
         console.error('Auto-save error:', err)
       }

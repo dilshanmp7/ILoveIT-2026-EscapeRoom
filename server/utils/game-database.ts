@@ -401,6 +401,17 @@ function mapSessionRow(row: Record<string, unknown>) {
   };
 }
 
+export function updateSessionFloorplan(id: string, floorplan: Floorplan) {
+  const updatedAt = new Date().toISOString();
+  try {
+    getDatabase()
+      .prepare("UPDATE game_sessions SET floorplan_json = ?, updated_at = ? WHERE id = ?")
+      .run(JSON.stringify(floorplan), updatedAt, id);
+  } catch {
+    // Ignore error
+  }
+}
+
 export function updateStoredSession(
   id: string,
   accessToken: string,
@@ -412,6 +423,11 @@ export function updateStoredSession(
     hintsUsed?: number;
     timeSpentSeconds?: number;
     levelProgress?: LevelProgress;
+    userCode?: string;
+    firstName?: string;
+    lastName?: string;
+    department?: string;
+    shift?: string;
   },
 ) {
   let result;
@@ -426,6 +442,11 @@ export function updateStoredSession(
            time_spent_seconds = COALESCE(?, time_spent_seconds),
            level_progress_json = COALESCE(?, level_progress_json),
            access_token = COALESCE(?, access_token),
+           user_code = COALESCE(?, user_code),
+           first_name = COALESCE(?, first_name),
+           last_name = COALESCE(?, last_name),
+           department = COALESCE(?, department),
+           shift = COALESCE(?, shift),
            updated_at = ?
          WHERE id = ?`,
       )
@@ -437,6 +458,11 @@ export function updateStoredSession(
         options.timeSpentSeconds ?? null,
         options.levelProgress ? JSON.stringify(options.levelProgress) : null,
         accessToken || null,
+        options.userCode ?? null,
+        options.firstName ?? null,
+        options.lastName ?? null,
+        options.department ?? null,
+        options.shift ?? null,
         updatedAt,
         id,
       );
@@ -448,10 +474,59 @@ export function updateStoredSession(
       .run(score, status, accessToken || null, updatedAt, id);
   }
 
-  if (!result.changes) return null;
+  // Multi-container serverless fallback: if session does not exist on this lambda instance yet, insert it (UPSERT)
+  if (!result.changes) {
+    const userCode = options?.userCode || `CPH-${id.slice(0, 8).toUpperCase()}`;
+    const floorplan = readFloorplan();
+    const currentLevel = options?.currentLevel || 1;
+    const progress: LevelProgress = options?.levelProgress || {
+      currentLevel,
+      solvedQuestionIds: [],
+      hintUsedQuestionIds: [],
+      level1Questions: getRandomQuestionsForLevel(1, 5),
+      level2Questions: getRandomQuestionsForLevel(2, 5),
+      level3Questions: getRandomQuestionsForLevel(3, 5),
+      attemptsByQuestionId: {},
+    };
+
+    try {
+      getDatabase()
+        .prepare(
+          `INSERT INTO game_sessions (
+            id, session_key, user_code, first_name, last_name, department, shift,
+            current_level, hints_used, time_spent_seconds, access_token, status,
+            score, floorplan_json, quizzes_json, level_progress_json, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          id,
+          userCode,
+          userCode,
+          options?.firstName || "Agent",
+          options?.lastName || "",
+          options?.department || "Operation",
+          options?.shift || "Day Shift",
+          currentLevel,
+          options?.hintsUsed || 0,
+          options?.timeSpentSeconds || 0,
+          accessToken || "",
+          status,
+          score,
+          JSON.stringify(floorplan),
+          JSON.stringify(progress.level1Questions || []),
+          JSON.stringify(progress),
+          updatedAt,
+          updatedAt,
+        );
+    } catch {
+      // Ignore if concurrent insert succeeded
+    }
+  }
+
   const mapped = readGameSession(id);
   return mapped ? mapped.session : null;
 }
+
 
 export function getLeaderboard(department?: string, shift?: string): LeaderboardEntry[] {
   let query = `
