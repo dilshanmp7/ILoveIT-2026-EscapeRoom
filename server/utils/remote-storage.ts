@@ -1,8 +1,20 @@
 import type { EventStats, GameSession, LeaderboardEntry } from "#shared/game/types";
 
 function getKvConfig() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.UPSTASH_REDIS_REST_API_URL ||
+    process.env.REDIS_REST_API_URL ||
+    process.env.UPSTASH_REST_API_URL;
+
+  const token =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_API_TOKEN ||
+    process.env.REDIS_REST_API_TOKEN ||
+    process.env.UPSTASH_REST_API_TOKEN;
+
   if (!url || !token) return null;
   return { url: url.replace(/\/$/, ""), token };
 }
@@ -16,17 +28,17 @@ export async function saveRemoteSession(session: GameSession): Promise<boolean> 
   if (!config) return false;
 
   try {
-    const res = await fetch(`${config.url}/hset/cph_sessions/${encodeURIComponent(session.id)}`, {
+    const res = await fetch(config.url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(session),
+      body: JSON.stringify(["HSET", "cph_sessions", session.id, JSON.stringify(session)]),
     });
     return res.ok;
   } catch (err) {
-    console.error("Failed to save session to remote KV:", err);
+    console.error("Failed to save session to Upstash Redis:", err);
     return false;
   }
 }
@@ -36,10 +48,13 @@ export async function getRemoteSessions(): Promise<GameSession[]> {
   if (!config) return [];
 
   try {
-    const res = await fetch(`${config.url}/hgetall/cph_sessions`, {
+    const res = await fetch(config.url, {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${config.token}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(["HGETALL", "cph_sessions"]),
     });
     if (!res.ok) return [];
 
@@ -48,16 +63,18 @@ export async function getRemoteSessions(): Promise<GameSession[]> {
 
     const sessions: GameSession[] = [];
 
+    // Upstash returns array [field1, value1, field2, value2, ...]
     if (Array.isArray(data.result)) {
       for (let i = 1; i < data.result.length; i += 2) {
         try {
-          const item = typeof data.result[i] === "string" ? JSON.parse(data.result[i] as string) : data.result[i];
+          const raw = data.result[i];
+          const item = typeof raw === "string" ? JSON.parse(raw) : raw;
           if (item && item.id) sessions.push(item as GameSession);
         } catch {
           // Ignore parse errors
         }
       }
-    } else if (typeof data.result === "object") {
+    } else if (typeof data.result === "object" && data.result !== null) {
       for (const val of Object.values(data.result)) {
         try {
           const item = typeof val === "string" ? JSON.parse(val as string) : val;
@@ -70,7 +87,7 @@ export async function getRemoteSessions(): Promise<GameSession[]> {
 
     return sessions;
   } catch (err) {
-    console.error("Failed to read sessions from remote KV:", err);
+    console.error("Failed to read sessions from Upstash Redis:", err);
     return [];
   }
 }
@@ -80,15 +97,17 @@ export async function deleteRemoteSessions(): Promise<boolean> {
   if (!config) return false;
 
   try {
-    const res = await fetch(`${config.url}/del/cph_sessions`, {
+    const res = await fetch(config.url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.token}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(["DEL", "cph_sessions"]),
     });
     return res.ok;
   } catch (err) {
-    console.error("Failed to clear remote KV sessions:", err);
+    console.error("Failed to clear Upstash Redis sessions:", err);
     return false;
   }
 }
@@ -177,3 +196,4 @@ export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
     averageScore,
   };
 }
+

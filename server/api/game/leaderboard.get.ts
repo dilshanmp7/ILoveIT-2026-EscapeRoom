@@ -1,10 +1,11 @@
 import { getQuery } from "h3";
-import { getEventStats, getLeaderboard } from "../../utils/game-database";
+import { getEventStats, getLeaderboard, readGameSession } from "../../utils/game-database";
 import {
   computeLeaderboardFromSessions,
   computeStatsFromSessions,
   getRemoteSessions,
   isRemoteStorageConfigured,
+  saveRemoteSession,
 } from "../../utils/remote-storage";
 
 export default defineEventHandler(async (event) => {
@@ -17,7 +18,20 @@ export default defineEventHandler(async (event) => {
 
   if (isRemoteStorageConfigured()) {
     try {
-      const remoteSessions = await getRemoteSessions();
+      let remoteSessions = await getRemoteSessions();
+
+      // If Upstash Redis is freshly connected and empty, seed it from local SQLite sessions
+      if (remoteSessions.length === 0) {
+        const localEntries = getLeaderboard();
+        for (const entry of localEntries) {
+          const mapped = readGameSession(entry.id);
+          if (mapped?.session) {
+            void saveRemoteSession(mapped.session);
+          }
+        }
+        remoteSessions = await getRemoteSessions();
+      }
+
       if (remoteSessions.length > 0) {
         leaderboard = computeLeaderboardFromSessions(remoteSessions, department, shift);
         stats = computeStatsFromSessions(remoteSessions);
