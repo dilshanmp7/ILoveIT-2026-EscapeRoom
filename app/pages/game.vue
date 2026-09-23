@@ -27,6 +27,13 @@ async function submitScore(completed = false) {
   if (import.meta.client) {
     try {
       localStorage.setItem(`cph_snapshot_${session.value.id}`, JSON.stringify(payload))
+      if (completed || snapshot.completed) {
+        localStorage.setItem('cph_completed_session', JSON.stringify({
+          ...payload,
+          id: session.value.id,
+          completed: true,
+        }))
+      }
     } catch {
       // Ignore storage errors
     }
@@ -50,6 +57,11 @@ async function submitScore(completed = false) {
   } catch (err) {
     console.error('Failed to sync session score:', err)
   }
+}
+
+async function handleGoToLeaderboard() {
+  await submitScore(true)
+  await navigateTo('/leaderboard')
 }
 
 function handleBeforeUnload() {
@@ -334,7 +346,7 @@ useSeoMeta({
         :player-name="engine.state.playerName"
         :player-department="engine.state.playerDepartment"
         :player-shift="engine.state.playerShift"
-        @leaderboard="navigateTo('/leaderboard')"
+        @leaderboard="handleGoToLeaderboard"
         @home="navigateTo('/')" />
     </section>
   </main>

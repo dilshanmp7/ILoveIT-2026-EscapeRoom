@@ -6,6 +6,7 @@ import {
   isAccessTokenValid,
   updateGameSession,
 } from "../../../utils/game-session";
+import { isRemoteStorageConfigured, saveRemoteSession } from "../../../utils/remote-storage";
 
 export default defineEventHandler(async (event) => {
   let accessToken = getCookie(event, ACCESS_COOKIE) || getHeader(event, "x-access-token");
@@ -59,6 +60,10 @@ export default defineEventHandler(async (event) => {
       statusCode: 404,
       statusMessage: "Game session not found",
     });
+  }
+
+  if (isRemoteStorageConfigured()) {
+    void saveRemoteSession(session);
   }
 
   return { session, accessToken };

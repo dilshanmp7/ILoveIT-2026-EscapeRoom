@@ -6,6 +6,7 @@ import {
   createOrResumeGameSession,
   isAccessTokenValid,
 } from "../../utils/game-session";
+import { isRemoteStorageConfigured, saveRemoteSession } from "../../utils/remote-storage";
 
 export default defineEventHandler(async (event) => {
   let accessToken = getCookie(event, ACCESS_COOKIE) || getHeader(event, "x-access-token");
@@ -24,5 +25,9 @@ export default defineEventHandler(async (event) => {
     Partial<PlayerRegistration> & { sessionKey?: string }
   >(event);
 
-  return createOrResumeGameSession(accessToken, body || {});
+  const result = createOrResumeGameSession(accessToken, body || {});
+  if (isRemoteStorageConfigured() && result?.session) {
+    void saveRemoteSession(result.session);
+  }
+  return result;
 });

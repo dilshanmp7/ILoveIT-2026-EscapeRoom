@@ -33,8 +33,110 @@ async function fetchLeaderboard() {
     const data = await $fetch<{ leaderboard: LeaderboardEntry[]; stats: EventStats }>('/api/game/leaderboard', {
       params,
     })
-    entries.value = data.leaderboard
-    stats.value = data.stats
+    entries.value = data.leaderboard || []
+    stats.value = data.stats || {
+      totalRegistered: 0,
+      totalCompleted: 0,
+      fastestTimeSeconds: null,
+      topDepartment: null,
+      averageScore: 0,
+    }
+
+    // Client-side fallback: ensure the player's own finished game is never missing on their device
+    if (import.meta.client) {
+      let localData: any = null
+      const localCompletedRaw = localStorage.getItem('cph_completed_session')
+      if (localCompletedRaw) {
+        try {
+          localData = JSON.parse(localCompletedRaw)
+        } catch {}
+      }
+
+      if (!localData) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i)
+          if (k && k.startsWith('cph_snapshot_')) {
+            try {
+              const parsed = JSON.parse(localStorage.getItem(k) || '')
+              if (parsed && (parsed.score > 0 || parsed.completed)) {
+                localData = {
+                  ...parsed,
+                  id: k.replace('cph_snapshot_', ''),
+                  userCode: localStorage.getItem('cph_agent_code') || parsed.userCode,
+                  firstName: localStorage.getItem('cph_first_name') || parsed.firstName,
+                  lastName: localStorage.getItem('cph_last_name') || parsed.lastName,
+                  department: localStorage.getItem('cph_dept') || parsed.department,
+                  shift: localStorage.getItem('cph_shift') || parsed.shift,
+                }
+                break
+              }
+            } catch {}
+          }
+        }
+      }
+
+      if (localData && (localData.score > 0 || localData.completed)) {
+        const exists = entries.value.some(
+          (e) => (localData.id && e.id === localData.id) || (localData.userCode && e.userCode === localData.userCode),
+        )
+
+        if (!exists) {
+          // Re-hydrate the active serverless instance in the background
+          if (localData.id) {
+            $fetch(`/api/game/session/${localData.id}`, {
+              method: 'POST',
+              body: localData,
+              headers: localStorage.getItem('cph_access_token')
+                ? { 'x-access-token': localStorage.getItem('cph_access_token')! }
+                : undefined,
+            }).catch(() => {})
+          }
+
+          const localEntry: LeaderboardEntry = {
+            rank: entries.value.length + 1,
+            id: localData.id || 'local-session',
+            userCode: localData.userCode || 'CPH-AGENT',
+            firstName: localData.firstName || 'Agent',
+            lastName: localData.lastName || '',
+            department: localData.department || 'Operation',
+            shift: localData.shift || 'Day Shift',
+            score: Number(localData.score) || 0,
+            timeSpentSeconds: Number(localData.timeSpentSeconds) || 0,
+            currentLevel: Number(localData.currentLevel) || 1,
+            completed: Boolean(localData.completed),
+            hintsUsed: Number(localData.hintsUsed) || 0,
+            updatedAt: new Date().toISOString(),
+          }
+
+          const matchesDept =
+            !selectedDepartment.value ||
+            localEntry.department.toLowerCase() === selectedDepartment.value.toLowerCase()
+          const matchesShift =
+            !selectedShift.value ||
+            localEntry.shift.toLowerCase() === selectedShift.value.toLowerCase()
+
+          if (matchesDept && matchesShift) {
+            entries.value.push(localEntry)
+            entries.value.sort((a, b) => {
+              if (b.score !== a.score) return b.score - a.score
+              if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds
+              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            })
+            entries.value.forEach((item, idx) => {
+              item.rank = idx + 1
+            })
+          }
+
+          stats.value.totalRegistered = Math.max(stats.value.totalRegistered, entries.value.length)
+          if (localEntry.completed) {
+            stats.value.totalCompleted = Math.max(
+              stats.value.totalCompleted,
+              entries.value.filter((e) => e.completed).length,
+            )
+          }
+        }
+      }
+    }
   } catch (err) {
     console.error('Failed to load leaderboard:', err)
   } finally {
