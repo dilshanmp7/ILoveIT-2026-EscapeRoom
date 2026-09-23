@@ -81,59 +81,12 @@ async function fetchLeaderboard() {
         )
 
         if (!exists) {
-          // Re-hydrate the active serverless instance in the background
-          if (localData.id) {
-            $fetch(`/api/game/session/${localData.id}`, {
-              method: 'POST',
-              body: localData,
-              headers: localStorage.getItem('cph_access_token')
-                ? { 'x-access-token': localStorage.getItem('cph_access_token')! }
-                : undefined,
-            }).catch(() => {})
-          }
-
-          const localEntry: LeaderboardEntry = {
-            rank: entries.value.length + 1,
-            id: localData.id || 'local-session',
-            userCode: localData.userCode || 'CPH-AGENT',
-            firstName: localData.firstName || 'Agent',
-            lastName: localData.lastName || '',
-            department: localData.department || 'Operation',
-            shift: localData.shift || 'Day Shift',
-            score: Number(localData.score) || 0,
-            timeSpentSeconds: Number(localData.timeSpentSeconds) || 0,
-            currentLevel: Number(localData.currentLevel) || 1,
-            completed: Boolean(localData.completed),
-            hintsUsed: Number(localData.hintsUsed) || 0,
-            updatedAt: new Date().toISOString(),
-          }
-
-          const matchesDept =
-            !selectedDepartment.value ||
-            localEntry.department.toLowerCase() === selectedDepartment.value.toLowerCase()
-          const matchesShift =
-            !selectedShift.value ||
-            localEntry.shift.toLowerCase() === selectedShift.value.toLowerCase()
-
-          if (matchesDept && matchesShift) {
-            entries.value.push(localEntry)
-            entries.value.sort((a, b) => {
-              if (b.score !== a.score) return b.score - a.score
-              if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds
-              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            })
-            entries.value.forEach((item, idx) => {
-              item.rank = idx + 1
-            })
-          }
-
-          stats.value.totalRegistered = Math.max(stats.value.totalRegistered, entries.value.length)
-          if (localEntry.completed) {
-            stats.value.totalCompleted = Math.max(
-              stats.value.totalCompleted,
-              entries.value.filter((e) => e.completed).length,
-            )
-          }
+          // If the session was removed from the server (e.g. admin reset or Redis deletion),
+          // purge local device cache so stale scores do not linger or resurrect
+          try {
+            localStorage.removeItem('cph_completed_session')
+            if (localData.id) localStorage.removeItem(`cph_snapshot_${localData.id}`)
+          } catch {}
         }
       }
     }

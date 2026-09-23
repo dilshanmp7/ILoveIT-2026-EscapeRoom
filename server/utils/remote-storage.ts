@@ -133,6 +133,31 @@ export async function deleteRemoteSessions(): Promise<boolean> {
   }
 }
 
+export async function deleteRemoteSession(idOrKey: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis || !idOrKey) return false;
+
+  try {
+    await redis.hdel("cph_sessions", idOrKey);
+
+    const all = await getRemoteSessions();
+    const cleanKey = idOrKey.trim().toLowerCase();
+    for (const s of all) {
+      if (
+        (s.id && s.id.toLowerCase() === cleanKey) ||
+        (s.userCode && s.userCode.toLowerCase() === cleanKey) ||
+        (s.sessionKey && s.sessionKey.toLowerCase() === cleanKey)
+      ) {
+        await redis.hdel("cph_sessions", s.id);
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed to delete session from Upstash Redis:", err);
+    return false;
+  }
+}
+
 export function computeLeaderboardFromSessions(
   sessions: GameSession[],
   department?: string,

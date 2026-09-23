@@ -9,6 +9,7 @@ import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { createError } from "h3";
 import { generateUserCode, getRandomQuestionsForLevel } from "../../shared/game/questions-data";
 import {
+  deleteGameSession,
   findSessionByUserCode,
   getAccessTokenRecord,
   insertGameSession,
@@ -115,11 +116,20 @@ export async function createOrResumeGameSession(
   if (lookupKey) {
     let existing = findSessionByUserCode(lookupKey) || readGameSession(lookupKey);
 
-    // If not found in local SQLite (e.g. fresh lambda container on Vercel), check Upstash Redis
-    if (!existing && isRemoteStorageConfigured()) {
+    // If Upstash Redis is configured, it is the authoritative remote store:
+    if (isRemoteStorageConfigured()) {
       const remote = await getRemoteSessionByIdOrCode(lookupKey);
-      if (remote) {
-        const floorplan = readFloorplan();
+      if (!remote) {
+        // Player details were deleted from Upstash Redis!
+        // Clear out any stale local SQLite records so the player can start fresh
+        if (existing) {
+          deleteGameSession(existing.session.id);
+          deleteGameSession(lookupKey);
+          existing = null;
+        }
+      } else {
+        // Active/completed session found in Upstash Redis, keep local SQLite synced
+        const floorplan = existing?.floorplan || readFloorplan();
         insertGameSession(remote, remote.userCode, accessToken, floorplan, remote.levelProgress);
         existing = {
           session: remote,

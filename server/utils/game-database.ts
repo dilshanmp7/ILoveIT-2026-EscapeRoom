@@ -300,6 +300,16 @@ export function clearAllGameSessions() {
   };
 }
 
+export function deleteGameSession(idOrUserCode: string) {
+  try {
+    getDatabase()
+      .prepare("DELETE FROM game_sessions WHERE id = ? OR user_code = ? OR session_key = ?")
+      .run(idOrUserCode, idOrUserCode, idOrUserCode);
+  } catch {
+    // Ignore error
+  }
+}
+
 export function updateSessionAccessToken(id: string, token: string) {
   const updatedAt = new Date().toISOString();
   try {

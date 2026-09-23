@@ -18,24 +18,9 @@ export default defineEventHandler(async (event) => {
 
   if (isRemoteStorageConfigured()) {
     try {
-      let remoteSessions = await getRemoteSessions();
-
-      // If Upstash Redis is freshly connected and empty, seed it from local SQLite sessions
-      if (remoteSessions.length === 0) {
-        const localEntries = getLeaderboard();
-        for (const entry of localEntries) {
-          const mapped = readGameSession(entry.id);
-          if (mapped?.session) {
-            await saveRemoteSession(mapped.session);
-          }
-        }
-        remoteSessions = await getRemoteSessions();
-      }
-
-      if (remoteSessions.length > 0) {
-        leaderboard = computeLeaderboardFromSessions(remoteSessions, department, shift);
-        stats = computeStatsFromSessions(remoteSessions);
-      }
+      const remoteSessions = await getRemoteSessions();
+      leaderboard = computeLeaderboardFromSessions(remoteSessions, department, shift);
+      stats = computeStatsFromSessions(remoteSessions);
     } catch (err) {
       console.error("Error reading remote leaderboard:", err);
     }
