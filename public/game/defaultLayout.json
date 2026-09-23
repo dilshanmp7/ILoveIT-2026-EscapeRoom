@@ -338,6 +338,108 @@
   },
 
   {
+    "id": "obs_l1_1",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 16107019,
+    "type": "obstacle",
+    "label": "AURA Quantum Containment Pylon",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": -12.5, "z": 0.0, "rotation": 0 }
+  },
+  {
+    "id": "obs_l1_2",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 16107019,
+    "type": "obstacle",
+    "label": "AURA Neural Core Capacitor",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": -9.0, "z": -2.2, "rotation": 45 }
+  },
+  {
+    "id": "obs_l1_3",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 16107019,
+    "type": "obstacle",
+    "label": "AURA High-Voltage Substation",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": -10.2, "z": 2.5, "rotation": 0 }
+  },
+
+  {
+    "id": "obs_l2_1",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 439892,
+    "type": "obstacle",
+    "label": "CPH Cloud Routing Relay",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": -2.2, "z": 1.5, "rotation": 0 }
+  },
+  {
+    "id": "obs_l2_2",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 439892,
+    "type": "obstacle",
+    "label": "Automated Security Barrier Column",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": -1.8, "z": -2.2, "rotation": 45 }
+  },
+  {
+    "id": "obs_l2_3",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 439892,
+    "type": "obstacle",
+    "label": "ServiceNow Incident Buffer Pod",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": 1.8, "z": -1.5, "rotation": 0 }
+  },
+
+  {
+    "id": "obs_l3_1",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 15680580,
+    "type": "obstacle",
+    "label": "Firewall Sentinel Bollard",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": 7.5, "z": 0.0, "rotation": 0 }
+  },
+  {
+    "id": "obs_l3_2",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 15680580,
+    "type": "obstacle",
+    "label": "Zero-Trust Encryption Monolith",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": 9.8, "z": 2.2, "rotation": 45 }
+  },
+  {
+    "id": "obs_l3_3",
+    "w": 0.9,
+    "d": 0.9,
+    "color": 15680580,
+    "type": "obstacle",
+    "label": "Biometric Quarantine Pillar",
+    "allowGrab": false,
+    "canPush": false,
+    "position": { "x": 11.5, "z": -2.0, "rotation": 0 }
+  },
+
+  {
     "id": "wall_north",
     "w": 32.0,
     "d": 0.5,

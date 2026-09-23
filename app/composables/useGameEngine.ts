@@ -35,6 +35,11 @@ import {
   updateWorkstationVisualState,
   type WorkstationModelInstance,
 } from "~/utils/game/workstation-builder";
+import {
+  createSectorObstacle,
+  updateObstaclesAnimation,
+  type ObstacleModelInstance,
+} from "~/utils/game/obstacle-builder";
 import * as THREE from "three";
 import { reactive, readonly, shallowRef } from "vue";
 
@@ -329,6 +334,8 @@ export function useGameEngine() {
   }[] = [];
   const stationFloorRings: { mesh: THREE.Mesh; id: string }[] = [];
   const sectorWorkstations = new Map<string, WorkstationModelInstance>();
+  const sectorObstacles: ObstacleModelInstance[] = [];
+  let lastBumpTime = 0;
   let stationDecorGroup: THREE.Group | null = null;
 
   function updatePathNodes() {
@@ -663,6 +670,7 @@ export function useGameEngine() {
       disposeWorkstation(ws);
     }
     sectorWorkstations.clear();
+    sectorObstacles.splice(0);
 
     const previousInstances = new Map(objectInstances);
     objectInstances.clear();
@@ -695,6 +703,15 @@ export function useGameEngine() {
         const ws = createSectorWorkstation(asset.id, sectorNum, stepNum, label, shortLabel);
         sectorWorkstations.set(asset.id, ws);
         mesh = ws.rootGroup;
+      } else if (asset.id.startsWith("obs_") || asset.type === "obstacle") {
+        let sectorNum: 1 | 2 | 3 = 1;
+        if (asset.id.includes("l1") || asset.position.x < -4.5) sectorNum = 1;
+        else if (asset.id.includes("l2") || (asset.position.x >= -4.5 && asset.position.x <= 4.5)) sectorNum = 2;
+        else sectorNum = 3;
+
+        const obs = createSectorObstacle(asset.id, sectorNum, asset.label);
+        sectorObstacles.push(obs);
+        mesh = obs.rootGroup;
       } else {
         mesh = await loadMapObjectModel(instance, instance.state);
       }
@@ -1549,6 +1566,22 @@ export function useGameEngine() {
 
     updateObjectiveTracking();
     updateStationVisualStates(time);
+    updateObstaclesAnimation(sectorObstacles, time);
+
+    // Obstacle bump detection & deflection audio feedback
+    if (player && isMoving) {
+      for (const obs of sectorObstacles) {
+        const dx = player.mesh.position.x - obs.rootGroup.position.x;
+        const dz = player.mesh.position.z - obs.rootGroup.position.z;
+        if (Math.hypot(dx, dz) < 0.95) {
+          if (time - lastBumpTime > 450) {
+            sound.play("bump");
+            lastBumpTime = time;
+          }
+          break;
+        }
+      }
+    }
 
     updateCameraOcclusion();
     renderer?.render(scene!, camera!);

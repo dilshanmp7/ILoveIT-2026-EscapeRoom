@@ -12,6 +12,7 @@ import serverRackDefinition from "./gameObjects/server-rack/server-rack-object-d
 import serverDefinition from "./gameObjects/server/server-object-definition";
 import trashDefinition from "./gameObjects/trash/trash-object-definition";
 import wallDefinition from "./gameObjects/wall/wall-object-definition";
+import obstacleDefinition from "./gameObjects/obstacle/obstacle-object-definition";
 import type { ObjectDefinitions } from "./types";
 export const objectDefinitions: ObjectDefinitions = {
   box_laptop: boxLaptopDefinition,
@@ -22,6 +23,7 @@ export const objectDefinitions: ObjectDefinitions = {
   floor: floorDefinition,
   key: keyDefinition,
   laptop: laptopDefinition,
+  obstacle: obstacleDefinition,
   office_desk: officeDeskDefinition,
   riddle: riddleDefinition,
   server: serverDefinition,

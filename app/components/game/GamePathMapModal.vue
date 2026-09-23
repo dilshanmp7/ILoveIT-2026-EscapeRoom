@@ -49,6 +49,26 @@ function toSvgY(z: number) {
 }
 
 const activeNode = computed(() => props.nodes.find((n) => n.isCurrent) || null)
+
+const SECTOR_OBSTACLES: Record<1 | 2 | 3, { id: string; label: string; x: number; z: number }[]> = {
+  1: [
+    { id: 'obs_l1_1', label: 'Pylon 01', x: -12.5, z: 0.0 },
+    { id: 'obs_l1_2', label: 'Capacitor', x: -9.0, z: -2.2 },
+    { id: 'obs_l1_3', label: 'Substation', x: -10.2, z: 2.5 },
+  ],
+  2: [
+    { id: 'obs_l2_1', label: 'Relay 01', x: -2.2, z: 1.5 },
+    { id: 'obs_l2_2', label: 'Barrier Post', x: -1.8, z: -2.2 },
+    { id: 'obs_l2_3', label: 'Buffer Pod', x: 1.8, z: -1.5 },
+  ],
+  3: [
+    { id: 'obs_l3_1', label: 'Sentinel', x: 7.5, z: 0.0 },
+    { id: 'obs_l3_2', label: 'Monolith', x: 9.8, z: 2.2 },
+    { id: 'obs_l3_3', label: 'Quarantine', x: 11.5, z: -2.0 },
+  ],
+}
+
+const currentObstacles = computed(() => SECTOR_OBSTACLES[props.level] || [])
 </script>
 
 <template>
@@ -170,6 +190,40 @@ const activeNode = computed(() => props.nodes.find((n) => n.isCurrent) || null)
               </text>
             </g>
 
+            <!-- Tactical Obstacles (Physical Navigation Barriers) -->
+            <g v-for="obs in currentObstacles" :key="'obs-' + obs.id" class="obstacle-marker">
+              <rect
+                :x="toSvgX(obs.x) - 10"
+                :y="toSvgY(obs.z) - 10"
+                width="20"
+                height="20"
+                rx="4"
+                fill="#1e1b4b"
+                :stroke="level === 1 ? '#f59e0b' : (level === 2 ? '#06b6d4' : '#ef4444')"
+                stroke-width="1.8"
+                stroke-dasharray="3 2" />
+              <text
+                :x="toSvgX(obs.x)"
+                :y="toSvgY(obs.z) + 4"
+                text-anchor="middle"
+                :fill="level === 1 ? '#f59e0b' : (level === 2 ? '#06b6d4' : '#ef4444')"
+                font-family="monospace"
+                font-weight="900"
+                font-size="10">
+                ⚠️
+              </text>
+              <text
+                :x="toSvgX(obs.x)"
+                :y="toSvgY(obs.z) + 20"
+                text-anchor="middle"
+                fill="#cbd5e1"
+                font-family="monospace"
+                font-weight="700"
+                font-size="8">
+                {{ obs.label }}
+              </text>
+            </g>
+
             <!-- Player Marker -->
             <g class="player-marker">
               <circle
@@ -253,9 +307,8 @@ const activeNode = computed(() => props.nodes.find((n) => n.isCurrent) || null)
         </div>
       </div>
 
-      <!-- Footer CTA -->
       <footer class="map-footer">
-        <span class="hotkey-tip">Press <kbd>M</kbd> or <kbd>ESC</kbd> to close map</span>
+        <span class="hotkey-tip">Press <kbd>M</kbd> or <kbd>ESC</kbd> to close map • ⚠️ Slalom around physical hazard barriers</span>
         <button type="button" class="btn-resume" @click="emit('close')">
           RESUME ESCAPE RUN ➔
         </button>

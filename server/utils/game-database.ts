@@ -107,7 +107,7 @@ function getDatabase() {
     try {
       const parsed = JSON.parse(existingFloorplan.layout_json);
       const items = Array.isArray(parsed) ? parsed : parsed.layout;
-      if (!items || items.length < 20 || items.some((x: any) => x.id === "term_l1_6") || !items.some((x: any) => x.id === "key_sector_2") || items.some((x: any) => x.id === "term_l1_2" && x.position?.z === -3.8)) {
+      if (!items || items.length < 20 || items.some((x: any) => x.id === "term_l1_6") || !items.some((x: any) => x.id === "key_sector_2") || !items.some((x: any) => x.id === "obs_l1_1") || items.some((x: any) => x.id === "term_l1_2" && x.position?.z === -3.8)) {
         database
           .prepare(
             "UPDATE floorplans SET layout_json = ?, updated_at = ? WHERE id = ?",
@@ -393,7 +393,8 @@ function mapSessionRow(row: Record<string, unknown>) {
     session,
     floorplan: Array.isArray(storedFloorplan.layout) &&
       storedFloorplan.layout.some((x: any) => x.id === "key_sector_2") &&
-      !storedFloorplan.layout.some((x: any) => x.id === "term_l1_6")
+      !storedFloorplan.layout.some((x: any) => x.id === "term_l1_6") &&
+      storedFloorplan.layout.some((x: any) => x.id === "obs_l1_1")
       ? (storedFloorplan as Floorplan)
       : readFloorplan(),
     quizzes: storedQuizzes.length ? storedQuizzes : levelProgress.level1Questions,

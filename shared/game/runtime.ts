@@ -351,6 +351,9 @@ export class SoundFX {
     } else if (effect === "riddle_success") {
       this.playTone(440, "triangle", 0.1, 0.2);
       setTimeout(() => this.playTone(880, "sine", 0.25, 0.2), 120);
+    } else if (effect === "bump") {
+      this.playTone(160, "sawtooth", 0.08, 0.12);
+      setTimeout(() => this.playTone(100, "triangle", 0.08, 0.1), 30);
     } else this.playTone(200, "sawtooth", 0.1, 0.12);
   }
 }

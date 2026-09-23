@@ -144,7 +144,7 @@ export async function createOrResumeGameSession(
         });
       }
 
-      if (!existing.floorplan?.layout || existing.floorplan.layout.length < 15 || existing.floorplan.layout.some((x: any) => x.id === "term_l1_6")) {
+      if (!existing.floorplan?.layout || existing.floorplan.layout.length < 15 || existing.floorplan.layout.some((x: any) => x.id === "term_l1_6") || !existing.floorplan.layout.some((x: any) => x.id === "obs_l1_1")) {
         existing.floorplan = readFloorplan();
         updateSessionFloorplan(existing.session.id, existing.floorplan);
       }

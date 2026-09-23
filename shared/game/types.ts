@@ -173,7 +173,8 @@ export type SoundEffect =
   | "unlock"
   | "deliver"
   | "riddle_success"
-  | "dash";
+  | "dash"
+  | "bump";
 
 export interface PlayerSpawn {
   x: number;
