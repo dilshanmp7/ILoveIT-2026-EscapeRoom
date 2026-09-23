@@ -63,7 +63,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (isRemoteStorageConfigured()) {
-    void saveRemoteSession(session);
+    await saveRemoteSession(session);
   }
 
   return { session, accessToken };

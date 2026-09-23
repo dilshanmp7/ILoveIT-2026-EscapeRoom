@@ -20,6 +20,7 @@ import {
   updateSessionFloorplan,
   updateStoredSession,
 } from "./game-database";
+import { getRemoteSessionByIdOrCode, isRemoteStorageConfigured } from "./remote-storage";
 
 export const ACCESS_COOKIE = "courier_access";
 
@@ -95,7 +96,7 @@ export function isAccessTokenValid(token: string | undefined): boolean {
   return true;
 }
 
-export function createOrResumeGameSession(
+export async function createOrResumeGameSession(
   accessToken: string,
   registration?: Partial<PlayerRegistration> & { sessionKey?: string },
 ) {
@@ -112,7 +113,23 @@ export function createOrResumeGameSession(
   // Check if an existing session exists for this user code or session key
   const lookupKey = userCode || registration?.sessionKey;
   if (lookupKey) {
-    const existing = findSessionByUserCode(lookupKey) || readGameSession(lookupKey);
+    let existing = findSessionByUserCode(lookupKey) || readGameSession(lookupKey);
+
+    // If not found in local SQLite (e.g. fresh lambda container on Vercel), check Upstash Redis
+    if (!existing && isRemoteStorageConfigured()) {
+      const remote = await getRemoteSessionByIdOrCode(lookupKey);
+      if (remote) {
+        const floorplan = readFloorplan();
+        insertGameSession(remote, remote.userCode, accessToken, floorplan, remote.levelProgress);
+        existing = {
+          session: remote,
+          floorplan,
+          quizzes: remote.levelProgress?.level1Questions || [],
+          levelProgress: remote.levelProgress,
+        };
+      }
+    }
+
     if (existing) {
       // If the session is already finished (completed or timed out), block replaying!
       const isFinished =

@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
         for (const entry of localEntries) {
           const mapped = readGameSession(entry.id);
           if (mapped?.session) {
-            void saveRemoteSession(mapped.session);
+            await saveRemoteSession(mapped.session);
           }
         }
         remoteSessions = await getRemoteSessions();

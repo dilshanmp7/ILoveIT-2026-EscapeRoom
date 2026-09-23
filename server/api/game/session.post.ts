@@ -25,9 +25,9 @@ export default defineEventHandler(async (event) => {
     Partial<PlayerRegistration> & { sessionKey?: string }
   >(event);
 
-  const result = createOrResumeGameSession(accessToken, body || {});
+  const result = await createOrResumeGameSession(accessToken, body || {});
   if (isRemoteStorageConfigured() && result?.session) {
-    void saveRemoteSession(result.session);
+    await saveRemoteSession(result.session);
   }
   return result;
 });

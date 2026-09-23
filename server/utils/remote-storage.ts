@@ -65,6 +65,34 @@ export async function saveRemoteSession(session: GameSession): Promise<boolean> 
   }
 }
 
+export async function getRemoteSessionByIdOrCode(key: string): Promise<GameSession | null> {
+  const redis = getRedis();
+  if (!redis || !key) return null;
+
+  try {
+    // 1. Direct ID lookup in cph_sessions hash
+    const direct = await redis.hget<string | GameSession>("cph_sessions", key);
+    if (direct) {
+      return typeof direct === "string" ? JSON.parse(direct) : (direct as GameSession);
+    }
+
+    // 2. Scan sessions for matching userCode or sessionKey
+    const all = await getRemoteSessions();
+    const cleanKey = key.trim().toLowerCase();
+    return (
+      all.find(
+        (s) =>
+          (s.id && s.id.toLowerCase() === cleanKey) ||
+          (s.userCode && s.userCode.toLowerCase() === cleanKey) ||
+          (s.sessionKey && s.sessionKey.toLowerCase() === cleanKey),
+      ) || null
+    );
+  } catch (err) {
+    console.error("Failed to find session in Upstash Redis:", err);
+    return null;
+  }
+}
+
 export async function getRemoteSessions(): Promise<GameSession[]> {
   const redis = getRedis();
   if (!redis) return [];
