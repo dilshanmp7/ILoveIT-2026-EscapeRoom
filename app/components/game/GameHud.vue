@@ -26,6 +26,7 @@ interface HudState {
   currentObjectiveId?: string
   pathNodes?: PathNodeState[]
   mapModalOpen?: boolean
+  musicEnabled?: boolean
 }
 
 defineProps<{ state: HudState }>()
@@ -34,6 +35,7 @@ defineEmits<{
   openMap: []
   grab: []
   action: []
+  toggleMusic: []
 }>()
 
 function formatTime(seconds: number) {
@@ -163,6 +165,20 @@ function formatTime(seconds: number) {
             <strong :class="{ 'hints-warn': state.hintsUsed > 0 }">{{ state.hintsUsed }}</strong>
           </div>
         </div>
+
+        <button
+          type="button"
+          class="metric music-metric-btn"
+          :class="{ 'music-muted': state.musicEnabled === false }"
+          :title="state.musicEnabled === false ? 'BGM Muted (Click to Unmute)' : 'BGM Active (Click to Mute)'"
+          @click="$emit('toggleMusic')"
+        >
+          <span class="metric-icon">{{ state.musicEnabled === false ? '🔇' : '🔊' }}</span>
+          <div class="metric-text">
+            <small>BGM</small>
+            <strong>{{ state.musicEnabled === false ? 'OFF' : 'ON' }}</strong>
+          </div>
+        </button>
       </div>
     </div>
 
@@ -675,6 +691,39 @@ function formatTime(seconds: number) {
 
 .score-metric strong { color: #4ade80; }
 .hints-warn { color: #f97316 !important; }
+
+.music-metric-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  border-radius: 0.5rem;
+}
+
+.music-metric-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.music-metric-btn:active {
+  transform: scale(0.94);
+}
+
+.music-metric-btn .metric-icon {
+  color: #38bdf8;
+}
+
+.music-metric-btn.music-muted .metric-icon {
+  color: #94a3b8;
+}
+
+.music-metric-btn strong {
+  color: #38bdf8;
+}
+
+.music-metric-btn.music-muted strong {
+  color: #94a3b8;
+}
 
 .timer-metric.time-critical .metric-icon {
   color: #ef4444;

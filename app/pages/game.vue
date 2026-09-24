@@ -261,6 +261,7 @@ useSeoMeta({
         @open-map="engine.openMapModal"
         @grab="engine.pickUp"
         @action="engine.useNearby"
+        @toggle-music="engine.toggleMusic"
       />
 
       <!-- Tactical 2D Level Escape Path Map Modal -->

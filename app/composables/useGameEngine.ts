@@ -42,6 +42,7 @@ import {
   updateObstaclesAnimation,
   type ObstacleModelInstance,
 } from "~/utils/game/obstacle-builder";
+import { CyberMusicEngine } from "~/utils/game/cyber-music";
 import * as THREE from "three";
 import { reactive, readonly, shallowRef } from "vue";
 
@@ -235,6 +236,7 @@ const initialState = () => ({
   playerDepartment: "",
   playerShift: "",
   scoreBreakdown: null as ScoreBreakdown | null,
+  musicEnabled: true,
 });
 
 export function useGameEngine() {
@@ -246,6 +248,15 @@ export function useGameEngine() {
   let player: Player | null = null;
   let physics = new GamePhysics();
   const sound = new SoundFX();
+  const music = new CyberMusicEngine();
+  state.musicEnabled = music.isMusicEnabled;
+
+  function toggleMusic() {
+    const isEnabled = music.toggle();
+    state.musicEnabled = isEnabled;
+    return isEnabled;
+  }
+
   const walkCycle = { value: 0 };
   let animationFrame = 0;
   let timerId: ReturnType<typeof setInterval> | undefined;
@@ -824,6 +835,7 @@ export function useGameEngine() {
     state.finished = true;
     state.isTimedOut = reason === "timeout";
     sound.play("deliver");
+    music.stop(1.5);
 
     const breakdown = calculateScore({
       questionScore: state.score,
@@ -1407,6 +1419,7 @@ export function useGameEngine() {
     if (level === 1) {
       await setObjectState("slide_door_1", "opened");
       levelProgress.currentLevel = 2;
+      music.setSector(2);
       initStationTrackAndHolograms();
       updateLevelStats();
       state.levelClearedModal = {
@@ -1418,6 +1431,7 @@ export function useGameEngine() {
     } else if (level === 2) {
       await setObjectState("slide_door_2", "opened");
       levelProgress.currentLevel = 3;
+      music.setSector(3);
       initStationTrackAndHolograms();
       updateLevelStats();
       state.levelClearedModal = {
@@ -1663,6 +1677,7 @@ export function useGameEngine() {
     };
 
     updateLevelStats();
+    music.setSector(levelProgress.currentLevel);
 
     // Determine target spawn coordinates
     let spawn = getSectorDefaultSpawn(levelProgress.currentLevel);
@@ -1905,6 +1920,15 @@ export function useGameEngine() {
     };
     const keyup = (event: KeyboardEvent) => keys.delete(event.code);
 
+    // Start procedural cyber-music on first user interaction (audio policy compliant)
+    const startAudioOnGesture = () => {
+      if (music.isMusicEnabled && !music.isPlaying) {
+        void music.start();
+      }
+    };
+    target.addEventListener("pointerdown", startAudioOnGesture, { once: true });
+    window.addEventListener("keydown", startAudioOnGesture, { once: true });
+
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", keydown);
     window.addEventListener("keyup", keyup);
@@ -1913,6 +1937,9 @@ export function useGameEngine() {
       if (!state.finished) {
         state.runningTime += 1;
         state.timeRemaining = Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime);
+        if (state.timeRemaining <= 60 && state.timeRemaining > 0) {
+          music.setUrgent(true);
+        }
         if (state.runningTime >= GAME_TIME_LIMIT_SECONDS) {
           state.quizOpen = false;
           state.message = "⏰ TIME OUT! 15-Minute emergency window expired. Submitting your final operational score...";
@@ -1931,6 +1958,8 @@ export function useGameEngine() {
     animationFrame = requestAnimationFrame(frame);
 
     removeListeners = () => {
+      target.removeEventListener("pointerdown", startAudioOnGesture);
+      window.removeEventListener("keydown", startAudioOnGesture);
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("keyup", keyup);
@@ -1974,6 +2003,7 @@ export function useGameEngine() {
       }
     });
     renderer?.dispose();
+    music.dispose();
     scene = null;
     camera = null;
     renderer = null;
@@ -1985,6 +2015,7 @@ export function useGameEngine() {
     state: readonly(state),
     mount,
     unmount,
+    toggleMusic,
     setJoystick,
     setFloorplan,
     initSessionProgress,
