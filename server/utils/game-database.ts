@@ -1,11 +1,13 @@
-import type {
-  EventStats,
-  Floorplan,
-  GameObjectRecord,
-  GameSession,
-  LeaderboardEntry,
-  LevelProgress,
-  QuizQuestion,
+import {
+  type EventStats,
+  type Floorplan,
+  type GameObjectRecord,
+  type GameSession,
+  type LeaderboardEntry,
+  type LevelProgress,
+  type QuizQuestion,
+  type ScoreBreakdown,
+  calculateScore,
 } from "#shared/game/types";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -443,6 +445,7 @@ export function updateStoredSession(
     lastName?: string;
     department?: string;
     shift?: string;
+    scoreBreakdown?: ScoreBreakdown;
   },
 ) {
   let result;
@@ -456,6 +459,7 @@ export function updateStoredSession(
            hints_used = COALESCE(?, hints_used),
            time_spent_seconds = COALESCE(?, time_spent_seconds),
            level_progress_json = COALESCE(?, level_progress_json),
+           score_breakdown_json = COALESCE(?, score_breakdown_json),
            access_token = COALESCE(?, access_token),
            user_code = COALESCE(?, user_code),
            first_name = COALESCE(?, first_name),
@@ -472,6 +476,7 @@ export function updateStoredSession(
         options.hintsUsed ?? null,
         options.timeSpentSeconds ?? null,
         options.levelProgress ? JSON.stringify(options.levelProgress) : null,
+        options.scoreBreakdown ? JSON.stringify(options.scoreBreakdown) : null,
         accessToken || null,
         options.userCode ?? null,
         options.firstName ?? null,
@@ -546,7 +551,7 @@ export function updateStoredSession(
 export function getLeaderboard(department?: string, shift?: string): LeaderboardEntry[] {
   let query = `
     SELECT id, user_code, first_name, last_name, department, shift,
-           score, time_spent_seconds, current_level, status, hints_used, updated_at
+           score, time_spent_seconds, current_level, status, hints_used, score_breakdown_json, updated_at
     FROM game_sessions
     WHERE 1=1
   `;
@@ -559,26 +564,59 @@ export function getLeaderboard(department?: string, shift?: string): Leaderboard
     query += " AND shift = ?";
     params.push(shift.trim());
   }
-  query += `
-    ORDER BY score DESC, time_spent_seconds ASC, updated_at DESC
-    LIMIT 100
-  `;
 
   const rows = getDatabase().prepare(query).all(...params) as Record<string, unknown>[];
-  return rows.map((row, index) => ({
+
+  const parsed = rows.map((row) => {
+    let breakdown: ScoreBreakdown | undefined;
+    try {
+      if (row.score_breakdown_json) {
+        breakdown = JSON.parse(String(row.score_breakdown_json));
+      }
+    } catch {}
+
+    const isCompleted = row.status === "completed";
+    const timeSpent = Number(row.time_spent_seconds) || 0;
+    const rawScore = Number(row.score) || 0;
+
+    let effectiveScore = rawScore;
+    if (breakdown?.totalScore !== undefined) {
+      effectiveScore = breakdown.totalScore;
+    } else if (isCompleted) {
+      effectiveScore = calculateScore({
+        questionScore: rawScore,
+        timeSpentSeconds: timeSpent,
+        completed: true,
+        isTimedOut: row.status === "timed_out",
+      }).totalScore;
+    }
+
+    return {
+      id: String(row.id),
+      userCode: (row.user_code as string) || "CPH-USER",
+      firstName: (row.first_name as string) || "Agent",
+      lastName: (row.last_name as string) || "",
+      department: (row.department as string) || "Operations",
+      shift: (row.shift as string) || "Day Shift",
+      score: effectiveScore,
+      scoreBreakdown: breakdown,
+      timeSpentSeconds: timeSpent,
+      currentLevel: Number(row.current_level) || 1,
+      completed: isCompleted,
+      hintsUsed: Number(row.hints_used) || 0,
+      updatedAt: String(row.updated_at),
+    };
+  });
+
+  parsed.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
+
+  return parsed.slice(0, 100).map((entry, index) => ({
+    ...entry,
     rank: index + 1,
-    id: String(row.id),
-    userCode: (row.user_code as string) || "CPH-USER",
-    firstName: (row.first_name as string) || "Agent",
-    lastName: (row.last_name as string) || "",
-    department: (row.department as string) || "Operations",
-    shift: (row.shift as string) || "Day Shift",
-    score: Number(row.score) || 0,
-    timeSpentSeconds: Number(row.time_spent_seconds) || 0,
-    currentLevel: Number(row.current_level) || 1,
-    completed: row.status === "completed",
-    hintsUsed: Number(row.hints_used) || 0,
-    updatedAt: String(row.updated_at),
   }));
 }
 

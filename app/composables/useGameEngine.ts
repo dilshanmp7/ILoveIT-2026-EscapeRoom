@@ -26,6 +26,8 @@ import {
   type ObjectVisualStateType,
   type Player,
   type QuizQuestion,
+  type ScoreBreakdown,
+  calculateScore,
   GAME_TIME_LIMIT_SECONDS,
 } from "#shared/game/types";
 import { ESCAPE_ROOM_QUESTIONS, getRandomQuestionsForLevel } from "#shared/game/questions-data";
@@ -232,6 +234,7 @@ const initialState = () => ({
   playerName: "",
   playerDepartment: "",
   playerShift: "",
+  scoreBreakdown: null as ScoreBreakdown | null,
 });
 
 export function useGameEngine() {
@@ -816,13 +819,29 @@ export function useGameEngine() {
     }
   }
 
+  function finalizeGameSession(reason: "escaped" | "timeout" = "escaped") {
+    if (state.finished) return;
+    state.finished = true;
+    state.isTimedOut = reason === "timeout";
+    sound.play("deliver");
+
+    const breakdown = calculateScore({
+      questionScore: state.score,
+      timeSpentSeconds: state.runningTime,
+      completed: true,
+      isTimedOut: state.isTimedOut,
+    });
+
+    state.scoreBreakdown = breakdown;
+    state.score = breakdown.totalScore;
+    triggerSave(true);
+  }
+
   function emitGameEvent(event: EventType, emitter: GameObjectInstance) {
     if (event === "escape_hatch_triggered") {
       const isHatchOpened = emitter.state === "opened";
       if (isHatchOpened) {
-        state.finished = true;
-        sound.play("deliver");
-        triggerSave();
+        finalizeGameSession("escaped");
       } else {
         state.message = "🔒 The Master Dispatch Hatch is locked! Complete all 5 Sector 3 cybersecurity protocols and swipe the Master Override Cryptokey here.";
       }
@@ -988,8 +1007,7 @@ export function useGameEngine() {
       } else if (targetNearby.id === "final_escape_hatch") {
         sound.play("unlock");
         await handleLevelCompletion(3);
-        state.finished = true;
-        sound.play("deliver");
+        finalizeGameSession("escaped");
       }
     }
 
@@ -1623,6 +1641,14 @@ export function useGameEngine() {
     if (session.status === "completed" || session.status === "timed_out" || state.runningTime >= GAME_TIME_LIMIT_SECONDS) {
       state.finished = true;
       state.isTimedOut = session.status === "timed_out" || state.runningTime >= GAME_TIME_LIMIT_SECONDS;
+      const breakdown = session.scoreBreakdown || calculateScore({
+        questionScore: session.score || 0,
+        timeSpentSeconds: state.runningTime,
+        completed: true,
+        isTimedOut: state.isTimedOut,
+      });
+      state.scoreBreakdown = breakdown;
+      state.score = breakdown.totalScore;
     }
 
     levelProgress = {
@@ -1679,13 +1705,22 @@ export function useGameEngine() {
 
   function getSessionSnapshot(completed?: boolean) {
     levelProgress.playerPosition = { ...state.playerPosition };
+    const isCompleted = completed ?? state.finished;
+    const breakdown = state.scoreBreakdown || calculateScore({
+      questionScore: state.score,
+      timeSpentSeconds: state.runningTime,
+      completed: isCompleted,
+      isTimedOut: state.isTimedOut,
+    });
+
     return {
-      score: state.score,
+      score: isCompleted ? breakdown.totalScore : state.score,
+      scoreBreakdown: breakdown,
       timeSpentSeconds: state.runningTime,
       currentLevel: levelProgress.currentLevel,
       hintsUsed: levelProgress.hintUsedQuestionIds.length,
       levelProgress: { ...levelProgress },
-      completed: completed ?? state.finished,
+      completed: isCompleted,
     };
   }
 
@@ -1810,12 +1845,9 @@ export function useGameEngine() {
         state.runningTime += 1;
         state.timeRemaining = Math.max(0, GAME_TIME_LIMIT_SECONDS - state.runningTime);
         if (state.runningTime >= GAME_TIME_LIMIT_SECONDS) {
-          state.finished = true;
-          state.isTimedOut = true;
           state.quizOpen = false;
-          sound.play("deliver");
           state.message = "⏰ TIME OUT! 15-Minute emergency window expired. Submitting your final operational score...";
-          triggerSave();
+          finalizeGameSession("timeout");
         }
       }
     }, 1000);

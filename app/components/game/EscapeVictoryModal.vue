@@ -10,6 +10,8 @@ const props = defineProps<{
   playerDepartment: string
   playerShift: string
   isTimedOut?: boolean
+  questionScore?: number
+  timeBonus?: number
 }>()
 
 const emit = defineEmits<{
@@ -63,13 +65,19 @@ function getRatingBadge(score: number, seconds: number, isTimedOut?: boolean) {
         <div class="score-card main-score">
           <small>FINAL SCORE</small>
           <strong>{{ score }}</strong>
-          <span>POINTS</span>
+          <span>POINTS (ACCURACY + SPEED BONUS)</span>
         </div>
 
         <div class="score-card">
           <small>TOTAL TIME</small>
           <strong>{{ formatTime(runningTime) }}</strong>
           <span>{{ isTimedOut ? '15-MIN WINDOW EXPIRED' : 'MINUTES : SECONDS' }}</span>
+        </div>
+
+        <div class="score-card speed-bonus-card">
+          <small>SPEED BONUS</small>
+          <strong class="speed-val">+{{ timeBonus ?? (isTimedOut ? 0 : Math.max(0, 900 - runningTime)) }}</strong>
+          <span>+1 PT / SEC REMAINING</span>
         </div>
 
         <div class="score-card">
@@ -260,12 +268,22 @@ h1 {
 }
 
 .score-card.main-score {
+  grid-column: span 2;
   border-color: #ffcc00;
   background: rgba(255, 204, 0, .12);
 }
 
 .score-card.main-score strong {
   color: #ffcc00;
+}
+
+.score-card.speed-bonus-card {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.score-card .speed-val {
+  color: #4ade80 !important;
 }
 
 .warn { color: #f97316 !important; }

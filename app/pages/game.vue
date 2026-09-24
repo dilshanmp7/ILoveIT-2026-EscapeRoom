@@ -339,6 +339,8 @@ useSeoMeta({
         :open="engine.state.finished"
         :is-timed-out="engine.state.isTimedOut"
         :score="engine.state.score"
+        :time-bonus="engine.state.scoreBreakdown?.timeBonus"
+        :question-score="engine.state.scoreBreakdown?.questionScore"
         :running-time="engine.state.runningTime"
         :hints-used="engine.state.hintsUsed"
         :total-solved="engine.state.totalSolved"

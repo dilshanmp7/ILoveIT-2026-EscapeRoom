@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
     accessToken!,
     {
       score,
+      scoreBreakdown: body?.scoreBreakdown,
       completed: body?.completed !== false,
       currentLevel: body?.currentLevel,
       hintsUsed: body?.hintsUsed,

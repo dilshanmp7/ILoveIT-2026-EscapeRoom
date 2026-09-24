@@ -228,6 +228,14 @@ export interface LevelProgress {
   playerPosition?: { x: number; z: number };
 }
 
+export interface ScoreBreakdown {
+  questionScore: number;
+  timeBonus: number;
+  timeSpentSeconds: number;
+  timeRemainingSeconds: number;
+  totalScore: number;
+}
+
 export interface GameSession {
   id: string;
   sessionKey: string;
@@ -240,8 +248,9 @@ export interface GameSession {
   hintsUsed: number;
   timeSpentSeconds: number;
   levelProgress?: LevelProgress;
-  status: "active" | "completed";
+  status: "active" | "completed" | "timed_out";
   score: number;
+  scoreBreakdown?: ScoreBreakdown;
   createdAt: string;
   updatedAt: string;
 }
@@ -252,6 +261,7 @@ export interface AccessResponse {
 
 export interface FinalScorePayload {
   score: number;
+  scoreBreakdown?: ScoreBreakdown;
   completed?: boolean;
   timeSpentSeconds?: number;
   currentLevel?: 1 | 2 | 3;
@@ -275,6 +285,7 @@ export interface LeaderboardEntry {
   department: string;
   shift: string;
   score: number;
+  scoreBreakdown?: ScoreBreakdown;
   timeSpentSeconds: number;
   currentLevel: number;
   completed: boolean;
@@ -306,3 +317,31 @@ export interface PathNodeState {
 }
 
 export const GAME_TIME_LIMIT_SECONDS = 900; // 15 minutes operational SLA
+
+/**
+ * Calculates score breakdown based on Time Bank Model:
+ * Total Score = Question Score + Time Bank Bonus (Remaining Seconds)
+ * - Questions award +100 (or +50 if hint used).
+ * - Incorrect attempts penalize -30.
+ * - Completing the escape awards +1 PT for every second remaining under the 15-minute SLA.
+ */
+export function calculateScore(params: {
+  questionScore: number;
+  timeSpentSeconds: number;
+  completed: boolean;
+  isTimedOut?: boolean;
+}): ScoreBreakdown {
+  const timeSpent = Math.max(0, Math.round(params.timeSpentSeconds || 0));
+  const timeRemaining = Math.max(0, GAME_TIME_LIMIT_SECONDS - timeSpent);
+  const timeBonus = params.completed && !params.isTimedOut ? timeRemaining : 0;
+  const rawQuestionScore = Math.max(0, Math.round(params.questionScore || 0));
+  const totalScore = rawQuestionScore + timeBonus;
+
+  return {
+    questionScore: rawQuestionScore,
+    timeBonus,
+    timeSpentSeconds: timeSpent,
+    timeRemainingSeconds: timeRemaining,
+    totalScore,
+  };
+}

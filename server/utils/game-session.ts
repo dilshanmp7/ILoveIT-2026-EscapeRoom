@@ -3,6 +3,7 @@ import {
   type GameSession,
   type LevelProgress,
   type PlayerRegistration,
+  calculateScore,
   GAME_TIME_LIMIT_SECONDS,
 } from "#shared/game/types";
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
@@ -242,10 +243,21 @@ export function updateGameSession(
 ) {
   const isTimedOut = payload.timeSpentSeconds !== undefined && payload.timeSpentSeconds >= GAME_TIME_LIMIT_SECONDS;
   const status = isTimedOut ? "timed_out" : (payload.completed === false ? "active" : "completed");
+  const isCompleted = status === "completed";
+
+  const breakdown = payload.scoreBreakdown || calculateScore({
+    questionScore: payload.score,
+    timeSpentSeconds: payload.timeSpentSeconds || 0,
+    completed: isCompleted,
+    isTimedOut,
+  });
+
+  const finalScore = isCompleted ? breakdown.totalScore : payload.score;
+
   return updateStoredSession(
     id,
     accessToken,
-    payload.score,
+    finalScore,
     status,
     new Date().toISOString(),
     {
@@ -253,6 +265,7 @@ export function updateGameSession(
       hintsUsed: payload.hintsUsed,
       timeSpentSeconds: payload.timeSpentSeconds,
       levelProgress: payload.levelProgress,
+      scoreBreakdown: breakdown,
       userCode: payload.userCode,
       firstName: payload.firstName,
       lastName: payload.lastName,

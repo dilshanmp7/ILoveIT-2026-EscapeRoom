@@ -1,4 +1,4 @@
-import type { EventStats, GameSession, LeaderboardEntry } from "#shared/game/types";
+import { type EventStats, type GameSession, type LeaderboardEntry, calculateScore } from "#shared/game/types";
 import { Redis } from "@upstash/redis";
 
 let redisClient: Redis | null = null;
@@ -158,6 +158,20 @@ export async function deleteRemoteSession(idOrKey: string): Promise<boolean> {
   }
 }
 
+export function getEffectiveSessionScore(s: GameSession): number {
+  if (s.scoreBreakdown?.totalScore !== undefined) {
+    return s.scoreBreakdown.totalScore;
+  }
+  const isCompleted = s.status === "completed";
+  const breakdown = calculateScore({
+    questionScore: s.score || 0,
+    timeSpentSeconds: s.timeSpentSeconds || 0,
+    completed: isCompleted,
+    isTimedOut: s.status === "timed_out",
+  });
+  return breakdown.totalScore;
+}
+
 export function computeLeaderboardFromSessions(
   sessions: GameSession[],
   department?: string,
@@ -174,26 +188,32 @@ export function computeLeaderboardFromSessions(
   }
 
   filtered.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
+    const scoreA = getEffectiveSessionScore(a);
+    const scoreB = getEffectiveSessionScore(b);
+    if (scoreB !== scoreA) return scoreB - scoreA;
     if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
-  return filtered.slice(0, 100).map((s, index) => ({
-    rank: index + 1,
-    id: s.id,
-    userCode: s.userCode || "CPH-USER",
-    firstName: s.firstName || "Agent",
-    lastName: s.lastName || "",
-    department: s.department || "Operations",
-    shift: s.shift || "Day Shift",
-    score: s.score || 0,
-    timeSpentSeconds: s.timeSpentSeconds || 0,
-    currentLevel: s.currentLevel || 1,
-    completed: s.status === "completed",
-    hintsUsed: s.hintsUsed || 0,
-    updatedAt: s.updatedAt,
-  }));
+  return filtered.slice(0, 100).map((s, index) => {
+    const effectiveScore = getEffectiveSessionScore(s);
+    return {
+      rank: index + 1,
+      id: s.id,
+      userCode: s.userCode || "CPH-USER",
+      firstName: s.firstName || "Agent",
+      lastName: s.lastName || "",
+      department: s.department || "Operations",
+      shift: s.shift || "Day Shift",
+      score: effectiveScore,
+      scoreBreakdown: s.scoreBreakdown,
+      timeSpentSeconds: s.timeSpentSeconds || 0,
+      currentLevel: s.currentLevel || 1,
+      completed: s.status === "completed",
+      hintsUsed: s.hintsUsed || 0,
+      updatedAt: s.updatedAt,
+    };
+  });
 }
 
 export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
@@ -210,7 +230,7 @@ export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
     }
   }
 
-  const totalScore = sessions.reduce((acc, s) => acc + (s.score || 0), 0);
+  const totalScore = sessions.reduce((acc, s) => acc + getEffectiveSessionScore(s), 0);
   const averageScore = totalRegistered > 0 ? Math.round(totalScore / totalRegistered) : 0;
 
   const deptMap = new Map<string, { totalScore: number; count: number }>();
@@ -218,7 +238,7 @@ export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
     if (s.department && s.department.trim()) {
       const dept = s.department.trim();
       const current = deptMap.get(dept) || { totalScore: 0, count: 0 };
-      current.totalScore += s.score || 0;
+      current.totalScore += getEffectiveSessionScore(s);
       current.count += 1;
       deptMap.set(dept, current);
     }

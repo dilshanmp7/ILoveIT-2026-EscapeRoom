@@ -68,6 +68,10 @@ const emit = defineEmits<{
               <span class="key">💡 HINTS</span>
               <small>Available with a 50% score penalty</small>
             </div>
+            <div class="control-item">
+              <span class="key">⏱️ SPEED BONUS</span>
+              <small>+1 PT per second remaining on clock</small>
+            </div>
           </div>
         </div>
 
