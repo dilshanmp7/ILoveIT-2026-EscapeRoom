@@ -1555,11 +1555,28 @@ export function useGameEngine() {
       );
       updateNearby();
       if (player && camera) {
+        let targetCamY = 9.0;
+        let targetCamZOffset = 8.8;
+
+        if (canvas.value) {
+          const aspect = canvas.value.clientWidth / Math.max(canvas.value.clientHeight, 1);
+          if (aspect < 1.0) {
+            // Mobile Portrait: Scale camera distance smoothly to ensure full room & terminal visibility
+            const portraitFactor = 1 + (1 - aspect) * 0.45;
+            targetCamY = 9.0 * portraitFactor;
+            targetCamZOffset = 8.8 * portraitFactor;
+          } else if (canvas.value.clientHeight <= 520 && aspect >= 1.25) {
+            // Mobile Landscape: Lower camera slightly so player is framed cleanly between corner touch controls
+            targetCamY = 7.8;
+            targetCamZOffset = 7.6;
+          }
+        }
+
         camera.position.lerp(
           new THREE.Vector3(
             player.mesh.position.x,
-            9.0,
-            player.mesh.position.z + 8.8,
+            targetCamY,
+            player.mesh.position.z + targetCamZOffset,
           ),
           0.08,
         );
@@ -1699,7 +1716,20 @@ export function useGameEngine() {
       player.body.x = spawn.x;
       player.body.z = spawn.z;
       if (camera) {
-        camera.position.set(spawn.x, 9.0, spawn.z + 8.8);
+        let initialCamY = 9.0;
+        let initialCamZOffset = 8.8;
+        if (canvas.value) {
+          const aspect = canvas.value.clientWidth / Math.max(canvas.value.clientHeight, 1);
+          if (aspect < 1.0) {
+            const portraitFactor = 1 + (1 - aspect) * 0.45;
+            initialCamY = 9.0 * portraitFactor;
+            initialCamZOffset = 8.8 * portraitFactor;
+          } else if (canvas.value.clientHeight <= 520 && aspect >= 1.25) {
+            initialCamY = 7.8;
+            initialCamZOffset = 7.6;
+          }
+        }
+        camera.position.set(spawn.x, initialCamY, spawn.z + initialCamZOffset);
         camera.lookAt(spawn.x, 0.5, spawn.z);
       }
     }
@@ -1754,15 +1784,29 @@ export function useGameEngine() {
     canvas.value = target;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a1128); // High-tech midnight cyber blue
+    const initialAspect = target.clientWidth / Math.max(target.clientHeight, 1);
+    const initialFov = initialAspect < 1.0 ? Math.min(62, 45 + (1 - initialAspect) * 18) : 45;
     camera = new THREE.PerspectiveCamera(
-      45,
-      target.clientWidth / target.clientHeight,
+      initialFov,
+      initialAspect,
       0.1,
       120,
     );
     const initialSpawn = pendingPlayerSpawn || floorplan.playerSpawn || getSectorDefaultSpawn(levelProgress.currentLevel);
     state.playerPosition = { ...initialSpawn };
-    camera.position.set(initialSpawn.x, 9.0, initialSpawn.z + 8.8);
+
+    let initialCamY = 9.0;
+    let initialCamZOffset = 8.8;
+    if (initialAspect < 1.0) {
+      const portraitFactor = 1 + (1 - initialAspect) * 0.45;
+      initialCamY = 9.0 * portraitFactor;
+      initialCamZOffset = 8.8 * portraitFactor;
+    } else if (target.clientHeight <= 520 && initialAspect >= 1.25) {
+      initialCamY = 7.8;
+      initialCamZOffset = 7.6;
+    }
+
+    camera.position.set(initialSpawn.x, initialCamY, initialSpawn.z + initialCamZOffset);
     camera.lookAt(initialSpawn.x, 0.5, initialSpawn.z);
     renderer = new THREE.WebGLRenderer({ canvas: target, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1810,9 +1854,21 @@ export function useGameEngine() {
 
     const resize = () => {
       if (!camera || !renderer) return;
-      camera.aspect = target.clientWidth / target.clientHeight;
+      const width = target.clientWidth;
+      const height = target.clientHeight;
+      const aspect = width / Math.max(height, 1);
+      camera.aspect = aspect;
+
+      // Dynamic FOV scaling: On PC (aspect >= 1.0) keep standard 45°.
+      // On narrow mobile portrait (< 1.0), slightly widen FOV to preserve horizontal scene context
+      if (aspect < 1.0) {
+        camera.fov = Math.min(62, 45 + (1 - aspect) * 18);
+      } else {
+        camera.fov = 45;
+      }
+
       camera.updateProjectionMatrix();
-      renderer.setSize(target.clientWidth, target.clientHeight, false);
+      renderer.setSize(width, height, false);
     };
 
     const keydown = (event: KeyboardEvent) => {

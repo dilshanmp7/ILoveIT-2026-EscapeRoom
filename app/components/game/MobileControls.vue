@@ -82,7 +82,7 @@ function stop(event: PointerEvent) {
 <style scoped>
 .controls {
   position: absolute;
-  inset: auto 1.25rem 1.25rem;
+  inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   z-index: 3;
   display: flex;
   justify-content: space-between;
@@ -206,28 +206,71 @@ function stop(event: PointerEvent) {
   filter: saturate(.5);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1025px) {
   /* On desktop laptops, keep controls discreet */
   .direction-pad {
     opacity: 0.7;
   }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .controls {
-    inset: auto .6rem .6rem;
+    inset: auto max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
   }
   .direction-pad {
-    width: 7.5rem;
-    height: 7.5rem;
+    width: 7.2rem;
+    height: 7.2rem;
+  }
+  .pad-knob {
+    width: 2.6rem;
+    height: 2.6rem;
   }
   .small-button {
+    width: 3.2rem;
+    height: 3.2rem;
+  }
+  .action-button {
+    width: 4.1rem;
+    height: 4.1rem;
+  }
+}
+
+@media (max-height: 520px) {
+  /* Mobile Landscape */
+  .controls {
+    inset: auto max(0.6rem, env(safe-area-inset-right)) max(0.4rem, env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left));
+  }
+  .direction-pad {
+    width: 5.8rem;
+    height: 5.8rem;
+  }
+  .pad-knob {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+  .action-group {
+    gap: 0.35rem;
+  }
+  .quick-actions,
+  .main-actions {
+    gap: 0.35rem;
+  }
+  .small-button {
+    width: 2.7rem;
+    height: 2.7rem;
+  }
+  .small-button b {
+    font-size: 0.44rem;
+  }
+  .action-button {
     width: 3.4rem;
     height: 3.4rem;
   }
-  .action-button {
-    width: 4.3rem;
-    height: 4.3rem;
+  .action-button b {
+    font-size: 0.46rem;
+  }
+  .btn-icon {
+    font-size: 1rem;
   }
 }
 </style>

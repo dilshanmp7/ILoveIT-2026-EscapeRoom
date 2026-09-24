@@ -360,21 +360,58 @@ onUnmounted(() => {
   z-index: 10;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   background: rgba(2, 6, 23, .88);
   backdrop-filter: blur(10px);
   font-family: 'Courier New', monospace;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .quiz-modal {
   width: min(100%, 38rem);
-  padding: 1.8rem;
+  max-height: min(92vh, calc(100dvh - 1.5rem));
+  display: flex;
+  flex-direction: column;
+  padding: 1.6rem;
   border: 2px solid #ffcc00;
   border-radius: 1rem;
   background: #0f172a;
   box-shadow: 0 24px 70px rgba(0, 0, 0, .6);
   color: #f8fafc;
   outline: none;
+  overflow: hidden;
+}
+
+.question-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: .3rem;
+  padding-bottom: .5rem;
+}
+
+.question-body::-webkit-scrollbar,
+.feedback-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.question-body::-webkit-scrollbar-track,
+.feedback-panel::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 4px;
+}
+
+.question-body::-webkit-scrollbar-thumb,
+.feedback-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 204, 0, 0.4);
+  border-radius: 4px;
+}
+
+.question-body::-webkit-scrollbar-thumb:hover,
+.feedback-panel::-webkit-scrollbar-thumb:hover {
+  background: #ffcc00;
 }
 
 .terminal-header {
@@ -841,5 +878,133 @@ h2 {
 
 .retry-button:hover {
   background: #dc2626;
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: max(0.4rem, env(safe-area-inset-top)) max(0.4rem, env(safe-area-inset-right)) max(0.4rem, env(safe-area-inset-bottom)) max(0.4rem, env(safe-area-inset-left));
+    align-items: center;
+  }
+  .quiz-modal {
+    padding: 1rem;
+    max-height: min(94vh, calc(100dvh - 1rem));
+    border-radius: 0.75rem;
+  }
+  .terminal-header {
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+  }
+  h2 {
+    font-size: 1.05rem;
+  }
+  .terminal-ticker {
+    font-size: 0.64rem;
+    padding: 0.35rem 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .question-text {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin-bottom: 0.8rem;
+  }
+  .hint-container {
+    margin-bottom: 0.8rem;
+  }
+  .options-grid {
+    gap: 0.45rem;
+  }
+  .option-card {
+    padding: 0.65rem 0.8rem;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    border-radius: 0.6rem;
+  }
+  .key-indicator {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.7rem;
+  }
+  .checkbox-indicator {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+  .multi-submit-bar {
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-submit-multi {
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+  }
+  .feedback-panel {
+    padding: 1rem;
+  }
+  .feedback-status {
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
+  .status-icon {
+    font-size: 1.6rem;
+  }
+  .feedback-status h3 {
+    font-size: 1.05rem;
+  }
+  .explanation-box {
+    padding: 0.75rem;
+    font-size: 0.78rem;
+    margin-bottom: 1rem;
+  }
+  .continue-button,
+  .retry-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-height: 520px) {
+  /* Mobile Landscape */
+  .modal-backdrop {
+    padding: 0.3rem;
+    align-items: center;
+  }
+  .quiz-modal {
+    max-height: calc(100dvh - 0.6rem);
+    padding: 0.65rem 0.9rem;
+  }
+  .terminal-header {
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.3rem;
+  }
+  h2 {
+    font-size: 0.95rem;
+  }
+  .terminal-ticker {
+    display: none;
+  }
+  .question-text {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    margin-bottom: 0.45rem;
+  }
+  .hint-container {
+    margin-bottom: 0.45rem;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+  .option-card {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+  }
+  .multi-submit-bar {
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+  }
 }
 </style>

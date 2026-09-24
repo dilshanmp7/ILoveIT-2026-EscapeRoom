@@ -234,6 +234,15 @@ useSeoMeta({
   title: 'DHL CPH Hub | Escape Room Dispatch Floor',
   robots: 'noindex',
 })
+
+useHead({
+  meta: [
+    {
+      name: 'viewport',
+      content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover',
+    },
+  ],
+})
 </script>
 
 <template>
@@ -413,7 +422,9 @@ useSeoMeta({
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
+  touch-action: none;
 }
 
 .resume-toast {

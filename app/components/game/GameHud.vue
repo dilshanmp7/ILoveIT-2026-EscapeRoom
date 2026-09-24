@@ -38,11 +38,15 @@ defineEmits<{
   toggleMusic: []
 }>()
 
+import { ref } from 'vue'
+
 function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0')
   const secs = (seconds % 60).toString().padStart(2, '0')
   return `${mins}:${secs}`
 }
+
+const showMobileDetails = ref(false)
 </script>
 
 <template>
@@ -54,49 +58,22 @@ function formatTime(seconds: number) {
         <span class="hub-label">CPH HUB / I LOVE IT 2026</span>
       </div>
 
-      <div class="level-card" :class="'level-' + state.currentLevel">
+      <div class="level-card" :class="['level-' + state.currentLevel, { 'mobile-expanded': showMobileDetails }]">
         <div class="level-header">
           <span class="level-pill">SECTOR {{ state.currentLevel }} / 3</span>
           <span class="progress-ratio">{{ state.solvedCountInLevel }} / {{ state.totalInLevel }} SOLVED</span>
+          <button
+            type="button"
+            class="mobile-expand-btn"
+            :aria-label="showMobileDetails ? 'Hide directive details' : 'Show directive and route details'"
+            @click="showMobileDetails = !showMobileDetails"
+          >
+            {{ showMobileDetails ? '✕ HIDE' : '📋 INTEL ▾' }}
+          </button>
         </div>
-        <div class="level-title">{{ state.levelTitle }}</div>
+        <div class="level-title desktop-only-title">{{ state.levelTitle }}</div>
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" :style="{ width: `${(state.solvedCountInLevel / state.totalInLevel) * 100}%` }" />
-        </div>
-
-        <!-- Escape Path Roadmap Sequence Stepper -->
-        <div v-if="state.pathNodes && state.pathNodes.length > 0" class="escape-roadmap" aria-label="Sector Escape Route">
-          <div class="roadmap-header">
-            <span class="roadmap-title">ROUTE SEQUENCE</span>
-            <button type="button" class="btn-quick-map" @click="$emit('openMap')" title="Toggle 2D Sector Blueprint (M)">
-              🗺️ MAP <kbd>M</kbd>
-            </button>
-          </div>
-          <div class="roadmap-track">
-            <div
-              v-for="(node, idx) in state.pathNodes"
-              :key="node.id"
-              class="roadmap-step"
-              :class="{
-                'is-solved': node.solved,
-                'is-current': node.isCurrent,
-                'is-key': node.isKey,
-                'is-gate': node.isGate,
-                'is-upcoming': !node.solved && !node.isCurrent
-              }"
-              :title="`${node.isGate ? 'Exit Gate: ' : (node.isKey ? 'Security Key: ' : 'Station ' + (node.step < 10 ? '0' + node.step : node.step) + ': ')}${node.label}`"
-            >
-              <div class="step-badge">
-                <span v-if="node.solved" class="badge-icon">✔</span>
-                <span v-else-if="node.isCurrent" class="badge-icon">🎯</span>
-                <span v-else-if="node.isKey" class="badge-icon">🔑</span>
-                <span v-else-if="node.isGate" class="badge-icon">🚪</span>
-                <span v-else class="badge-icon">{{ node.step }}</span>
-              </div>
-              <span class="step-label">{{ node.shortLabel }}</span>
-              <span v-if="idx < state.pathNodes.length - 1" class="step-arrow" :class="{ 'arrow-passed': node.solved }">➔</span>
-            </div>
-          </div>
         </div>
 
         <!-- Active Escape Objective Guidance Tracker -->
@@ -113,22 +90,60 @@ function formatTime(seconds: number) {
           </div>
         </div>
 
-        <div class="level-directive">
-          <span class="directive-icon">⚡</span>
-          <span class="directive-text">
-            <template v-if="state.currentLevel === 1">DIRECTIVE: Recalibrate 5 AURA AI Nodes to unlock Gate 1</template>
-            <template v-else-if="state.currentLevel === 2">DIRECTIVE: Synchronize 5 CPH App Nodes (GUS, ServiceNow, Power Automate) to breach Gate 2</template>
-            <template v-else>DIRECTIVE: Enforce 5 Multi-Factor Cyber Protocols to unlock Master Dispatch Hatch</template>
-          </span>
-        </div>
+        <!-- Collapsible Details on Mobile / Always Visible on PC -->
+        <div class="collapsible-details" :class="{ 'details-open': showMobileDetails }">
+          <!-- Escape Path Roadmap Sequence Stepper -->
+          <div v-if="state.pathNodes && state.pathNodes.length > 0" class="escape-roadmap" aria-label="Sector Escape Route">
+            <div class="roadmap-header">
+              <span class="roadmap-title">ROUTE SEQUENCE</span>
+              <button type="button" class="btn-quick-map" @click="$emit('openMap')" title="Toggle 2D Sector Blueprint (M)">
+                🗺️ MAP <kbd>M</kbd>
+              </button>
+            </div>
+            <div class="roadmap-track">
+              <div
+                v-for="(node, idx) in state.pathNodes"
+                :key="node.id"
+                class="roadmap-step"
+                :class="{
+                  'is-solved': node.solved,
+                  'is-current': node.isCurrent,
+                  'is-key': node.isKey,
+                  'is-gate': node.isGate,
+                  'is-upcoming': !node.solved && !node.isCurrent
+                }"
+                :title="`${node.isGate ? 'Exit Gate: ' : (node.isKey ? 'Security Key: ' : 'Station ' + (node.step < 10 ? '0' + node.step : node.step) + ': ')}${node.label}`"
+              >
+                <div class="step-badge">
+                  <span v-if="node.solved" class="badge-icon">✔</span>
+                  <span v-else-if="node.isCurrent" class="badge-icon">🎯</span>
+                  <span v-else-if="node.isKey" class="badge-icon">🔑</span>
+                  <span v-else-if="node.isGate" class="badge-icon">🚪</span>
+                  <span v-else class="badge-icon">{{ node.step }}</span>
+                </div>
+                <span class="step-label">{{ node.shortLabel }}</span>
+                <span v-if="idx < state.pathNodes.length - 1" class="step-arrow" :class="{ 'arrow-passed': node.solved }">➔</span>
+              </div>
+            </div>
+          </div>
 
-        <div class="card-btn-row">
-          <button type="button" class="btn-briefing" @click="$emit('openBriefing')">
-            📜 INTEL BRIEFING
-          </button>
-          <button type="button" class="btn-map" @click="$emit('openMap')">
-            🗺️ ESCAPE PATH (M)
-          </button>
+          <div class="level-directive">
+            <span class="directive-icon">⚡</span>
+            <span class="directive-text">
+              <template v-if="state.currentLevel === 1">DIRECTIVE: Recalibrate 5 AURA AI Nodes to unlock Gate 1</template>
+              <template v-else-if="state.currentLevel === 2">DIRECTIVE: Synchronize 5 CPH App Nodes (GUS, ServiceNow, Power Automate) to breach Gate 2</template>
+              <template v-else>DIRECTIVE: Enforce 5 Multi-Factor Cyber Protocols to unlock Master Dispatch Hatch</template>
+            </span>
+          </div>
+
+          <div class="card-btn-row">
+            <button type="button" class="btn-briefing" @click="$emit('openBriefing')">
+              📜 INTEL BRIEFING
+            </button>
+            <button type="button" class="btn-map" @click="$emit('openMap')">
+              🗺️ ESCAPE PATH (M)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -800,36 +815,148 @@ function formatTime(seconds: number) {
   50% { transform: translate(-50%, -6px); }
 }
 
-@media (max-width: 800px) {
+.mobile-expand-btn {
+  display: none;
+}
+
+.collapsible-details {
+  display: block;
+}
+
+.desktop-only-title {
+  display: block;
+}
+
+@media (max-width: 1024px) {
   .hud {
-    padding: .65rem;
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) 0 max(0.5rem, env(safe-area-inset-left));
+    gap: 0.5rem;
   }
-  .level-card {
-    width: 14rem;
-    padding: .5rem;
-  }
-  .level-title {
-    font-size: .68rem;
-    margin-bottom: .3rem;
+  .desktop-only-title {
+    display: none;
   }
   .agent-tag {
     display: none;
   }
-  .metrics-panel {
-    padding: .4rem .5rem;
+  .mobile-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .15rem .45rem;
+    background: rgba(255, 204, 0, .18);
+    border: 1px solid #ffcc00;
+    border-radius: .3rem;
+    color: #ffcc00;
+    font-family: inherit;
+    font-size: .56rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: all .15s ease;
   }
-  .metric {
-    padding: 0 .35rem;
+  .mobile-expand-btn:active {
+    transform: scale(0.95);
+    background: #ffcc00;
+    color: #0f172a;
+  }
+  .collapsible-details {
+    display: none;
+  }
+  .collapsible-details.details-open {
+    display: block;
+    margin-top: .4rem;
+    padding-top: .4rem;
+    border-top: 1px solid rgba(255, 255, 255, .15);
+    animation: slideDown .2s ease-out;
+  }
+  .level-card {
+    width: min(100%, 18rem);
+    padding: .4rem .55rem;
+  }
+  .level-header {
     gap: .3rem;
   }
+  .level-pill {
+    font-size: .56rem;
+    padding: .1rem .35rem;
+  }
+  .progress-ratio {
+    font-size: .58rem;
+  }
+  .objective-tracker {
+    margin-top: .35rem;
+    padding: .3rem .45rem;
+    gap: .35rem;
+  }
+  .tracker-tag {
+    font-size: .52rem;
+  }
+  .tracker-name {
+    font-size: .62rem;
+  }
+  .metrics-panel {
+    padding: .35rem .45rem;
+    gap: .3rem;
+    border-radius: .75rem;
+  }
+  .metric {
+    padding: 0 .3rem;
+    gap: .25rem;
+  }
   .metric-icon {
-    font-size: 1rem;
+    font-size: .95rem;
   }
   .metric-text strong {
-    font-size: .95rem;
+    font-size: .88rem;
   }
   .metric-text small {
     display: none;
   }
+  .interaction-hint {
+    bottom: clamp(6.2rem, 16vh, 9.5rem);
+    padding: .55rem 1.1rem;
+    font-size: .68rem;
+  }
+}
+
+@media (max-height: 520px) {
+  /* Mobile Landscape */
+  .hud {
+    padding: max(0.3rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) 0 max(0.5rem, env(safe-area-inset-left));
+    align-items: flex-start;
+  }
+  .brand-badge {
+    display: none;
+  }
+  .level-card {
+    width: auto;
+    max-width: 22rem;
+    padding: .25rem .45rem;
+  }
+  .progress-bar-bg {
+    height: .25rem;
+  }
+  .objective-tracker {
+    margin-top: .2rem;
+    padding: .2rem .35rem;
+  }
+  .metrics-panel {
+    padding: .25rem .4rem;
+  }
+  .interaction-hint {
+    bottom: 4.5rem;
+    padding: .4rem .85rem;
+    font-size: .65rem;
+  }
+  .holding-pill {
+    top: 3.5rem;
+    padding: .25rem .6rem;
+    font-size: .6rem;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
