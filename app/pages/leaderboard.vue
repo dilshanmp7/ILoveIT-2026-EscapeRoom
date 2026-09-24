@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { EventStats, LeaderboardEntry } from '#shared/game/types'
 import { CPH_DEPARTMENTS, CPH_SHIFTS } from '#shared/game/questions-data'
+import { useLeaderboardAudio } from '~/utils/game/leaderboard-audio'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const entries = ref<LeaderboardEntry[]>([])
@@ -17,6 +18,59 @@ const selectedShift = ref('')
 const isLoading = ref(false)
 const autoRefreshSeconds = ref(5)
 let refreshTimer: ReturnType<typeof setInterval> | undefined
+
+// Big Screen Broadcast Audio & Presentation State
+const audio = useLeaderboardAudio()
+const isAudioActive = ref(false)
+const isFullscreen = ref(false)
+
+const liveBroadcastAlert = ref<{ type: 'escape' | 'leader'; message: string; sub: string } | null>(null)
+let alertTimeout: ReturnType<typeof setTimeout> | null = null
+let previousTotalCompleted: number | null = null
+let previousTopAgentCode: string | null = null
+
+function triggerBroadcastAlert(type: 'escape' | 'leader', message: string, sub: string) {
+  liveBroadcastAlert.value = { type, message, sub }
+  if (alertTimeout) clearTimeout(alertTimeout)
+  alertTimeout = setTimeout(() => {
+    liveBroadcastAlert.value = null
+  }, 7000)
+}
+
+async function toggleSound() {
+  audio.unlock()
+  if (audio.isSoundEnabled && audio.isPlaying) {
+    audio.stop(0.3)
+    isAudioActive.value = false
+  } else {
+    await audio.start()
+    isAudioActive.value = audio.isPlaying
+  }
+}
+
+function toggleFullscreen() {
+  if (typeof document === 'undefined') return
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {})
+  } else {
+    document.exitFullscreen?.().catch(() => {})
+  }
+}
+
+function onFullscreenChange() {
+  if (typeof document !== 'undefined') {
+    isFullscreen.value = !!document.fullscreenElement
+  }
+}
+
+function onUserInteraction() {
+  audio.unlock()
+  if (audio.isSoundEnabled && !audio.isPlaying) {
+    void audio.start().then(() => {
+      isAudioActive.value = audio.isPlaying
+    })
+  }
+}
 
 useSeoMeta({
   title: 'DHL CPH Hub | Live Event Leaderboard',
@@ -41,6 +95,43 @@ async function fetchLeaderboard() {
       topDepartment: null,
       averageScore: 0,
     }
+
+    const currentCompleted = data.stats?.totalCompleted ?? 0
+    const currentEntries = data.leaderboard || []
+    const currentTopAgent = currentEntries[0]?.userCode || null
+
+    // Real-time Event Fanfare: Detect new successful facility escape
+    if (previousTotalCompleted !== null && currentCompleted > previousTotalCompleted) {
+      const newlyEscaped = currentEntries.find((e) => e.completed)
+      const name = newlyEscaped ? `${newlyEscaped.firstName} ${newlyEscaped.lastName}` : 'Rapid-Response Agent'
+      const dept = newlyEscaped?.department ? `(${newlyEscaped.department})` : ''
+      const timeStr = newlyEscaped ? formatTime(newlyEscaped.timeSpentSeconds) : ''
+      audio.playCelebrationFanfare()
+      triggerBroadcastAlert(
+        'escape',
+        `🎉 FACILITY ESCAPE CONFIRMED: ${name} ${dept}!`,
+        `Emergency clearance achieved in ${timeStr} • Total Escapes: ${currentCompleted}`,
+      )
+    }
+
+    // Real-time Event Fanfare: Detect change of #1 Leader
+    if (
+      previousTopAgentCode !== null &&
+      currentTopAgent &&
+      currentTopAgent !== previousTopAgentCode &&
+      currentEntries.length > 0
+    ) {
+      const top = currentEntries[0]!
+      audio.playLeadChangeChime()
+      triggerBroadcastAlert(
+        'leader',
+        `👑 NEW #1 CHAMPION: ${top.firstName} ${top.lastName} (${top.department})!`,
+        `Score: ${top.score} PTS • Escaped in ${formatTime(top.timeSpentSeconds)}`,
+      )
+    }
+
+    previousTotalCompleted = currentCompleted
+    previousTopAgentCode = currentTopAgent
 
     // Client-side fallback: ensure the player's own finished game is never missing on their device
     if (import.meta.client) {
@@ -105,6 +196,12 @@ function formatTime(seconds: number) {
 }
 
 onMounted(() => {
+  if (import.meta.client) {
+    isAudioActive.value = audio.isPlaying
+    window.addEventListener('pointerdown', onUserInteraction, { capture: true })
+    window.addEventListener('keydown', onUserInteraction, { capture: true })
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+  }
   fetchLeaderboard()
   refreshTimer = setInterval(() => {
     fetchLeaderboard()
@@ -113,6 +210,13 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  if (alertTimeout) clearTimeout(alertTimeout)
+  if (import.meta.client) {
+    window.removeEventListener('pointerdown', onUserInteraction, { capture: true })
+    window.removeEventListener('keydown', onUserInteraction, { capture: true })
+    document.removeEventListener('fullscreenchange', onFullscreenChange)
+    audio.stop(0.2)
+  }
 })
 </script>
 
@@ -129,13 +233,59 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Live Refresh Status -->
-        <div class="live-indicator">
-          <span class="pulsing-dot" />
-          <span>LIVE BROADCAST (5S AUTO-REFRESH)</span>
+        <!-- Live Broadcast Control Cluster -->
+        <div class="broadcast-controls">
+          <!-- Arena Audio Button -->
+          <button
+            type="button"
+            class="btn-broadcast-sound"
+            :class="{ active: isAudioActive }"
+            @click="toggleSound"
+            title="Toggle Big Screen Broadcast Audio (BGM & Chimes)"
+          >
+            <span v-if="isAudioActive" class="sound-wave" aria-hidden="true">
+              <span class="bar bar-1" />
+              <span class="bar bar-2" />
+              <span class="bar bar-3" />
+              <span class="bar bar-4" />
+            </span>
+            <span v-else class="sound-icon" aria-hidden="true">🔇</span>
+            <span>{{ isAudioActive ? 'ARENA SOUND: ON' : 'START ARENA SOUND 🔊' }}</span>
+          </button>
+
+          <!-- Fullscreen Presentation Toggle -->
+          <button
+            type="button"
+            class="btn-fullscreen"
+            @click="toggleFullscreen"
+            title="Toggle Big Screen Fullscreen Presentation Mode"
+          >
+            {{ isFullscreen ? '🗗 EXIT' : '⛶ FULLSCREEN' }}
+          </button>
+
+          <!-- Live Refresh Status -->
+          <div class="live-indicator">
+            <span class="pulsing-dot" />
+            <span>LIVE (5S)</span>
+          </div>
+
           <NuxtLink to="/" class="btn-play">Play Game ➔</NuxtLink>
         </div>
       </div>
+
+      <!-- Live Event Alert Banner (Facility Escapes & Leader Changes) -->
+      <transition name="alert-slide">
+        <div v-if="liveBroadcastAlert" class="broadcast-alert-banner" :class="liveBroadcastAlert.type">
+          <div class="alert-icon">
+            {{ liveBroadcastAlert.type === 'escape' ? '🚀' : '👑' }}
+          </div>
+          <div class="alert-body">
+            <strong class="alert-headline">{{ liveBroadcastAlert.message }}</strong>
+            <span class="alert-detail">{{ liveBroadcastAlert.sub }}</span>
+          </div>
+          <button class="alert-dismiss" @click="liveBroadcastAlert = null" aria-label="Dismiss alert">✕</button>
+        </div>
+      </transition>
 
       <!-- Real-Time Event Statistics Ribbon -->
       <div class="stats-ribbon">
@@ -332,6 +482,180 @@ h1 {
   color: #94a3b8;
   font-size: .75rem;
   letter-spacing: .08em;
+}
+
+.broadcast-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.btn-broadcast-sound {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .45rem .85rem;
+  background: rgba(15, 23, 42, .9);
+  border: 1.5px solid #ffcc00;
+  color: #ffcc00;
+  border-radius: .45rem;
+  font-family: inherit;
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 0 12px rgba(255, 204, 0, .25);
+  animation: pulse-border 2.5s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 204, 0, .25); }
+  50% { box-shadow: 0 0 20px rgba(255, 204, 0, .5); }
+}
+
+.btn-broadcast-sound:hover {
+  background: #ffcc00;
+  color: #0f172a;
+  box-shadow: 0 0 22px rgba(255, 204, 0, .6);
+}
+
+.btn-broadcast-sound.active {
+  background: rgba(16, 185, 129, .15);
+  border-color: #10b981;
+  color: #34d399;
+  box-shadow: 0 0 16px rgba(16, 185, 129, .35);
+  animation: none;
+}
+
+.btn-broadcast-sound.active:hover {
+  background: #10b981;
+  color: #0f172a;
+  box-shadow: 0 0 22px rgba(16, 185, 129, .6);
+}
+
+.sound-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.sound-wave .bar {
+  width: 3px;
+  background: currentColor;
+  border-radius: 1px;
+  animation: sound-bar-bounce 0.8s ease-in-out infinite alternate;
+}
+
+.sound-wave .bar-1 { height: 40%; animation-delay: 0.1s; }
+.sound-wave .bar-2 { height: 100%; animation-delay: 0.3s; }
+.sound-wave .bar-3 { height: 60%; animation-delay: 0.45s; }
+.sound-wave .bar-4 { height: 80%; animation-delay: 0.2s; }
+
+@keyframes sound-bar-bounce {
+  0% { transform: scaleY(0.25); }
+  100% { transform: scaleY(1); }
+}
+
+.btn-fullscreen {
+  padding: .45rem .75rem;
+  background: rgba(30, 41, 59, .85);
+  border: 1px solid #475569;
+  color: #f8fafc;
+  border-radius: .45rem;
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.btn-fullscreen:hover {
+  background: #334155;
+  border-color: #94a3b8;
+}
+
+.broadcast-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .85rem 1.25rem;
+  border-radius: .65rem;
+  margin-bottom: 1.2rem;
+  animation: banner-enter .4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 2px solid;
+}
+
+@keyframes banner-enter {
+  0% { opacity: 0; transform: translateY(-12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.broadcast-alert-banner.escape {
+  background: linear-gradient(90deg, rgba(16, 185, 129, .25), rgba(15, 23, 42, .95));
+  border-color: #10b981;
+  box-shadow: 0 0 25px rgba(16, 185, 129, .35);
+}
+
+.broadcast-alert-banner.leader {
+  background: linear-gradient(90deg, rgba(255, 204, 0, .25), rgba(15, 23, 42, .95));
+  border-color: #ffcc00;
+  box-shadow: 0 0 25px rgba(255, 204, 0, .35);
+}
+
+.alert-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.alert-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.alert-headline {
+  font-size: .95rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.broadcast-alert-banner.escape .alert-headline { color: #34d399; }
+.broadcast-alert-banner.leader .alert-headline { color: #ffcc00; }
+
+.alert-detail {
+  font-size: .75rem;
+  color: #cbd5e1;
+}
+
+.alert-dismiss {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: .2rem .4rem;
+}
+
+.alert-dismiss:hover { color: #f8fafc; }
+
+.alert-slide-enter-active,
+.alert-slide-leave-active {
+  transition: all .35s ease;
+}
+
+.alert-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-16px);
+}
+
+.alert-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-16px);
 }
 
 .live-indicator {
