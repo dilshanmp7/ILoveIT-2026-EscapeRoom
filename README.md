@@ -173,4 +173,4 @@ $$\text{Final Score} = \sum (\text{Question Points} - \text{Hint Penalties}) - \
 ---
 
 ## 📄 License
-Internal proprietary software for Deutsche Post DHL Group / DHL CPH Hub. All rights reserved.
+Internal proprietary software for  DHL CPH Hub IT Dev. All rights reserved.
