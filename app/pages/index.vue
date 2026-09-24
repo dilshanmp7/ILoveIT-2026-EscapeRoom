@@ -291,6 +291,11 @@ onMounted(async () => {
           {{ isSubmitting ? 'INITIALIZING AGENT...' : 'INITIALIZE AGENT & ENTER CPH HUB ➔' }}
         </button>
 
+        <p class="privacy-notice-inline">
+          🔒 Official DHL internal training game. Only name & department are used for leaderboard purposes. No data is shared outside DHL.
+          <NuxtLink to="/privacy" class="inline-policy-link">Privacy Policy ➔</NuxtLink>
+        </p>
+
         <div v-if="errorMessage" class="form-error-wrapper">
           <p class="form-error" role="alert">{{ errorMessage }}</p>
           <NuxtLink v-if="isBlockedFromReplay" to="/leaderboard" class="btn-error-leaderboard">
@@ -334,11 +339,20 @@ onMounted(async () => {
         </div>
       </form>
 
-      <!-- Navigation Links -->
+      <!-- Navigation & Policy Links -->
       <div class="bottom-links">
         <NuxtLink class="leaderboard-link" to="/leaderboard">
           📺 Live Big-Screen Leaderboard ➔
         </NuxtLink>
+        <div class="footer-legal-links">
+          <NuxtLink class="legal-link" to="/privacy">
+            🛡️ Privacy Policy
+          </NuxtLink>
+          <span class="legal-sep">•</span>
+          <NuxtLink class="legal-link" to="/contact">
+            ✉️ Contact IT Support
+          </NuxtLink>
+        </div>
       </div>
     </section>
 
@@ -386,6 +400,11 @@ onMounted(async () => {
         <NuxtLink to="/leaderboard" class="aside-board-btn">
           View Live Event Standings ➔
         </NuxtLink>
+        <div class="aside-legal-links">
+          <NuxtLink to="/privacy">Privacy Policy</NuxtLink>
+          <span class="aside-sep">•</span>
+          <NuxtLink to="/contact">Contact IT</NuxtLink>
+        </div>
       </div>
     </aside>
   </main>
@@ -708,20 +727,94 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+.privacy-notice-inline {
+  margin: .85rem 0 0;
+  font-size: .68rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  background: rgba(15, 23, 42, .6);
+  padding: .5rem .75rem;
+  border-radius: .35rem;
+  border-left: 2.5px solid #ffcc00;
+}
+
+.inline-policy-link {
+  color: #ffcc00;
+  text-decoration: underline;
+  font-weight: 700;
+  margin-left: .25rem;
+}
+
+.inline-policy-link:hover {
+  color: #fde047;
+}
+
 .bottom-links {
   display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
+  gap: .75rem;
   margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #1e293b;
 }
 
 .leaderboard-link {
   color: #ffcc00;
   text-decoration: none;
-  font-size: .78rem;
+  font-size: .8rem;
   font-weight: 800;
 }
 
 .leaderboard-link:hover { text-decoration: underline; }
+
+.footer-legal-links {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  font-size: .72rem;
+}
+
+.legal-link {
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color .2s;
+}
+
+.legal-link:hover {
+  color: #ffcc00;
+  text-decoration: underline;
+}
+
+.legal-sep {
+  color: #475569;
+}
+
+.aside-legal-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .65rem;
+  font-size: .7rem;
+  color: #64748b;
+  margin-top: .4rem;
+}
+
+.aside-legal-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color .2s;
+}
+
+.aside-legal-links a:hover {
+  color: #ffcc00;
+  text-decoration: underline;
+}
+
+.aside-sep {
+  color: #475569;
+}
 
 /* Aside Mission Graphic */
 .access-aside {

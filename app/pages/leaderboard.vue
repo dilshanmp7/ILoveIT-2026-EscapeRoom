@@ -430,6 +430,17 @@ onBeforeUnmount(() => {
         <span>🚨 NIGHT-SORT CYBER INCIDENT IN PROGRESS • 200 RAPID-RESPONSE AGENTS COMPETING TO RESTORE LOGISTICS PROTOCOLS • SOLVE ALL 3 SECTORS TO UNLOCK EMERGENCY DISPATCH HATCH!</span>
       </div>
     </footer>
+
+    <!-- Leaderboard Sub-Footer -->
+    <div class="leaderboard-legal-footer">
+      <span>DHL CPH Hub • I Love IT Day 2026</span>
+      <span>•</span>
+      <NuxtLink to="/privacy">Privacy Policy</NuxtLink>
+      <span>•</span>
+      <NuxtLink to="/contact">Contact IT Team</NuxtLink>
+      <span>•</span>
+      <NuxtLink to="/">Return to Game Start ➔</NuxtLink>
+    </div>
   </main>
 </template>
 
@@ -1004,6 +1015,29 @@ h1 {
 @keyframes ticker-slide {
   0% { transform: translateX(100%); }
   100% { transform: translateX(-100%); }
+}
+
+.leaderboard-legal-footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  font-size: .7rem;
+  color: #64748b;
+}
+
+.leaderboard-legal-footer a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color .2s;
+}
+
+.leaderboard-legal-footer a:hover {
+  color: #ffcc00;
+  text-decoration: underline;
 }
 
 @media (max-width: 900px) {
