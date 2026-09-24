@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+
 const props = defineProps<{
   open: boolean
   score: number
@@ -18,6 +20,35 @@ const emit = defineEmits<{
   leaderboard: []
   home: []
 }>()
+
+function handleKey(e: KeyboardEvent) {
+  if (!props.open) return
+  if (
+    e.key === 'Enter' ||
+    e.code === 'Enter' ||
+    e.key === ' ' ||
+    e.code === 'Space' ||
+    e.key === 'l' ||
+    e.key === 'L' ||
+    e.code === 'KeyL'
+  ) {
+    e.preventDefault()
+    e.stopPropagation()
+    emit('leaderboard')
+  } else if (e.key === 'Escape' || e.code === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    emit('home')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKey, true)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKey, true)
+})
 
 function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0')
@@ -106,10 +137,10 @@ function getRatingBadge(score: number, seconds: number, isTimedOut?: boolean) {
 
       <div class="victory-actions">
         <button type="button" class="btn-leaderboard" @click="emit('leaderboard')">
-          View Live Event Leaderboard ➔
+          View Live Event Leaderboard ➔ <small class="action-hint">[SPACE / ENTER]</small>
         </button>
         <button type="button" class="btn-home" @click="emit('home')">
-          Return to Hub Login
+          Return to Hub Login <small class="action-hint">[ESC]</small>
         </button>
       </div>
     </div>

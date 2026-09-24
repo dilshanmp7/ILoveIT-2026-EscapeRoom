@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { EscapeRoomQuestion } from '#shared/game/types'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{
   quiz: EscapeRoomQuestion | null
@@ -93,14 +93,49 @@ function handleHintRequest() {
 function handleKeydown(event: KeyboardEvent) {
   if (!props.quiz || !props.open) return
 
-  if (props.feedback) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
+  // Escape key closes modal, cancels hint prompt, or closes feedback
+  if (event.key === 'Escape' || event.code === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    if (confirmHintPrompt.value) {
+      confirmHintPrompt.value = false
+    } else if (props.feedback) {
       if (props.feedback.isCorrect) {
         emit('advance')
       } else {
         emit('retry')
       }
+    } else {
+      emit('close')
+    }
+    return
+  }
+
+  // Feedback screen navigation
+  if (props.feedback) {
+    if (
+      event.key === 'Enter' ||
+      event.key === ' ' ||
+      event.code === 'Space' ||
+      event.code === 'Enter'
+    ) {
+      event.preventDefault()
+      event.stopPropagation()
+      if (props.feedback.isCorrect) {
+        emit('advance')
+      } else {
+        emit('retry')
+      }
+    }
+    return
+  }
+
+  // Hint confirmation dialog keys
+  if (confirmHintPrompt.value) {
+    if (event.key === 'Enter' || event.key === ' ' || event.code === 'Space' || event.code === 'Enter') {
+      event.preventDefault()
+      event.stopPropagation()
+      handleHintRequest()
     }
     return
   }
@@ -111,6 +146,7 @@ function handleKeydown(event: KeyboardEvent) {
   const numKey = parseInt(event.key, 10)
   if (!isNaN(numKey) && numKey >= 1 && numKey <= optionCount) {
     event.preventDefault()
+    event.stopPropagation()
     const option = props.quiz.options[numKey - 1]
     if (option) {
       selectedIndex.value = numKey - 1
@@ -129,14 +165,16 @@ function handleKeydown(event: KeyboardEvent) {
   } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
     event.preventDefault()
     selectedIndex.value = (selectedIndex.value - 1 + optionCount) % optionCount
-  } else if (event.key === ' ') {
+  } else if (event.key === ' ' || event.code === 'Space') {
     if (isMultiSelect.value) {
       event.preventDefault()
+      event.stopPropagation()
       const option = props.quiz.options[selectedIndex.value]
       if (option) toggleOption(option.id)
     }
-  } else if (event.key === 'Enter') {
+  } else if (event.key === 'Enter' || event.code === 'Enter') {
     event.preventDefault()
+    event.stopPropagation()
     if (isMultiSelect.value) {
       if (selectedOptionIds.value.length > 0) {
         submitMultiAnswer()
@@ -150,6 +188,14 @@ function handleKeydown(event: KeyboardEvent) {
     }
   }
 }
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown, true)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown, true)
+})
 </script>
 
 <template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
+
 const props = defineProps<{
   open: boolean
   level: 1 | 2 | 3
@@ -9,6 +11,30 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+function handleKey(e: KeyboardEvent) {
+  if (!props.open) return
+  if (
+    e.key === 'Enter' ||
+    e.key === ' ' ||
+    e.key === 'Escape' ||
+    e.code === 'Space' ||
+    e.code === 'Enter' ||
+    e.code === 'Escape'
+  ) {
+    e.preventDefault()
+    e.stopPropagation()
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKey, true)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKey, true)
+})
 </script>
 
 <template>
@@ -142,7 +168,7 @@ const emit = defineEmits<{
       <!-- Footer CTA -->
       <div class="briefing-footer">
         <button type="button" class="btn-proceed" @click="emit('close')">
-          COMMENCE ESCAPE SHIFT ➔
+          COMMENCE ESCAPE SHIFT ➔ <span class="btn-hint">[SPACE / ENTER / ESC]</span>
         </button>
       </div>
     </section>

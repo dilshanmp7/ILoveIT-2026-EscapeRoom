@@ -1801,6 +1801,75 @@ export function useGameEngine() {
     };
 
     const keydown = (event: KeyboardEvent) => {
+      // Priority 1: Dismiss open message/notification dialogs
+      if (state.message) {
+        if (
+          event.key === "Enter" ||
+          event.key === " " ||
+          event.key === "Escape" ||
+          event.code === "Space" ||
+          event.code === "Enter" ||
+          event.code === "Escape" ||
+          event.code === "KeyE" ||
+          event.key === "e" ||
+          event.key === "E"
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeMessage();
+          return;
+        }
+      }
+
+      if (state.levelClearedModal) {
+        if (
+          event.key === "Enter" ||
+          event.key === " " ||
+          event.key === "Escape" ||
+          event.code === "Space" ||
+          event.code === "Enter" ||
+          event.code === "Escape" ||
+          event.code === "KeyE" ||
+          event.key === "e" ||
+          event.key === "E"
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeLevelClearedModal();
+          return;
+        }
+      }
+
+      if (state.missionBriefingOpen) {
+        if (
+          event.key === "Enter" ||
+          event.key === " " ||
+          event.key === "Escape" ||
+          event.code === "Space" ||
+          event.code === "Enter" ||
+          event.code === "Escape"
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeMissionBriefing();
+          return;
+        }
+      }
+
+      // Priority 2: Suppress 3D motion while modals/dialogs are active
+      if (
+        state.message ||
+        state.levelClearedModal ||
+        state.quizOpen ||
+        state.missionBriefingOpen ||
+        state.mapModalOpen ||
+        state.objectSelectionOpen ||
+        state.actionSelectionOpen ||
+        state.finished
+      ) {
+        return;
+      }
+
       keys.add(event.code);
       const isEKey = event.code === "KeyE" || event.key === "e" || event.key === "E";
       const isZKey = event.code === "KeyZ" || event.key === "z" || event.key === "Z";

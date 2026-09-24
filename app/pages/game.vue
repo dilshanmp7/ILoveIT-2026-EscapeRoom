@@ -324,7 +324,7 @@ useSeoMeta({
           <h2>{{ engine.state.levelClearedModal.title }}</h2>
           <p>{{ engine.state.levelClearedModal.message }}</p>
           <button type="button" class="btn-proceed" @click="engine.closeLevelClearedModal">
-            Proceed to Next Sector ➔
+            Proceed to Next Sector ➔ <span class="key-hint">[SPACE / ENTER / ESC]</span>
           </button>
         </div>
       </div>
