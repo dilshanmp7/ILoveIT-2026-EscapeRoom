@@ -302,7 +302,12 @@ export class SoundFX {
 
   private init() {
     if (typeof window === "undefined" || this.context) return;
-    this.context = new AudioContext();
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      try {
+        this.context = new AudioCtx();
+      } catch {}
+    }
   }
 
   private playTone(
@@ -333,6 +338,9 @@ export class SoundFX {
 
   play(effect: SoundEffect) {
     this.init();
+    if (this.context && this.context.state === "suspended") {
+      void this.context.resume();
+    }
     if (effect === "type") {
       this.playTone(800, "square", 0.05, 0.05);
       setTimeout(() => this.playTone(850, "square", 0.05, 0.05), 50);

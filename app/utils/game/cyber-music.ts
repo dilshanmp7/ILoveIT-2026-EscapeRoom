@@ -73,29 +73,55 @@ export class CyberMusicEngine {
   private initAudio() {
     if (typeof window === "undefined" || this.ctx) return;
 
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    this.ctx = new AudioCtx();
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      this.ctx = new AudioCtx({ latencyHint: "interactive" });
 
-    // Master Dynamics Compressor to glue the synth elements and avoid harsh peaks
-    this.compressor = this.ctx.createDynamicsCompressor();
-    this.compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
-    this.compressor.knee.setValueAtTime(12, this.ctx.currentTime);
-    this.compressor.ratio.setValueAtTime(6, this.ctx.currentTime);
-    this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
-    this.compressor.release.setValueAtTime(0.12, this.ctx.currentTime);
-    this.compressor.connect(this.ctx.destination);
+      // Master Dynamics Compressor to glue the synth elements and avoid harsh peaks
+      this.compressor = this.ctx.createDynamicsCompressor();
+      this.compressor.threshold.setValueAtTime(-18, this.ctx.currentTime);
+      this.compressor.knee.setValueAtTime(12, this.ctx.currentTime);
+      this.compressor.ratio.setValueAtTime(6, this.ctx.currentTime);
+      this.compressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
+      this.compressor.release.setValueAtTime(0.12, this.ctx.currentTime);
+      this.compressor.connect(this.ctx.destination);
 
-    // Master BGM Gain
-    this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.setValueAtTime(this.enabled ? 0.22 : 0, this.ctx.currentTime);
-    this.masterGain.connect(this.compressor);
+      // Master BGM Gain
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.setValueAtTime(this.enabled ? 0.32 : 0, this.ctx.currentTime);
+      this.masterGain.connect(this.compressor);
 
-    // Generate 1-second white noise buffer for crisp mechanical ticking
-    const bufferSize = this.ctx.sampleRate;
-    this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = this.noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
+      // Generate 1-second white noise buffer for crisp mechanical ticking
+      const bufferSize = this.ctx.sampleRate;
+      this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+    } catch (err) {
+      console.warn("[CyberMusic] Failed to initialize AudioContext:", err);
+    }
+  }
+
+  /**
+   * Synchronously unlocks iOS Safari / Android Web Audio during user gesture.
+   */
+  public unlock(): void {
+    this.initAudio();
+    if (!this.ctx) return;
+
+    // iOS Web Audio unlock: Play 1-sample silent buffer synchronously inside user gesture
+    try {
+      const buffer = this.ctx.createBuffer(1, 1, 22050);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.ctx.destination);
+      source.start(0);
+    } catch {}
+
+    if (this.ctx.state === "suspended") {
+      void this.ctx.resume();
     }
   }
 
@@ -104,15 +130,26 @@ export class CyberMusicEngine {
    */
   public async start(): Promise<void> {
     this.initAudio();
-    if (!this.ctx || this.isRunning) return;
+    if (!this.ctx) return;
+
+    this.unlock();
 
     if (this.ctx.state === "suspended") {
       try {
         await this.ctx.resume();
       } catch {
-        // User gesture required
         return;
       }
+    }
+
+    if (this.isRunning) {
+      // If already running, ensure volume is smoothly unmuted
+      if (this.masterGain && this.enabled) {
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0.32, this.ctx.currentTime + 0.3);
+      }
+      return;
     }
 
     this.isRunning = true;
@@ -123,8 +160,8 @@ export class CyberMusicEngine {
     if (this.masterGain) {
       this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
       this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-      this.masterGain.gain.exponentialRampToValueAtTime(
-        this.enabled ? 0.22 : 0.001,
+      this.masterGain.gain.linearRampToValueAtTime(
+        this.enabled ? 0.32 : 0.001,
         this.ctx.currentTime + 1.2,
       );
     }
@@ -149,7 +186,7 @@ export class CyberMusicEngine {
       try {
         this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
         this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
-        this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + fadeSeconds);
+        this.masterGain.gain.linearRampToValueAtTime(0.0001, this.ctx.currentTime + fadeSeconds);
       } catch {}
     }
 
@@ -169,21 +206,25 @@ export class CyberMusicEngine {
       } catch {}
     }
 
-    if (this.masterGain && this.ctx) {
-      this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
-      if (this.enabled) {
-        if (!this.isRunning) {
-          this.start();
-        } else {
-          this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-          this.masterGain.gain.exponentialRampToValueAtTime(0.22, this.ctx.currentTime + 0.4);
-        }
-      } else {
-        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
-        this.masterGain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.3);
+    this.initAudio();
+    if (this.ctx) {
+      this.unlock();
+    }
+
+    if (this.enabled) {
+      if (!this.isRunning || !this.ctx || this.ctx.state === "suspended") {
+        void this.start();
+      } else if (this.masterGain && this.ctx) {
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(Math.max(0.001, this.masterGain.gain.value), this.ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0.32, this.ctx.currentTime + 0.3);
       }
-    } else if (this.enabled) {
-      this.start();
+    } else {
+      if (this.masterGain && this.ctx) {
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+        this.masterGain.gain.linearRampToValueAtTime(0.0001, this.ctx.currentTime + 0.3);
+      }
     }
 
     return this.enabled;
@@ -215,6 +256,11 @@ export class CyberMusicEngine {
 
   private scheduleLoop = () => {
     if (!this.isRunning || !this.ctx) return;
+
+    // Guard against background tab delay or suspended AudioContext timing jump
+    if (this.nextStepTime < this.ctx.currentTime) {
+      this.nextStepTime = this.ctx.currentTime + 0.02;
+    }
 
     while (this.nextStepTime < this.ctx.currentTime + this.scheduleAheadTime) {
       this.scheduleStep(this.currentStep, this.nextStepTime);
@@ -311,11 +357,11 @@ export class CyberMusicEngine {
     const gain = this.ctx.createGain();
 
     osc.type = "sine";
-    // Pitch drop from 120Hz to 38Hz creates sub-bass thump
-    osc.frequency.setValueAtTime(125, time);
-    osc.frequency.exponentialRampToValueAtTime(38, time + 0.09);
+    // Pitch drop from 160Hz to 52Hz creates punch audible on mobile phone speakers & desktop
+    osc.frequency.setValueAtTime(160, time);
+    osc.frequency.exponentialRampToValueAtTime(52, time + 0.09);
 
-    gain.gain.setValueAtTime(0.38, time);
+    gain.gain.setValueAtTime(0.46, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
 
     osc.connect(gain);

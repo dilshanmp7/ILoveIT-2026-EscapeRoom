@@ -1464,12 +1464,20 @@ export function useGameEngine() {
 
   function closeMissionBriefing() {
     state.missionBriefingOpen = false;
+    music.unlock();
+    if (music.isMusicEnabled && !music.isPlaying) {
+      void music.start();
+    }
   }
 
   function closeFeedbackAndAdvance() {
     state.quizFeedback = null;
     state.quizOpen = false;
     state.quiz = null;
+    music.unlock();
+    if (music.isMusicEnabled && !music.isPlaying) {
+      void music.start();
+    }
   }
 
   function retryQuiz() {
@@ -1478,6 +1486,10 @@ export function useGameEngine() {
 
   function closeMessage() {
     state.message = "";
+    music.unlock();
+    if (music.isMusicEnabled && !music.isPlaying) {
+      void music.start();
+    }
   }
 
   function updateCameraOcclusion() {
@@ -1639,6 +1651,10 @@ export function useGameEngine() {
 
   function setJoystick(x: number, y: number) {
     joystick = { x, y };
+    if ((x !== 0 || y !== 0) && music.isMusicEnabled && !music.isPlaying) {
+      music.unlock();
+      void music.start();
+    }
   }
 
   function setFloorplan(value: Floorplan | GameObjectInstance[]) {
@@ -1976,14 +1992,19 @@ export function useGameEngine() {
     };
     const keyup = (event: KeyboardEvent) => keys.delete(event.code);
 
-    // Start procedural cyber-music on first user interaction (audio policy compliant)
-    const startAudioOnGesture = () => {
+    // Start procedural cyber-music on first user interaction anywhere (window + document)
+    const unlockAndStartAudio = () => {
+      music.unlock();
       if (music.isMusicEnabled && !music.isPlaying) {
         void music.start();
       }
     };
-    target.addEventListener("pointerdown", startAudioOnGesture, { once: true });
-    window.addEventListener("keydown", startAudioOnGesture, { once: true });
+
+    window.addEventListener("pointerdown", unlockAndStartAudio, { capture: true });
+    window.addEventListener("touchstart", unlockAndStartAudio, { capture: true, passive: true });
+    window.addEventListener("touchend", unlockAndStartAudio, { capture: true, passive: true });
+    window.addEventListener("click", unlockAndStartAudio, { capture: true });
+    window.addEventListener("keydown", unlockAndStartAudio, { capture: true });
 
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", keydown);
@@ -2014,8 +2035,11 @@ export function useGameEngine() {
     animationFrame = requestAnimationFrame(frame);
 
     removeListeners = () => {
-      target.removeEventListener("pointerdown", startAudioOnGesture);
-      window.removeEventListener("keydown", startAudioOnGesture);
+      window.removeEventListener("pointerdown", unlockAndStartAudio, { capture: true });
+      window.removeEventListener("touchstart", unlockAndStartAudio, { capture: true });
+      window.removeEventListener("touchend", unlockAndStartAudio, { capture: true });
+      window.removeEventListener("click", unlockAndStartAudio, { capture: true });
+      window.removeEventListener("keydown", unlockAndStartAudio, { capture: true });
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("keyup", keyup);
