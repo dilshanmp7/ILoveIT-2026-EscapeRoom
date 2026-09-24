@@ -16,7 +16,7 @@ const stats = ref<EventStats>({
 const selectedDepartment = ref('')
 const selectedShift = ref('')
 const isLoading = ref(false)
-const autoRefreshSeconds = ref(5)
+const autoRefreshSeconds = ref(300) // 5 minutes
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 
 // Big Screen Broadcast Audio & Presentation State
@@ -205,7 +205,7 @@ onMounted(() => {
   fetchLeaderboard()
   refreshTimer = setInterval(() => {
     fetchLeaderboard()
-  }, 5000)
+  }, 5 * 60 * 1000)
 })
 
 onBeforeUnmount(() => {
@@ -264,10 +264,16 @@ onBeforeUnmount(() => {
           </button>
 
           <!-- Live Refresh Status -->
-          <div class="live-indicator">
+          <button
+            type="button"
+            class="live-indicator"
+            @click="fetchLeaderboard"
+            title="Auto-refreshes every 5 minutes. Click to refresh now."
+          >
             <span class="pulsing-dot" />
-            <span>LIVE (5S)</span>
-          </div>
+            <span>LIVE (5 MIN)</span>
+            <span v-if="isLoading" class="refreshing-spin">⟳</span>
+          </button>
 
           <NuxtLink to="/" class="btn-play">Play Game ➔</NuxtLink>
         </div>
@@ -668,6 +674,26 @@ h1 {
   border-radius: .5rem;
   font-size: .72rem;
   font-weight: 800;
+  font-family: inherit;
+  color: #f8fafc;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.live-indicator:hover {
+  border-color: #ffcc00;
+  background: rgba(30, 41, 59, .95);
+}
+
+.refreshing-spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  color: #ffcc00;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .pulsing-dot {
