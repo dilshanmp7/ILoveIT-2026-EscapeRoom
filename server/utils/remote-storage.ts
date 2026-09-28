@@ -233,26 +233,12 @@ export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
   const totalScore = sessions.reduce((acc, s) => acc + getEffectiveSessionScore(s), 0);
   const averageScore = totalRegistered > 0 ? Math.round(totalScore / totalRegistered) : 0;
 
-  const deptMap = new Map<string, { totalScore: number; count: number }>();
-  for (const s of sessions) {
-    if (s.department && s.department.trim()) {
-      const dept = s.department.trim();
-      const current = deptMap.get(dept) || { totalScore: 0, count: 0 };
-      current.totalScore += getEffectiveSessionScore(s);
-      current.count += 1;
-      deptMap.set(dept, current);
-    }
-  }
-
-  let topDepartment: string | null = null;
-  let highestAvg = -1;
-  for (const [dept, data] of deptMap.entries()) {
-    const avg = data.totalScore / data.count;
-    if (avg > highestAvg) {
-      highestAvg = avg;
-      topDepartment = dept;
-    }
-  }
+  // Department of the current highest scoring player who has played (or null if no scores recorded)
+  const overallLeaderboard = computeLeaderboardFromSessions(sessions);
+  const topDepartment: string | null =
+    overallLeaderboard.length > 0 && overallLeaderboard[0]?.department
+      ? overallLeaderboard[0].department.trim()
+      : null;
 
   return {
     totalRegistered,

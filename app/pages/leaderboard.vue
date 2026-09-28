@@ -312,8 +312,8 @@ onBeforeUnmount(() => {
         </div>
         <div class="stat-box">
           <small>LEADING DEPARTMENT</small>
-          <strong class="text-blue">{{ stats.topDepartment || 'Operations' }}</strong>
-          <span>HIGHEST AVG SCORE</span>
+          <strong class="text-blue">{{ stats.topDepartment || 'N/A' }}</strong>
+          <span>TOP SCORING PLAYER</span>
         </div>
         <div class="stat-box">
           <small>AVERAGE SCORE</small>

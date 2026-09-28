@@ -625,21 +625,18 @@ export function getEventStats(): EventStats {
   const totalRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions").get() as { count: number };
   const completedRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions WHERE status = 'completed'").get() as { count: number };
   const fastestRow = db.prepare("SELECT MIN(time_spent_seconds) as min_time FROM game_sessions WHERE status = 'completed' AND time_spent_seconds > 0").get() as { min_time: number | null };
-  const avgScoreRow = db.prepare("SELECT AVG(score) as avg_score FROM game_sessions").get() as { avg_score: number | null };
-  const topDeptRow = db.prepare(`
-    SELECT department, AVG(score) as avg_score
-    FROM game_sessions
-    WHERE department IS NOT NULL AND department != ''
-    GROUP BY department
-    ORDER BY avg_score DESC
-    LIMIT 1
-  `).get() as { department: string; avg_score: number } | undefined;
+  // Department of the current highest scoring player who has played (or null if no scores recorded)
+  const overallLeaderboard = getLeaderboard();
+  const topDepartment: string | null =
+    overallLeaderboard.length > 0 && overallLeaderboard[0]?.department
+      ? overallLeaderboard[0].department.trim()
+      : null;
 
   return {
     totalRegistered: totalRow?.count || 0,
     totalCompleted: completedRow?.count || 0,
     fastestTimeSeconds: fastestRow?.min_time || null,
-    topDepartment: topDeptRow?.department || null,
+    topDepartment,
     averageScore: Math.round(avgScoreRow?.avg_score || 0),
   };
 }
