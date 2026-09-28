@@ -549,94 +549,112 @@ export function updateStoredSession(
 
 
 export function getLeaderboard(department?: string, shift?: string): LeaderboardEntry[] {
-  let query = `
-    SELECT id, user_code, first_name, last_name, department, shift,
-           score, time_spent_seconds, current_level, status, hints_used, score_breakdown_json, updated_at
-    FROM game_sessions
-    WHERE 1=1
-  `;
-  const params: string[] = [];
-  if (department && department.trim()) {
-    query += " AND department = ?";
-    params.push(department.trim());
-  }
-  if (shift && shift.trim()) {
-    query += " AND shift = ?";
-    params.push(shift.trim());
-  }
-
-  const rows = getDatabase().prepare(query).all(...params) as Record<string, unknown>[];
-
-  const parsed = rows.map((row) => {
-    let breakdown: ScoreBreakdown | undefined;
-    try {
-      if (row.score_breakdown_json) {
-        breakdown = JSON.parse(String(row.score_breakdown_json));
-      }
-    } catch {}
-
-    const isCompleted = row.status === "completed";
-    const timeSpent = Number(row.time_spent_seconds) || 0;
-    const rawScore = Number(row.score) || 0;
-
-    let effectiveScore = rawScore;
-    if (breakdown?.totalScore !== undefined) {
-      effectiveScore = breakdown.totalScore;
-    } else if (isCompleted) {
-      effectiveScore = calculateScore({
-        questionScore: rawScore,
-        timeSpentSeconds: timeSpent,
-        completed: true,
-        isTimedOut: row.status === "timed_out",
-      }).totalScore;
+  try {
+    let query = `
+      SELECT id, user_code, first_name, last_name, department, shift,
+             score, time_spent_seconds, current_level, status, hints_used, score_breakdown_json, updated_at
+      FROM game_sessions
+      WHERE 1=1
+    `;
+    const params: string[] = [];
+    if (department && department.trim()) {
+      query += " AND department = ?";
+      params.push(department.trim());
+    }
+    if (shift && shift.trim()) {
+      query += " AND shift = ?";
+      params.push(shift.trim());
     }
 
-    return {
-      id: String(row.id),
-      userCode: (row.user_code as string) || "CPH-USER",
-      firstName: (row.first_name as string) || "Agent",
-      lastName: (row.last_name as string) || "",
-      department: (row.department as string) || "Operations",
-      shift: (row.shift as string) || "Day Shift",
-      score: effectiveScore,
-      scoreBreakdown: breakdown,
-      timeSpentSeconds: timeSpent,
-      currentLevel: Number(row.current_level) || 1,
-      completed: isCompleted,
-      hintsUsed: Number(row.hints_used) || 0,
-      updatedAt: String(row.updated_at),
-    };
-  });
+    const rows = getDatabase().prepare(query).all(...params) as Record<string, unknown>[];
 
-  parsed.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds;
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  });
+    const parsed = rows.map((row) => {
+      let breakdown: ScoreBreakdown | undefined;
+      try {
+        if (row.score_breakdown_json) {
+          breakdown = JSON.parse(String(row.score_breakdown_json));
+        }
+      } catch {}
 
-  return parsed.slice(0, 100).map((entry, index) => ({
-    ...entry,
-    rank: index + 1,
-  }));
+      const isCompleted = row.status === "completed";
+      const timeSpent = Number(row.time_spent_seconds) || 0;
+      const rawScore = Number(row.score) || 0;
+
+      let effectiveScore = rawScore;
+      if (breakdown?.totalScore !== undefined) {
+        effectiveScore = breakdown.totalScore;
+      } else if (isCompleted) {
+        effectiveScore = calculateScore({
+          questionScore: rawScore,
+          timeSpentSeconds: timeSpent,
+          completed: true,
+          isTimedOut: row.status === "timed_out",
+        }).totalScore;
+      }
+
+      return {
+        id: String(row.id),
+        userCode: (row.user_code as string) || "CPH-USER",
+        firstName: (row.first_name as string) || "Agent",
+        lastName: (row.last_name as string) || "",
+        department: (row.department as string) || "Operations",
+        shift: (row.shift as string) || "Day Shift",
+        score: effectiveScore,
+        scoreBreakdown: breakdown,
+        timeSpentSeconds: timeSpent,
+        currentLevel: Number(row.current_level) || 1,
+        completed: isCompleted,
+        hintsUsed: Number(row.hints_used) || 0,
+        updatedAt: String(row.updated_at),
+      };
+    });
+
+    parsed.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (a.timeSpentSeconds !== b.timeSpentSeconds) return a.timeSpentSeconds - b.timeSpentSeconds;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+
+    return parsed.slice(0, 100).map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+    }));
+  } catch (err) {
+    console.error("Error in getLeaderboard:", err);
+    return [];
+  }
 }
 
 export function getEventStats(): EventStats {
-  const db = getDatabase();
-  const totalRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions").get() as { count: number };
-  const completedRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions WHERE status = 'completed'").get() as { count: number };
-  const fastestRow = db.prepare("SELECT MIN(time_spent_seconds) as min_time FROM game_sessions WHERE status = 'completed' AND time_spent_seconds > 0").get() as { min_time: number | null };
-  // Department of the current highest scoring player who has played (or null if no scores recorded)
-  const overallLeaderboard = getLeaderboard();
-  const topDepartment: string | null =
-    overallLeaderboard.length > 0 && overallLeaderboard[0]?.department
-      ? overallLeaderboard[0].department.trim()
-      : null;
+  try {
+    const db = getDatabase();
+    const totalRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions").get() as { count: number } | undefined;
+    const completedRow = db.prepare("SELECT COUNT(*) as count FROM game_sessions WHERE status = 'completed'").get() as { count: number } | undefined;
+    const fastestRow = db.prepare("SELECT MIN(time_spent_seconds) as min_time FROM game_sessions WHERE status = 'completed' AND time_spent_seconds > 0").get() as { min_time: number | null } | undefined;
+    const avgScoreRow = db.prepare("SELECT AVG(score) as avg_score FROM game_sessions").get() as { avg_score: number | null } | undefined;
 
-  return {
-    totalRegistered: totalRow?.count || 0,
-    totalCompleted: completedRow?.count || 0,
-    fastestTimeSeconds: fastestRow?.min_time || null,
-    topDepartment,
-    averageScore: Math.round(avgScoreRow?.avg_score || 0),
-  };
+    // Department of the current highest scoring player who has played (or null if no scores recorded)
+    const overallLeaderboard = getLeaderboard();
+    const topDepartment: string | null =
+      overallLeaderboard.length > 0 && overallLeaderboard[0]?.department
+        ? overallLeaderboard[0].department.trim()
+        : null;
+
+    return {
+      totalRegistered: totalRow?.count || 0,
+      totalCompleted: completedRow?.count || 0,
+      fastestTimeSeconds: fastestRow?.min_time || null,
+      topDepartment,
+      averageScore: Math.round(avgScoreRow?.avg_score || 0),
+    };
+  } catch (err) {
+    console.error("Error in getEventStats:", err);
+    return {
+      totalRegistered: 0,
+      totalCompleted: 0,
+      fastestTimeSeconds: null,
+      topDepartment: null,
+      averageScore: 0,
+    };
+  }
 }

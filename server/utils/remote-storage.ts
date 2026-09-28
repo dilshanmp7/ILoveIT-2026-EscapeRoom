@@ -177,7 +177,8 @@ export function computeLeaderboardFromSessions(
   department?: string,
   shift?: string,
 ): LeaderboardEntry[] {
-  let filtered = sessions.filter((s) => s.status === "completed" || (s.score && s.score > 0));
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  let filtered = safeSessions.filter((s) => s.status === "completed" || (s.score && s.score > 0));
   if (department && department.trim()) {
     const d = department.trim().toLowerCase();
     filtered = filtered.filter((s) => (s.department || "").trim().toLowerCase() === d);
@@ -217,8 +218,9 @@ export function computeLeaderboardFromSessions(
 }
 
 export function computeStatsFromSessions(sessions: GameSession[]): EventStats {
-  const totalRegistered = sessions.length;
-  const completed = sessions.filter((s) => s.status === "completed");
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const totalRegistered = safeSessions.length;
+  const completed = safeSessions.filter((s) => s.status === "completed");
   const totalCompleted = completed.length;
 
   let fastestTimeSeconds: number | null = null;
